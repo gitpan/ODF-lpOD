@@ -1,0 +1,133 @@
+=head1	NAME
+
+ODF::lpOD::Common - Common utlities provided by the Perl lpOD library
+
+=head1  DESCRIPTION
+
+This manual page describes miscellaneous functions and auxiliary features of
+the lpOD Perl implementation that are not directly linked to the lpOD functional
+specification. 
+
+=head1  Data conversion utilities
+
+The utilities introduced in this section are implemented as exported functions.
+They may be used without package or object reference.
+
+=head3  is_true(value), 
+
+Returns C<TRUE> if the given value may be regarded as true (in the Perl lpOD
+implementation). The usual Perl true values are interpreted as C<TRUE>, with the
+a few exceptions. The strings C<'false'>, C<'no'>, and C<'off'>, like 0,
+C<undef>, and the empty string, are regarded as C<FALSE>.
+
+The common constants C<TRUE> and C<FALSE> (corresponding to 1 and 0) may be
+used by the applications.
+
+=head3  is_false(value)
+
+Returns C<TRUE> if the given value is C<undef>, zero, an empty string,
+C<'false'>, C<'no'>, C<'off'>. Returns C<FALSE> otherwise.
+
+=head3  odf_boolean(value)
+
+Translates in an ODF-compliant boolean value (i.e. C<'true'> or C<'false'>)
+a Perl/lpOD boolean value. The result may be used as the value of any ODF
+boolean attribute.
+
+=head3  is_odf_datatype(type)
+
+Returns C<TRUE> if the given argument is the name of a valid ODF data type for
+table cells or variable fields, C<FALSE> otherwise. For example, the first
+instruction below returns C<TRUE> and the second one returns C<FALSE>:
+
+        $check1 = is_odf_datatype('float');
+        $check2 = is_odf_datatype('complexType');
+
+=head3  odf_value(value, type)
+
+Converts the given value according to the given type (which must be a regular
+ODF datatype), and checks it if the value is already in ODF format.
+
+The following example formats the current system date so the result may be
+used as the value of a date field in a document:
+
+        $odf_date = odf_value(time(), 'date');
+
+This function returns C<undef> if the given value is not compatible with the
+given type.
+
+I<Note: this function doesn't work for any type in the present developement
+version.>
+
+=head3  iso_date(time)
+
+Translates a numeric C<time> into an ISO-8601, ODF-compliant date.
+
+=head3  numeric_date(odf_date)
+
+Translates an ISO-8601 date, coming from an ODF document, into a Perl computable
+C<time> value.
+
+=head1  General configuration
+
+Some methods are provided by the C<lpod> pseudo-object in order to get or set
+some configuration parameters.
+
+=head3  Installation information
+
+The C<info> method returns some informations about the current lpOD
+installation, as a string in scalar context, or as a hash in array context.
+
+Example:
+
+        say scalar lpod->info;
+
+The C<installation_path> method returns the path of the C<ODF::lpOD> module
+installation in the user's filesystem.
+
+=head3  Local encoding
+
+All the text/attribute oriented methods of the C<odf_element> may automatically
+convert the processed content from or to the local encoding of the user. The
+local encoding is C<utf8> by default. It may be get or set using the common
+C<get_local_encoding> or C<set_local_encoding>. The latter must be called with
+an encoding name that is supported by the Perl C<Encode> module (an alert is
+issued and nothing is changed if the given encoding is not supported).
+
+Example:
+
+        my $old_encoding = $lpod->get_local_encoding;
+        lpod->set_local_encoding('iso8859-1');
+
+=head3  Warning information
+
+The C<debug> method, when called with C<TRUE> as argument, specifies that the
+lpOD-issued warnings must display the call stack.
+
+=head1	COPYRIGHT & LICENSE
+
+Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+
+This work was sponsored by the Agence Nationale de la Recherche
+(L<http://www.agence-nationale-recherche.fr>).
+
+lpOD is free software; you can redistribute it and/or modify it under
+the terms of either:
+
+a) the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.
+lpOD is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with lpOD.  If not, see L<http://www.gnu.org/licenses/>.
+
+b) the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+L<http://www.apache.org/licenses/LICENSE-2.0>
+
+=cut
+

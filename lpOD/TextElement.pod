@@ -1,0 +1,770 @@
+=head1	NAME
+
+ODF::lpOD::TextElement - Basic text containers
+
+=head1  DESCRIPTION
+
+All the text content of a document belong to I<paragraphs>. Paragraphs may be
+included in various structured containers (such as tables, sections, and
+others) introduced in other manual pages. Some particular paragraphs have a
+hierarchical level and are called I<headings>. A paragraph have a I<style>, but
+some text segments in a paragraph, so-called I<text spans>, may have particular
+styles. In addition, a paragraph may include special markup elements, namely
+I<bookmarks>, I<index marks>, and I<bibliography marks>.
+
+I<Other kinds of elements may be included too, but there are not introduced in
+the present developement release.>
+
+Paragraphs and headings are represented by C<odf_paragraph> and C<odf_heading>
+objects in the lpOD library. C<odf_heading> is a subclass of C<odf_paragraph>,
+which in turn is a subclass of C<odf_element>.
+
+=head1  Paragraph creation and retrieval
+
+=head2  Text element creation
+
+A paragraph can be created with a given style and a given text content. The
+default content is an empty string. There is not default style; a paragraph can
+be created without explicit style, as long as the default paragraph style of the
+document is convenient for the application. The style and the text content may
+be set or changed later.
+
+A paragraph is created (as a free element) using the C<odf_create_paragraph>
+function, with a C<text> and a C<style> optional parameters. It may be
+attached later in a context through the standard C<append_element> or
+C<insert_element> method:
+
+        $p = odf_create_paragraph(
+                text    => 'My first paragraph',
+                style   =>'TextBody'
+                );
+        $context->append_element($p);
+
+A heading may be created in a similar way using C<odf_create_heading>.
+However, this constructor allows not only the C<text> and C<style> options,
+but much more parameters:
+
+=over
+
+=item
+
+C<level> that indicates the hierarchical level of the heading (default 1,
+i.e. the top level);
+
+=item
+
+C<restart numbering>, a boolean which, if true, indicates that the numbering
+  should be restarted at the current heading (default FALSE);
+
+=item
+
+C<start value> to restart the heading numbering of the current level at a
+given value;
+
+=item
+
+C<suppress numbering>, a boolean which, if true, indicates that the heading
+must not be numbered (default FALSE).
+
+=back
+
+The option names may be used "as is" (between quotes) or with underscore
+characters instead of white spaces (i.e. C<"start value"> may be replaced by
+C<start_value>, and so on).
+
+Each of these properties may be retrieved or changed later using C<get_xxx>
+or C<set_xxx> accessors, where C<xxx> is the name of the optional parameter
+(and where any space is replaced by a "_").
+
+If a start value is set using the C<set_start_value> accessor, then the
+C<restart numbering> boolean is silently set to C<TRUE>.
+
+The following example creates a level 2 heading that will be numbered 5
+whatever the sequence of previous headings:
+
+        my $h = odf_create_heading(
+                text                    => "The new level 2 heading"
+                style                   => "Heading2",
+                level                   => 2,
+                'start value'           => 5,
+                'restart numbering'     => TRUE
+                );
+
+=head2  Text element retrieval
+
+Paragraphs and headings may be retrieved using dedicated context-based methods.
+
+=head3  get_heading
+
+Returns a heading element. By default, the returned element is the first
+heading in the context. However, optional attributes allows the user to
+specify search conditions:
+
+=over
+
+=item
+
+C<level>: restricts the search to the headings of the given level;
+
+=item
+
+C<position>: The sequential zero-based position of the heading among other
+headings in the order of the document; negative positions are counted
+backward from the end; this option allows the application to select another
+heading than the first one of the given context;
+
+=item
+
+C<content>: a search string (or a regex) restricting the search space to the
+headings with matching content.
+
+=back
+
+This instruction returns the last level 1 heading:
+
+        $h = $context->get_heading(
+                level           => 1,
+                position        => -1
+                );
+
+=head3  get_heading_list
+
+Takes the same arguments as C<get_heading>, without the C<position>, and returns
+the list of the heading elements that meet the conditions.
+
+=head3  get_paragraph
+
+A paragraph can be retrieved in a given context using C<get_paragraph> with the
+appropriate C<content> and/or C<position> options like a heading, but without
+the C<level> option. However, an optional C<style> parameter allows to restrict
+the search to paragraphs using a given style. The example below returns the
+5th paragraph using the "Standard" style and containing "ODF":
+
+        $p = $context->get_paragraph(
+                style           => "Standard",
+                content         => "ODF",
+                position        => 4
+                );
+
+=head3  get_paragraph_list
+
+Without argument, returns all the paragraphs in the context. Restictions are
+possible using the same options as C<get_paragraph> without, of course, the
+C<position> option.
+
+=head1  Paragraph & heading property accessors
+
+=head2  Styles
+
+The style of a paragraph or a header may be read or changed at any time using
+C<get_style> or C<set_style>. With C<set_style>, the argument is the name of
+a paragraph style that may exist or that will be created later.
+
+I<With the present development version, style creation is not supported (or more
+exactly requires low-level programming).>
+
+=head2  Text content
+
+=head3  set_text
+
+The paragraph/heading version of C<set_text> produces the same effects as the
+common C<set_text> method (see L<ODF::lpOD::Element>), with additional features.
+
+The tabulation marks (C<"\t">) and line breaks (C<"\n">) are allowed in the
+given texts. Multiple contiguous spaces are allowed, too, and silently replaced
+by the corresponding ODF-compliant constructs. For example, the instruction
+below stores a multi-line content in a paragraph:
+
+        $paragraph->set_text("First line\nSecond line\nThird line");
+
+Caution: Remember that C<set_text> deletes any previous content in the calling
+element.
+
+=head3  get_text
+
+Like the common C<get_text> method (see L<ODF::lpOD::Element>), the paragraph-
+based version of C<get_text> returns the text content of the paragraph. However,
+in a paragraph (or heading), C<get_text> processed the tabs, line breaks, and
+multiple space elements in a ODF-compliant way.
+
+The C<recursive> option (set to TRUE) is generally recommended (while not
+mandatory), knowing that the text of a paragraph is often split in various
+I<text spans> (i.e. paragraph sub-elements), in order to get the text as it's
+seen by the end-user.
+
+=head2  Other properties
+
+All the properties that may be set through C<odf_create_heading> may be read or
+set later using corresponding C<get_xxx> or C<set_xxx> attributes.
+These properties are allowed for headings only.
+
+=head1  Internal text markup elements
+
+A paragraph may contain special markup elements. A I<text span> is a particular
+substring whose style is not the paragraph style; it's a "sub-paragraph" with
+its own style. A I<hyperlink> is a variant of text span; it associates a text
+segment with a URL instead of a style. A I<bookmark> is either a place holder
+that specifies a particular position in the text of a paragraph, or a named
+text segment that may spread over more than one paragraph. An I<index mark> is
+a particular bookmark that may be used in order to create a document index. 
+A I<bibliography mark> is an element that specifies a relationship between a
+particular place in a paragraph and a bibliographic data structure. The lpOD
+API provides methods allowing to handle such objects.
+
+=head2  Text spans
+
+A style span is created through the C<set_span> method  from the object that
+will contain the span. This object is a paragraph, a heading or an existing
+styling span. The method must be called with a C<style> named parameter whose
+value should be the name of any text style (common or automatic, existing or to
+be created in the same document). C<set_span> may uses a string or a regular
+expression, which may match zero, one or several times the text content of
+the calling object, so the spans can apply repeatedly to every substring that
+matches. The string is provided through a C<filter> parameter. Alternatively,
+C<set_span> may be called with given C<position> and C<length> parameters,
+in order to apply the span once whatever the content. Note that C<position> is
+an offset that may be a positive integer (starting to 0 for the 1st position),
+or a negative integer (starting to -1 for the last position) if the user prefers
+to count back from the end of the target. If the C<length> parameter is omitted
+or set to 0 the span runs up to the end of the target content. If C<position>
+is out of range, nothing is done; if C<position> is OK, extra length (if any)
+is ignored. The following instructions create two text spans with a so-called
+"HighLight" style; the first one applies the given style to any "The lpOD
+Project" substring while the second one does it once on a fixed length substring
+at a given position, C<$p> being the target paragraph:
+
+        $p->set_span(filter => 'The lpOD Project', style => 'HighLight');
+        $p->set_span(position => 3, length => 5, style => 'HighLight');
+
+A hyperlink span is created through C<set_hyperlink>, which waits for the
+same positioning parameters (by regex or by position and length). However,
+there is no style, and a C<url> parameter (whose value is any kind of path
+specification that is supported by the application) is required instead.
+A hyperlink span can't contain any other span, while a style span can contain
+one or more spans. As a consequence, the only one way to provide a hyperlink
+span with a text style consists of embedding it in a style span.
+
+As an example, the instruction below applies the "HighLight" text style to
+every "ODF" and "OpenDocument" substring in the C<$p> context:
+
+        $p->set_span(filter => 'ODF|OpenDocument', style => 'HighLight');
+
+The following example associates an hyperlink in the last 5 characters of the
+C<$p> container (note that the C<length> parameter is omitted, meaning that
+the hyperlink will run up to the end):
+
+        $p->set_hyperlink(position => -5, url => 'http://here.org');
+
+The sequence hereafter show the way to set a style span and a hyperlink for
+the same text run. The style span is created first, then it's used as the
+context to create a hyperlink span that spreads over its whole content:
+
+        $s = $p->set_span(
+                filter          => 'The lpOD Project',
+                style           => 'Outstanding'
+                );
+        $s->set_hyperlink(
+                position        => 0,
+                url             => 'http://www.lpod-project.org'
+                );
+
+=head2  Bookmarks
+
+A I<position bookmark> is a location mark somewhere in a text container, which
+is identified by a unique name, but without any content. Its just a named
+location somewhere in a text container.
+
+By default, the bookmark is created and inserted using C<set_bookmark>
+before the first character of the content in the calling element (which may be a
+paragraph, a heading, or a text span). As an example, this instruction creates
+a position bookmark before the first character of a paragraph:
+
+        $paragraph->set_bookmark("MyFirstBookmark");
+
+This very simple instruction is appropriate as long as the purpose in only to
+associate a significant and persistent name to a text container in order to
+retrieve it later (with an interactive text processor or by program with lpOD or
+another ODF toolkit). It's probably the most frequent use of bookmarks. However,
+the API offers more sophisticated functionality.
+
+The position can be explicitly provided by the user with a C<position>
+parameter. Alternatively, the user can provide a regular expression using a
+C<before> or C<after> parameter, whose value is a search string (or a regex)
+so the bookmark is set immediately before or after the first substring that
+matches the expression. The code below illustrates these possibilities:
+
+        $paragraph->set_bookmark("BM1", before="xyz")
+        $paragraph->set_bookmark("BM2", position=4)
+
+This method returns the new bookmark element (that is an C<odf_element>) in
+case of success, or a null value otherwise.
+
+When the bookmark must be put at the very end of the calling element, the
+C<position> parameter may be set to C<'end'> instead of a numeric value.
+
+For performance reasons, the uniqueness of the given name is not checked. If
+needed, this check should be done by the applications, by calling
+C<get_bookmark> (with the same name and from the root element) just
+before C<set_bookmark>; as long as C<get_bookmark> returns a null value,
+the given bookmark name is not in use in the context.
+
+There is no need to specify the creation of a position bookmark;
+C<set_bookmark> creates a position bookmark by default; an additional
+C<role> parameter is required for range bookmarks only, as introduced later.
+
+The first instruction in the last example sets a bookmark before the first
+substring matching the given expression (here "xyz"), which is processed as a
+regular expression. The second instruction sets a bookmark in the same
+paragraph at a given (zero-based), so before the 5th character.
+
+In order to put a bookmark according to a regexp that could be matched more than
+once in the same paragraph, it's possible to combine the position and text
+options, so the search area begins at the given position. The following example
+puts a bookmark at the end of the first substring that matches a given
+expression after a given position:
+
+        $paragraph->set_bookmark("BM3", position => 4, after => "xyz");
+
+Thanks to the generic C<set_attribute> and C<set_attributes> methods,
+the user can set or unset any arbitrary attribute later, without automatic
+compliance check. In addition, arbitrary attributes may be set at the creation
+time (without check) using an optional C<attributes> parameter, whose content
+is a hash ref of attribute/value pairs (like with C<set_attributes>).
+
+A bookmark can be retrieved by its unique name using C<get_bookmark> from
+any element (including the root context).
+The ODF element that contains the bookmark then can be obtained as the parent of
+the bookmark element, using the C<get_parent> method from the retrieved
+bookmark. Alternatively, C<get_element_by_bookmark>, whose argument is a
+bookmark name, directly returns the element that contains the bookmark. However,
+a bookmark may belong to a text span, that in turn may belong to another text
+span, and so on. In order to directly get the real paragraph or heading element
+that contains the bookmark (whatever the possible intermediate hierarchy of
+sub-containers), an additional C<get_paragraph_by_bookmark> method is available.
+
+In the following example, the first instruction returns the text container
+(whatever its type, paragraph, heading or text span) where the bookmark is
+located, while the second one returns the paragraph or the heading that
+ultimately contains the bookmark (note that in many situations both will return
+the same element)::
+
+        $element = $context->get_element_by_bookmark("BM1");
+        $element = $context->get_paragraph_by_bookmark("BM1");
+
+The C<remove_bookmark> method may be used from any context above the
+container or the target bookmark, including the document root, in order to
+delete a bookmark whatever its container. The only required parameter is the
+bookmark name.
+
+A range bookmark is an identified text range which can spread across paragraph
+frontiers. It's a named content area, not dependant of the document tree
+structure. It starts somewhere in a paragraph and stops somewhere in the same
+paragraph or in a following one. Technically, it's a pair of special position
+bookmarks, so called bookmark start and bookmark end, owning the same name.
+
+The API allows the user to create a range bookmark within an existing content,
+as well as to retrieve and extract it according to its name. Range bookmarks
+share some common functionality with position bookmarks
+
+A range bookmark may be inserted using C<set_bookmark> like a position
+bookmark. However, this method must be sometimes called twice knowing that the
+start and end points aren't always in the same context. In such a situation,
+an additional C<role> parameter is required. The value of C<role> is either
+C<start> or C<end>, and the application must issue two explicit calls with the
+same bookmark name but with the two different values of C<role>. Example:
+
+        $paragraph1->set_bookmark(
+                "MyRange",
+                position        => 12,
+                role            => "start"
+                );
+        $paragraph2->set_bookmark(
+                "MyRange",
+                position        => 3,
+                role="end"
+                );
+
+The sequence above creates a range bookmark starting at a given position in a
+paragraph and ending at another position in another paragraph.
+
+Knowing that the default position is C<0>, and the last position in a string is
+C<'end'>, the following example creates a range bookmark that just covers the
+full content of a single paragraph::
+
+        $paragraph->set_bookmark(
+                "AnotherBookmark", role => 'start'
+                );
+        $paragraph->set_bookmark(
+                "AnotherBookmark", role => 'end', position => 'end'
+                );
+
+A range bookmark may be entirely contained in the same paragraph. As a
+consequence, it's possible to create it with a single call of
+C<set_bookmark>, with parameters that make sense for such a situation. If a
+C<content> parameter, whose value is a regex, is provided instead of the
+C<before> or C<after> option, the given expression is regarded as covering
+the whole text content to be enclosed by the bookmark, and this content is
+supposed to be entirely included in the calling paragraph. So the range bookmark
+is immediately created and automatically balanced. As soon as C<content> is
+present, C<role> is not needed (and is ignored). Like C<before> and C<after>,
+C<content> may be combined with C<position>. In addition, the range bookmark
+is automatically complete and consistent.
+
+Note that the following instruction::
+
+        $paragraph->set_bookmark("MyRange", content => "xyz")
+
+does exactly the same job as the sequence below (provided that the calling
+paragraph remains the same between the two instructions):
+
+        $paragraph->set_bookmark(
+                "MyRange", before => "xyz", role => "start"
+                );
+        $paragraph->set_bookmark(
+                "MyRange", after => "xyz", role => "end"
+                );
+
+Another way to create a range bookmark in a single instruction is to provide
+a list of two positions through the C<position> optional parameter. These two
+positions will be processed as the respective C<position> parameters of the
+start en end elements, respectively.
+
+        $paragraph->set_bookmark("MyRange", position => [3,15]);
+
+When two positions are provided, the second position can't be before the first
+one and the method fails if one of the given positions is off limits, so the
+consistency of the bookmark is secured as soon as C<set_bookmark> returns a
+non-null value with this parameter.
+
+The C<position> and C<content> parameters may be combined in order to create a
+range bookmark whose content matches a given filter string in a delimited
+substring in the calling element. The next example creates a range bookmark
+whose content will begin before the first substring that matches a "xyz"
+expression contained in a range whose the 5 first characters and the 6 last
+characters are excluded:
+
+        $paragraph->set_bookmark(
+                "MyRange", content => "xyz", position => [5, -6]
+                );
+
+When C<set_bookmark> creates a range bookmark in a single instruction, it
+returns a pair of elements according to the same logic as C<get_bookmark>
+(see below).
+
+If the start position is not before the end position, a warning is issued and
+nothing is done.
+
+The consistency of an existing range bookmark may be verified using the
+C<check_bookmark> context-based method, whose mandatory argument
+is the name of the bookmark, and that returns C<TRUE> if and only if the
+corresponding range bookmark exists, has defined start and end points I<and> if
+the end point is located after the start point. This method returns C<FALSE>
+if anyone of these conditions is not met (as a consequence, C<get_bookmark>
+may succeed while C<check_bookmark> fails for the same bookmark name). Of
+course, C<check_bookmark> always succeeds with a regular position bookmark,
+so, with a position bookmark, this method is just en existence check.
+
+A range bookmark is not a single object; it's a pair of distinct ODF elements
+whose parent elements may differ. With a range bookmark, C<get_bookmark>
+returns the pair instead of a single element like with a position bookmark.
+Of course, the first element of the pair is the start point while the second
+one is the end point. So it's possible, with the generic element-based
+C<parent> method, to select the ODF elements that contain respectively the
+start and the end points (in most situations, it's the same container).
+
+The context-based C<get_element_by_bookmark>, when the given name designates
+a range bookmark, returns the parent element of the start point by default.
+However, it's possible to use the same C<role> options as with C<set_bookmark>;
+if the C<role> value is C<'end'>, then C<get_element_by_bookmark> will return
+the container of the end point (or null if the given name designates a position
+bookmark or an non-consistent range bookmark whose end point doesn't exist).
+
+A C<get_bookmark_text> context-based method whose argument is the name of a
+range bookmark returns the text content of the bookmark as a flat string,
+without the structure; this string is just a concatenation of all the pieces of
+text occurring in the range, whatever the style and the type of their
+respective containers; however, the paragraph boundaries are replaced by blank
+spaces. Note that, when called with a position bookmark or an inconsistent
+range bookmark, C<get_bookmark_text> just returns an null value, while it
+always returns a string (possibly empty) when called from a regular range
+bookmark.
+
+A range bookmark (consistent or not) may be safely removed through the
+C<remove_bookmark> method (which deletes the start point and the end point).
+
+A range bookmark can be safely processed only if it's entirely contained in the
+calling context. A context that is not the whole document can contain a bookmark
+start or a bookmark end but not both.  In addition, a bookmark spreading across
+several elements gets corrupt if the element containing its start point or its
+end point is later removed.
+
+The C<remove_bookmark> method (which can be used at any level, including the
+document root) allows the applications to safely remove balanced and
+non-balanced range bookmarks. Nothing is done if the given bookmark is not
+entirely contained in the calling context element. The return value is C<TRUE>
+if a bookmark has really been removed, or C<FALSE> otherwise.
+
+In addition, C<clean_marks> automatically removes non-balanced range
+bookmarks (as well as non-balanced index marks). Caution: this method is
+potentially harmful, knowing that a bookmark may be non-balanced in a given
+element while it's consistent at a higher level, knowing that its start and end
+points may belong to different paragraphs. On the other hand, it's always safe
+from the document root or body element.
+
+=head2  Index marks
+
+Index marks may be handled like bookmarks but they functionality differ. There
+are three kinds of index marks, namely:
+
+=over
+
+=item
+
+C<lexical> marks, whose role is to designate text positions or ranges in
+order to use them as entries for a lexical (or alphabetical) index;
+
+=item
+
+C<toc> marks, created to become the source for tables of contents (as soon
+as these tables of contents are generated from TOC marks instead of headings);
+
+=item
+
+C<user> marks, which allow the user to create custom indices (which could be
+ignored by the typical TOC or lexical index generation features of the
+office applications).
+
+=back
+
+An index mark, just like a text bookmark, is either a mark associated to a
+position in a text, or a pair of location marks that defines a delimited range
+of text.
+
+An index mark is created in place using the C<set_index_mark> context-based
+method, according to the same basic logic as C<set_bookmark>, with some
+important differences:
+
+=over
+
+=item
+
+because an index mark is not a named object, the first argument of
+C<set_index_mark> is not really a name, like a bookmark name; this
+argument (which remains mandatory) is either a technical identifier, or
+a significant text, according to the kind of index mark;
+
+=item
+
+for a position index mark (which, by definition, has no text content), the
+first argument is a text string that is displayed in the associated index
+(when this index is generated);
+
+=item
+
+for a range index mark (which, by definition, has a text content), the first
+argument is only a meaningless but unique key that is internally used in order
+to associate the two ODF elements that represent the start point and the end
+point of the range; this key should not be displayed by a typical interactive
+text processor, and is not reliable as a persistent identifier knowing that
+an ODF-compliant application could silently change it as soon as the document
+is edited;
+
+=item
+
+an additional C<type> option, whose possible values are C<'lexical'>, C<'toc'>,
+and C<'user'>, specifies the functional type; the default is C<'lexical'>;
+
+=item
+
+when the C<'user'> type is selected, an additional C<'index name'> parameter is
+required; its value is the name of the user-defined index that will (or could)
+be associated to the current index entry; this name could be regarded as the
+arbitrary name of an arbitrary collection of text marks;
+
+=item
+
+According to the ODF 1.1 specification (§7.1.3), lexical bookmarks may have
+additional keys, so-called C<key1> and C<key2>, and a boolean C<main entry>
+attribute; these optional properties may be set (without automatic check)
+using the optional C<attributes> parameter that allows the applications to
+add any arbitrary property to a bookmark or an index mark (the value of this
+parameter is a attribute/value hash ref);
+
+=item
+
+if the C<index name> argument is provided, the mandatory value of C<type>
+is C<'user'>; as a consequence, if C<index name> is set, the default C<type>
+becomes C<'user'> and the C<type> parameter is not required;
+
+=item
+
+every C<'toc'> or C<'user'> index mark owns a I<level> property that specifies
+its hierarchical level in the table(s) of contents that may use it; this
+property may be provided using a C<level> optional parameter; its default
+value is C<1>;
+
+=item
+
+according to the ODF 1.1 specification, the range of an index mark can't
+spread across paragraph boundaries, i.e. the start en end points must be
+contained in the same paragraph; as a consequence, a range index mark may
+(and should) be always created using a single C<set_index_mark>;
+
+=item
+
+like C<set_bookmark>, C<set_index_mark> returns a pair of ODF elements
+when it creates a range index mark; if the application needs to set particular
+properties (using the C<set_attribute> generic method or otherwise) to the
+index mark, the first element of the pair (i.e. the start point element) must
+be used.
+
+=back
+
+See C<set_bookmark> for details about the index mark positioning options.
+
+The example hereafter successively creates, in the same paragraph, a range TOC
+mark, two range index marks associated to the same user-defined index, and a
+lexical position index mark at the default position (i.e. before the first
+character of the paragraph):
+
+        $paragraph->set_index_mark(
+                "id1", type => "toc", position => [3,5]
+                );
+        $paragraph->set_index_mark(
+                "id2", index_name => "OpenStandards", content => "XML"
+                );
+        $paragraph->set_index_mark(
+                "id3", index_name => "OpenStandards", content => "ODF"
+                );
+        $paragraph->set_index_mark(
+                "Go There", type => "lexical"
+                );
+
+Not that the last instruction (unlike the preceding ones) uses a possibly
+meaningful text as the first argument instead of an arbitrary technical
+identifier. Because this instruction creates a lexical index entry, the given
+text will appear in the document as a reference to the paragraph as soon as a
+standard lexical index is generated (by the current program or later by an
+end-user office software).
+
+There is a C<get_index_marks> context-based method that allows the applications
+to retrieve a list of index entries present in a document or in a more
+restricted context. This method needs a C<type> parameter, whose possible
+values are the same as with C<set_index_mark>, in order to select the kind of
+index entries; the C<'lexical'> type is the default. If the C<'user'> type is
+selected, the name of the user-defined index must be provided too,
+through a C<index name> parameter. However, if C<index name> is provided,
+the C<'user'> type is automatically selected and the C<type> parameter is not
+required.
+
+The following example successively produces three lists of index marks, the
+first one containing the entries for a table of contents, the second one the
+entries of a standard lexical index, and the third one the entries dedicated
+to an arbitrary user-defined index::
+
+        @toc = $document->get_root->get_index_marks(type => 'toc');
+        @alphabetical_index = document->get_root->get_index_marks;
+        @foo_index = $document->get_root->get_index_marks(
+                index_name => "foo"
+                );
+
+=head2  Bibliography marks
+
+A bibliography mark is a particular index mark. It may be used in order to
+store anywhere in a text a data structure which contains multiple attributes but
+whose only one particular attribute, so-called the I<identifier> is visible at
+the place of the mark. All the other attributes, or some of them, may appear in
+a bibliography index, when such an index is generated (according to index
+format).
+
+A bibliography mark is created using the C<set_bibliography_mark> method from
+a paragraph, a heading or a text span element. Its placement is controlled with
+the same arguments as a position bookmark, i.e. C<position>, C<before> or
+C<after> (look at the I<Bookmarks> section for details). Without explicit
+placement parameters, the bibliography mark is inserted at the beginning of the
+calling container.
+
+Unlike C<set_bookmark>, C<set_bibliography_mark> doesn't require a name as
+its first argument, but it requires a named C<type> parameter whose value
+is one of the publication types listed in the §7.1.4 of the ODF 1.1
+specification (examples: C<'article'>, C<'book'>, C<'conference'>,
+C<'techreport'>, C<'masterthesis'>, C<'email'>, C<'manual'>, C<'www'>, etc).
+This predefined set of types is questionable, knowing that, for example, the
+standard doesn't tell us if the right type is C<'www'> or C<'manual'> for, say,
+a manual that is published through the web, but the user is responsible for the
+choice.
+
+Beside the C<type> parameter, a C<identifier> parameter (that is not a real
+identifier in spite of its name) is supported. This so-called C<identifier>,
+unlike a real identifier, is a label that will be displayed in the document at
+the position of the bibliography entry by a typical ODF-compliant viewer or
+editor and that will provide the end-user with a visible link between the
+bibliography mark in the document body and a bibliography index later generated
+elsewhere. Nothing in the ODF 1.1 specification prevents the applications from
+creating the same bibliography mark repeatedly, and from inserting different
+bibliography marks with the same "identifier".
+
+The full set of supported parameters correspond to the list of possible
+attributes of the bibliography mark element, defined in the §7.1.4 of the
+ODF 1.1 specification. All them are C<text:> attributes, but
+C<set_bibliography_mark> allows the use of named parameters without the
+C<text> prefix (examples: C<author>, C<title>, C<editor>, C<year>, C<isbn>,
+C<url>, etc). The instruction below inserts in a paragraph, immediately after
+the first occurrence of the "lpOD documentation" substring, a bibliography
+entry that represents the lpOD documentation, and whose visible label at the
+insertion point could be something like "[lpOD2010]" in a typical document
+viewer:
+
+        $paragraph->set_bibliography_mark(
+                identifier      => "lpOD2010",
+                type            => "manual",
+                after           => "lpOD documentation",
+                year            => "2010",
+                month           => "december",
+                url             => "http://docs.lpod-project.org",
+                editor          => "The lpOD Team"
+                );
+
+The positioning parameters as the same as with C<set_bookmark> (the C<after>
+parameter is used in this example), according to the same logic as for a
+position bookmark.
+
+C<set_bibliography_mark> returns an ODF element whose any property may be
+set or changed later through the generic element-based C<set_attribute> method.
+
+Knowing that there is no persistent unique name for this class of objects, there
+is a context-based C<get_bibliography_marks> method that returns the list of
+all the the bibliography marks. If this method is called with a string argument
+(which may be a regexp), the search is restricted to the entries whose so-called
+C<identifier> property is defined and matches this argument. Each element of
+the returned list (if any) may be then checked or updated using the generic
+C<get_attribute>, C<get_attributes>, C<set_attribute> and C<set_attributes>
+methods.
+
+=head1	COPYRIGHT & LICENSE
+
+Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+
+This work was sponsored by the Agence Nationale de la Recherche
+(L<http://www.agence-nationale-recherche.fr>).
+
+lpOD is free software; you can redistribute it and/or modify it under
+the terms of either:
+
+a) the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.
+lpOD is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with lpOD.  If not, see L<http://www.gnu.org/licenses/>.
+
+b) the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+L<http://www.apache.org/licenses/LICENSE-2.0>
+
+=cut
+

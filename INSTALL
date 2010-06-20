@@ -1,0 +1,49 @@
+lpOD Project -- Languages & Platforms OpenDocument
+Perl distribution - Developement package (2010-06-20)
+
+
+System requirements:
+====================
+
+- Perl 5.10.0 or later
+- Archive::Zip 1.30 or later
+- XML::Twig 3.32 or later
+
+
+Usage
+=====
+
+The Perl programs using lpOD must include the single statement below in order
+to load the whole library:
+
+  use ODF::lpOD;
+
+
+Installation instructions (CPAN package)
+========================================
+
+Installation procedure:
+
+1) Uncompress the distribution archive (tar.gz);
+
+2) Move in the directory created by the decompression ('ODF-lpOD-nnn', where
+nnn is the version number);
+
+3) Execute "perl Makefile.PL";
+
+4) If nothing looks wrong, execute "make install" as system administrator from
+the same directory.
+
+Note than "make test" doesn't presently work, knowing that the installation
+test suite is not implemented yet.
+
+Once installed, lpOD may be used by all the users of the system; they just have
+to include, of course, the "use ODF::lpOD" statement in their Perl programs.
+
+
+About this release
+==================
+
+This release is covers only a part of the lpOD functional specification.
+The full implementation is in progress.
+

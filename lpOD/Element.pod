@@ -1,0 +1,413 @@
+=head1	NAME
+
+ODF::lpOD::Element - Common features available with any ODF element
+
+=head1  DESCRIPTION
+
+This manual page describes the C<odf_element> class.
+
+C<odf_element> is implemented in the C<ODF::lpOD::Element> package.
+
+Every XML element (loaded from an existing ODF document or created by any
+lpOD-based application) is a C<odf_element>. This class is the base class
+for any document element; its features are inherited by other, more specialized
+element classes.
+
+An element may be explicitly created using the C<odf_create_element> class
+constructor (or a the constructor of any derivative of C<odf_element> (such
+as C<odf_paragraph>, C<odf_table>, etc), then inserted somewhere is an document.
+However, in most cases, elements are either retrieved in the existing structure
+or implicitly created ad put in place as children of existing elements through
+various element-based C<set_xxx> methods (where "xxx" depends on the kind of
+newly created data). 
+
+Among the C<odf_element> methods, we distinguish I<element> methods from
+I<context> methods, while both kinds of methods belong to C<odf_element>
+objects. An element method gets or sets one or more properties of the calling
+element, while a context method uses the calling element as its operating
+context and may produce effects regarding other elements located somewhere in
+the hierarchy of the calling element (generally below, and sometimes above).
+As examples, C<set_attribute> is an element method (it changes an attribute of
+the current element), while C<get_element> (in its element-based version, that
+is not the same as its part-based one) retrieves an element somewhere below
+the current one.
+
+=head1  Constructor and retrieval tools
+
+=head3  odf_create_element(data)
+
+Creates an odf_element from a fragment of XML data or an arbitrary tag.
+If the given argument is valid XML, its parsed and the new element is
+created accordingly, possibly with a complex structure. If the argument
+is a non-XML string, its regarded as a tag (possibly with a namespace
+prefix), and the new element is created internally without XML parsing. 
+
+The new element is not attached to a document; it's free for later use.
+
+C<odf_create_element> is an exported alias; it's implemented by
+C<ODF::lpOD::Element::create>.
+
+=head3  get_element(tag [options])
+
+This method returns the first element (if any) matching the given XML tag.
+It's the most generic context-based retrieval method.
+
+The given tag may be replaced by a regular expression, so the search space will
+include all the elements whose tags match the expression.
+
+For example, the following instruction (assuming C<$context> is a previously
+retrieved element) returns the first element that is either a paragraph or a
+heading (konwing that the correspondig tags are C<text:p> and C<text:h>):
+
+        my $text_element = $context->get_element(qr'text:(p|h)'); 
+
+The allowed options are:
+
+=over
+
+=item
+
+C<position>: The sequential zero-based position of the element among the
+set of elements matching the given tag; negative positions are counted
+backward from the end.
+
+=item
+
+C<attribute>: The name of an attribute used as a selection criterium; if this
+option is set, the C<value> option is required.
+
+=item
+
+C<value>: the value of the selection attribute.
+
+=item
+
+C<content>: a search string (or a regex) restricting the search space to the
+elements with matching content.
+
+=back
+
+The example below (that combines all the options) returns the 4th level 1
+heading before the end of the current context:
+
+        $context->get_element(
+                'text:h',
+                attribute       => 'outline level',
+                value           => 1,
+                position        => -4
+                );
+
+I<Caution: the C<get_element> method of C<odf_part> is not the same as the
+C<get_element> method of C<odf_element>.>
+
+=head3  get_element_list(tag)
+
+Returns the full list of elements matching the given tag, whose tags match
+the given regex.
+
+The C<attribute> and C<value> options are allowed in order to restrict the
+search.
+
+The next example returns the list of paragraphs whose style is "Standard":
+
+        my @std_paragraphs = $context->get_element_list(
+                'text:p',
+                attribute       => 'style name',
+                value           => 'Standard'
+                );
+
+=head3  get_parent
+
+This method returns the immediate I<parent> of the calling element. Of course,
+it returns C<undef> if the context element is itself a C<root>, or if it's
+not included yet in a document.
+
+=head3  get_root
+
+Returns the top level element of the document part that contains the calling
+element.
+
+=head1  Top level contexts
+
+As introduced in L<ODF::lpOD::Document>, the C<odf_part> handlers provide
+methods that automatically return high level elements that may be the preferred
+contexts in most cases. The most common one is the I<root> element; its context
+is the whole document part. The C<body> element, that is sometimes the same as
+the C<root> one, is a bit more restricted in the document C<content> part (it
+includes only the content objects, and excludes other objects such as style
+definitions). Both the C<root> and the C<body> may be got using the part-based
+C<get_root> and C<get_body> methods.
+
+The following sequence, starting from the creation of a document instance,
+selects a part, then the root element of the part, than selects the list of
+table styles defined in the part:
+
+        my $doc = odf_get_container("/home/jmg/report.odt");
+        my $content = $doc->get_content;
+        my $context = $content->get_root;
+        my @table_styles = $context->get_element_list(
+                'style:style',
+                attribute       => 'family',
+                value           => 'table'
+                );
+
+Note that in this last example nothing could be found knowing that style
+elements are not allowed by the ODF specification in the C<body> context.
+
+=head1  Child element creation methods
+
+The methods described in this section allows the user to insert elements
+(previously existing or not) as children of the calling element.
+
+=head3  insert_element(element [options])
+
+Insert the given odf_element at a given position, that is defined according
+to a C<position> parameter, whose possible values are:
+
+=over
+
+=item
+
+C<FIRST_CHILD>: the odf_element will be the first child.
+
+=item
+
+C<LAST_CHILD>: the odf_element will be the last child.
+
+=item
+
+C<NEXT_SIBLING>: the odf_element will be inserted just after.
+
+=item
+
+C<PREV_SIBLING>: the odf_element will be inserted just before.
+
+=item
+
+C<WITHIN>: the odf_element will be inserted as a child within the text content;
+if C<position> is C<WITHIN>, then the C<offset> parameter is required.
+
+=item
+
+C<offset>: specifies the position in the text of the context element where the
+new child element must be inserted (the position is zero-based).
+
+=item
+
+C<before>: the value of this option, if set, must be another child
+C<odf_element> of the calling one; the new element will be inserted as the
+previous sibling of this child element.
+
+=item
+
+C<after>: like C<before>, but the new element will be inserted I<after> the
+value of this option.
+
+=back
+
+The WITHIN option splits the text content of the container in two parts
+and inserts the elements between them, at a given offset. So if position is
+WITHIN, the offset optional parameter is used.
+By default, if no offset argument is provided, or if the calling element
+doesn't contain any text, WITHIN produces the same result as FIRST_CHILD.
+The offset argument must be an integer; it specifies the position of the
+inserted child element within the text content of the calling element.
+A zero offset means that the element must be inserted before the 1st
+character. A negative offset value means that the insert position must be
+counted down from the end of the text, knowing that -1 is the position just
+before the last character. Of course, if the insertion must be done after
+the end of the text, the simplest way is to select LAST_CHILD instead of
+WITHIN.
+
+If C<before> or C<after> is provided, the other options are ignored. Of course,
+C<before> and C<after> are mutually exclusive.
+
+The following example inserts a previously existing element between the 4th and
+the 5th characters of the text of the calling element:
+
+        $context->insert_element(
+                $alien_element,
+                position        => WITHIN,
+                offset          => 4
+                );
+
+The next example inserts a new empty paragraph before the last paragraph of the
+calling context:
+
+        my $last_p = $context->get_element('text:p', position => -1);
+        $context->insert_element(
+                'text:p',
+                before          => $last_p
+                );
+
+(Note that smarter methods, described elsewhere, may produce the same results).
+
+=head3  insert_element(tag)
+
+Like the first version of C<insert_element>, but the argument is an XML tag
+(i.e. technically a text string instead of a C<odf_element> instance); in
+such a case a new element is created then inserted according to the same rules
+and options.
+
+=head3  append_element(element/tag)
+
+Like C<insert_element>, but without options; appends the element as the I<last
+child> of the calling element. So these tow lines are equivalent:
+
+        $context->insert_element($elt, position => LAST_CHILD);
+        $context->append_element($elt);
+
+=head1  Element methods
+
+The methods introduced in this section are accessors that get or set the
+own properties of the calling element. However, in some cases they may have
+indirect consequence on other elements.
+
+=head3  clear
+
+Erases the text of an element and all its children.
+
+=head3  clone
+
+Returns a copy of the calling element, with all its attributes, its text, and
+its children elements. Allows the user to copy a high-level structured element
+(like a section or a table) as well as a single paragraph. The copy is a free
+element, that may be inserted somewhere in the same document as the prototype,
+or in another document.
+
+=head3  delete
+
+Removes the calling element with all its descendants.
+
+=head3  del_attribute(name)
+
+Deletes the attribute whose name is given in argument. Nothing is done if
+the attribute doesn't exist. The argument may be the exact XML name of the
+attribute, or an "approximative" name according to the same logic as
+C<get_attribute> below.
+
+=head3  get_attribute(name)
+
+Returns the string value of the attribute having this name. The argument may
+be the exact XML name of the attribute. However, if a name without namespace
+prefix is provided, the prefix is automatically supposed to be the same as the
+prefix of the context element. In addition, any white space or underscore
+character in the given name is interpreted as a "-". As a consequence, some
+attributes may be designated without care of the exact XML syntax. As an
+example, assuming C<$p> is a paragraph, the two instructions below are
+equivalent, knowing that the namespace prefix of a paragraph is C<'text'>:
+
+        $style = $p->get_attribute('text:style-name');
+        $style = $p->get_attribute('style name');
+
+The attribute values are returned in a character set that depends on the
+global configuration. The default character set is C<utf8>, but it may be
+changed at the application level using the following global lpOD configuration
+accessor:
+
+        lpod->set_local_encoding(new_encoding);
+
+(Any character set that is supported by the C<Encode> Perl module is allowed).
+
+=head3  get_attributes
+
+Returns all the attributes of the calling element as a hash ref where keys are
+the full XML names of the attributes.
+
+=head3  get_tag
+
+Returns the XML tag of the element with its namespace prefix.
+
+=head2  get_style
+
+Returns the name of the style used by the calling element (this accessor makes
+sense for objects that may be displayed according to a layout). Returns
+C<undef> if no style is used.
+
+=head3  get_text(recursive=false)
+
+Returns the text contents of the element as a string. By default this method is
+not recursive (i.e. it just returns the own text of the element, not the text
+belonging to children and descendant elements). Such behaviour is not convenient
+for every possible use case (for example, the text of a paragraph may be partly
+or entirely split among several low level text containers, while a typical
+end-user regards this text as a flat string). So, if the optional C<recursive>
+parameter is provided and set to C<TRUE>, then the method returns the
+concatenated contents of all the descendants of the given element.
+
+The encoding scheme is the same as for attribute values.
+
+=head3  serialize
+
+Returns an XML export of the calling element, allowing the lpOD applications to
+store and/or transmit particular pieces of documents, and not only full
+documents. The C<pretty> option is allowed, like with the C<serialize> method
+of C<odf_part> objects, described in L<ODF::lpOD::Document>.  
+
+=head3  set_attribute(attribute => value)
+
+Sets or changes an attribute of the calling element. The attribute is created
+if it didn't exist. If the provided value is C<undef>, the attribute is
+deleted (if it didn't exist, nothing is done). The attribute name may be
+specified according to the same rules as with C<get_attribute>.
+
+The attribute value is provided in the user-selected character set, that is
+C<utf8> by default, but that may be changed (see C<get_text>).
+
+=head3  set_attributes(attr_hash_ref)
+
+Sets several attributes at a time. The attributes to change or create must be
+passed as a hash ref (like the hash ref returned by C<get_attributes>). The
+attribute names may be provided in simplified form like with C<set_attribute>.
+
+=head3  set_tag(new_tag)
+
+Changes the XML tag of the calling element. Not for usual business; it's a low
+level technical feature.
+
+=head3  set_style(style_name)
+
+Changes or sets the style name of the calling object. Caution: a lot of ODF
+elements should not have any style, so don't use this accessor unless you know
+that the calling object needs a style.
+
+=head3  set_text(text_string)
+
+Sets the text content of the calling element, replacing any previous content.
+Example:
+
+        my $paragraph = $context->get_element('text:p', position => 15);
+        $paragraph->set_text("The new content");
+
+The text may be provided in the user's local character set (see
+C<get_attribute> and C<get_text>).
+
+If C<set_text> is called with an empty string, its effect is the same as
+C<clear>.
+    
+=head1	COPYRIGHT & LICENSE
+
+Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+
+This work was sponsored by the Agence Nationale de la Recherche
+(L<http://www.agence-nationale-recherche.fr>).
+
+lpOD is free software; you can redistribute it and/or modify it under
+the terms of either:
+
+a) the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.
+lpOD is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with lpOD.  If not, see L<http://www.gnu.org/licenses/>.
+
+b) the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+L<http://www.apache.org/licenses/LICENSE-2.0>
+
+=cut

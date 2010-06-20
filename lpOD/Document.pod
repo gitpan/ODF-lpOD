@@ -1,0 +1,432 @@
+=head1	NAME
+
+ODF::lpOD::Document - General ODF package handling and metadata
+
+=head1  DESCRIPTION
+
+This manual page describes the C<odf_document>, the common features of any
+C<odf_part> of a C<odf_document>, and the particular features of the
+C<odf_meta> part (that handles the global document metadata).
+
+Every C<odf_document> is associated with a C<odf_container> that encapsulate
+all the physical access logic. On the other hand, every C<odf_document> is
+made of several components so-called I<parts>. The lpOD API is mainly focused
+on parts that describe the global metadata, the text content, the layout and
+the structure of the document, and that are physically stored according to an
+XML schema. The common lpOD class for these parts is C<odf_xmlpart> (whose Perl
+implementation is the C<ODF::lpOD::XMLPart> package).
+
+lpOD provides specialized classes for the simplest parts, such as C<odf_meta>
+which provides methods dedicated to get or set the document metadata (other
+C<odf_xmlpart> subclasses will come later in the final version).
+
+The most complex C<odf_part> includes the I<content> of the document; however,
+knowing that any piece of content belongs to an C<odf_element>, this complexity
+is handled through the C<odf_element> class (introduced in
+L<ODF::lpOD::Element>) and its various subclasses.
+
+=head1  Document & part initialization
+
+Any access to a document requires a valid C<odf_document> instance, that may be
+created from an existing document or from scratch, using one of the constructors
+introduced below. Once created, this instance gives access to individual parts
+through C<get_xxx> methods, each one dedicated to a particular part.
+
+=head3  odf_get_document(uri)
+
+This function creates a read-write document instance. The returned object is
+associated to a physical existing ODF resource, which may be updated. The
+required argument is the URI of the resource.
+
+I<Note: in the present implementation, the URI argument must be either a
+file path or a C<IO::Handle> corresponding to an open file or socket. The
+physical resource must be a well formed compressed ODF file, such as those
+natively produced by OpenOffice.org or compatible office software suites.>
+
+Example:
+
+        my $doc = odf_get_document("C:\MyDocuments\test.odt");
+
+If the C<save> method of C<odf_document> is late used without explicit target,
+the document is wrote back to the same resource.
+
+=head3  odf_new_document_from_template(uri)
+
+Same as C<odf_get_document>, but the ODF resource is used in read only mode,
+i.e. it's used as a template in order to generate other ODF physical documents.
+
+=head3  odf_new_document_from_type(doc_type)
+
+Unlike other constructors, this one generates a C<odf_document> instance from
+scratch. Technically, it's a variant of C<odf_new_document_from_template>, but
+the default template (provided with the lpOD library) is used. The required
+argument specifies the document type, that must be C<'text'>, C<'spreadsheet'>,
+C<'presentation'>, or C<'drawing'>. The new document instance is not persistent;
+no file is created before an explicit use of the C<save> method.
+
+The following example creates a spreadsheet document instance:
+
+        my $doc = odf_new_document_from_type('spreadsheet').
+
+The real content of the instance depends on the default template.
+
+A set of valid template ODF files (created using OpenOffice.org) is
+transparently installed with the standard lpOD distribution. Advanced users may
+use their own template files. To do so, they have to replace the ODF files
+present in the C<templates> subdirectory of the lpOD installation; the path to
+the lpOD installation may be retrieved through the C<lpod->installation_path>
+common function. The user-provided template files must have the same names.
+
+=head3  get_mimetype
+
+Returns the MIME type of the document (i.e. the full string that identifies
+the document type). An example of regular ODF MIME type is:
+
+        application/vnd.oasis.opendocument.text
+
+=head3  set_mimetype(new_mimetype)
+
+Allows the user to force a new arbitrary MIME type (not to use in ordinary
+lpOD applications !).
+
+=head3  get_part(name)
+
+Generic C<odf_document> method allowing access to any I<part> of a previously
+created document intance, including parts that are not handled by lpOD.
+The lpOD library provides symbolic constants that represent the most usual
+part names: C<CONTENT>, C<STYLES>, C<META>, C<MANIFEST>, C<SETTINGS>, and
+C<MIMETYPE>.
+
+The use of this low level method is not encouraged unless the user wants to
+work closely with the physical ODF file.
+
+=head3  get_content
+
+Returns a handler to the document part that contains the text and structure
+information, and possibly some automatic style definitions. This is generally
+the most important, the most used and the most complex part. The structure
+of the C<content> part depends on the document type. For example, the content
+of a spreadsheet document is a sequence of tables, while the content of a
+presentation document is a sequence of draw pages. With text documents, the
+content may be made of a huge variety of elements.
+
+        my $workspace = $doc->get_content;
+
+The returned part handler may be used either to execute part-related operations
+or to get specific elements in order to use them for context-based operations.
+
+The most part of the content-oriented lpOD features are provided through
+element-based methods (see L<ODF::lpOD::Element>).
+
+=head3  get_manifest
+
+Returns a handler for the ODF document manifest (i.e. the XML catalog of
+all the parts included in the document instance). There is no specific feature
+in the present development version for this handler, which may be used and/or
+updated using the generic part-based and element-based methods.
+
+=head3  get_meta
+
+Returns a handler for the global document metadata. See the I<Global document
+metadata> section for details about its features.
+
+=head3  get_settings
+
+Returns a handler for the ODF document settings. There is no specific feature
+in the present development version for this handler, which may be used and/or
+updated using the generic part-based and element-based methods.
+
+=head3  get_styles
+
+Returns a handler for the ODF document styles part. There is no specific feature
+in the present development version for this handler, which may be used and/or
+updated using the generic part-based and element-based methods.
+
+=head1  Accessing data inside a part
+
+Everything in the part is stored as a set of C<odf_element> instances. So, for
+complex parts (such as C<content>) or parts that are not explictly covered in
+the present documentation, the applications need to get access to an "entry
+point" that is a particular element. The most used entry points are the C<root>
+and the C<body>. Every part handler provides a C<get_root> and a C<get_body>
+methods, each one returning a C<odf_element> instance, that provides all the
+element-based features (including the creation, insertion or retrieval of other
+elements that may become in turn working contexts).
+
+For those who know the ODF XML schema, two part-based methods allows the
+selection of elements according to XPath expressions, namely C<get_element>
+and C<get_element_list>. The first one requires an XPath expression and a
+positional number; it returns the element corresponding to the given position
+in the result set of the XPath expression (if any). The second one returns
+the full result set (i.e. a list of C<odf_element> instances). For example,
+the instructions below returns respectively the first paragraph and all the
+paragraphs of a part (assuming C<$part> is a previously selected document part):
+
+        my $paragraph = $part->get_element('text:p', 0);
+        my @paragraphs = $part->get_element_list('text:p');
+
+Note that the position argument of C<get_element> is zero-based, and that it
+may be a negative value (if so, it specifies a position counted backward from
+the last matching element, -1 being the position of the last one).
+
+So a large part of the lpOD functionality is described with
+L<ODF::lpOD::Element>.
+
+=head1  Global document metadate
+
+From the handler provided by the C<get_meta> document method, several metadata
+of the document may be directly get or set.
+
+=head2  Simple metadata accessors
+
+Most metadata are just text strings. The user may read or write each one using
+a C<get_xxx> or C<set_xxx> accessor, where "xxx" is the lpOD name of a
+particular property. The presently supported simple properties are:
+
+=over
+
+=item
+
+C<creation_date>: the date of the initial version of the document, expressed
+in ISO-8601 date format
+
+=item
+
+C<creator>: the name of the user who created the current version of the
+document
+
+=item
+
+C<description>: the long description of the document
+
+=item
+
+C<editing_cycles>: the number of edit sessions (may be regarded as a version
+number)
+
+=item
+
+C<editing_duration>: the total editing time through interactive software,
+expressed as a time delta in ISO-8601 format
+
+=item
+
+C<generator>: the signature of the application that created the document
+
+=item
+
+C<initial_creator>: the name of the user who created the first version of the
+document
+
+=item
+
+C<language>: the ISO code of the main language used in the document
+
+=item
+
+C<modification_date>: the date of the last modification (i.e. ot the current
+version)
+
+=item
+
+C<subject>: the subject (or short description) of the document
+
+=item
+
+C<title>: the title of the document.
+
+=back
+
+Both C<set_creation_date> and C<set_modification_date> allow the user to provide
+the date in the ODF-compliant (ISO-8601) format, or in numeric format (like the
+Perl C<time> format). In the second case, the provided time is automatically
+converted in the required format. The corresponding C<get_> accessors always
+return the dates in their storage format. However, the lpOD library provides
+a C<numeric_date> that translates a regular ISO date into a Perl numeric
+C<time> value (a symmetric C<iso_date> global function translates a Perl C<time>
+into a ISO date).
+
+Examples of use:
+
+        $meta->set_title("The lpOD Cookbook");
+        $meta->set_creator("The lpOD Project team");
+        $meta->set_modification_date(time);
+        my $old_version = $meta->get_editing_cycles;
+        $meta->set_editing_cycles($old_version + 1);
+
+=head2  Document statistics
+
+The global document statistics (as defined in the §3.1.18 of the ODF 1.1
+specification) may be get or set using the C<get_statistics> and
+C<set_statistics> accessors. The first one returns the statistic properties as
+a hash reference. The second one takes a hash reference with the same structure,
+containing the attribute names and values. The following example displays the
+page count of the document (assuming it's a text document):
+
+        my $meta = $document->get_meta;
+        my $stat = $meta->get_statistics;
+        say $meta->{'meta:page-count'};
+
+Note that nothing prevents the applications from using C<get_statistics> to
+set any arbitrary figures.
+
+=head2  Keywords
+
+The document metadata include a list of keywords (possibly empty). This list
+may be used or changed.
+
+=head3  get_keywords
+
+Knowing that a document may be "tagged" by one or more keywords, C<odf_meta> provides a C<get_keywords> method that returns the list of the current keywords as a comma-separated string.
+
+=head3  set_keywords(string_of_keywords)
+
+C<set_keywords> allows the user to set a full list of keywords, provided as a single comma-separated string; the provided list replaces any previously existing keyword; this method, used without argument or with an empty string, just removes all the keywords. Example:
+
+        $meta->set_keywords("ODF, OpenDocument, Python, Perl, Ruby, XML")
+
+The spaces after the commas are ignored, and it's not possible to set a keyword that contains comma(s) through C<set_keywords>.
+
+=head3  set_keyword(keyword)
+
+C<set_keyword> appends a new, given keyword to the list; it's neutral if the given keyword is already present; it allows commas in the given keyword (but we don't recommend such a practice).
+
+=head3  check_keyword(keyword)
+
+C<check_keyword> returns C<TRUE> if its argument (which may be a regular expression)
+matches an existing keyword, or C<FALSE> if the keyword is not present.
+
+=head3  remove_keyword(expression)
+
+C<remove_keyword> deletes any keyword that matches the argument (which may be a regular expression).
+
+=head2  User-defined metadata
+
+Each user-defined metadata element has a unique name (or key), a value and a datatype.
+
+=head3  get_user_field(name)
+
+Retrieves a user-defined field according to its name (that should be unique for
+the document). In scalar context, returns the value of the field. In array
+context, returns the value and the data type.
+
+The regular ODF datatypes are C<float>, C<date>, C<time>, C<boolean>, and
+C<string>.
+
+=head3  get_user_fields
+
+The C<odf_meta> API provides a C<get_user_fields> method that returns a list
+whose each element is a hash ref whose (self-documented) keys are C<name>,
+C<value>, and C<type>.
+
+As an example, the following loop displays the name, the value and the type of
+each use field in the matadata part of a document:
+
+        my $doc = odf_get_document($source);
+        my $meta = $doc->get_meta;
+        foreach my $uf ($meta->get_user_fields) {
+                say "Name   " . $uf->{name} .
+                    "Value  " . $uf->{value} .
+                    "Type   " . $uf->{type}
+                }
+
+=head3  set_user_field(name, value, type)
+
+Creates or changes a user field. The first argument is the name (identifier).
+The last argument is the data type, which must be ODF-compliant (see
+C<get_user_field>). If the type is not specified, it's default value is
+C<'string'>. If the type is C<date>, the value is automatically converted in
+ISO-8601 format if provided as a numeric C<time> value.
+
+Examples:
+
+        $meta->set_user_field("Development status", "Working draft");
+        $meta->set_user_field("Security status", "Classified");
+        $meta->set_user_field("Ready for release", FALSE, "boolean");
+
+=head1  How to commit the document updates
+
+Every part may be updated using specific methods that creates, change or remove
+elements, but this methods don't produce any persistent effect.
+
+The updates done in a given part may be either exported as an XML string, or
+returned to the C<odf_document> instance from which the part depends. With the
+first option, the user is responsible of the management of the exported XML
+(that can't be used as is through a typical office application), and the
+original document is not persistently changed. The second option instructs the
+C<odf_document> that the part has been changed and that this change should be
+reflected as soon as the physical resource is wrote back. However, a part-based
+method can't directly update the resource. The changes may be made persistent
+through a C<odf_document> method.
+
+=head3  serialize
+
+This part-based method returns a full XML export of the part. The returned XML
+string may be stored somewhere and used later in order to create or replace a
+part in another document, or to feed another application.
+
+A C<pretty> named option may be provided. If set to C<TRUE>, this option
+specifies that the XML export should be as human-readable as possible.
+
+=head3  store
+
+This part-based method stores the present state (possibly changed) of the part
+in a temporary, non-persistent space, waiting for the execution of the next
+call of the document-based C<save> method.
+
+Like C<serialize>, C<store> allows the C<pretty> option.
+
+=head3 save
+
+This method is provided by the C<odf_document>. If the document instance is
+associated with a regular ODF resource available for update (meaning that it
+has been created using C<odf_get_container> and that the user has a write
+access to the resource), the resource is wrote back and reflecting all the
+changes previously committed by one or more document parts using their
+respective C<store> methods.
+
+As an example, the sequence below updates a ODF file according to changes made
+in the C<meta> and C<content> parts:
+
+        my $doc = odf_get_document("/home/users/jmg/report.odt");
+        my $meta = $doc->get_meta;
+        my $content = $doc->get_content;
+        # meta updates are made here
+        $meta->store;
+        # content updates are made here
+        $content->store;
+        $document->save;
+        
+An optional C<target> parameter may be provided to C<save>. If set, this
+parameter specifies an alternative destination for the file (it produces the
+same effect as the "File/Save As" feature of a typical office software).
+The C<target> option is always allowed, but it's mandatory with C<odf_document>
+instances created using C<odf_new_document_from...> constructor.
+
+=head1	COPYRIGHT & LICENSE
+
+Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+
+This work was sponsored by the Agence Nationale de la Recherche
+(L<http://www.agence-nationale-recherche.fr>).
+
+lpOD is free software; you can redistribute it and/or modify it under
+the terms of either:
+
+a) the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.
+lpOD is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with lpOD.  If not, see L<http://www.gnu.org/licenses/>.
+
+b) the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+L<http://www.apache.org/licenses/LICENSE-2.0>
+
+=cut
+
