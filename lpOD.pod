@@ -57,8 +57,8 @@ whatever the document type) is retrieved, and its content is set to "Here B4"
 
 This is the Perl implementation of the lpOD project.
 
-lpOD is a Free Software project that offers, for high level use cases, an application programming interface dedicated to document processing with the Python, Perl and Ruby languages. It's complying with the `Open Document Format` (ODF), i.e. the
-ISO/IEC 26300 international standard.
+lpOD is a Free Software project that offers, for high level use cases, an application programming interface dedicated to document processing with the Python, Perl and Ruby languages. It's complying with the I<OASIS Open Document Format> (ODF), i.e. the
+I<ISO/IEC 26300> international standard.
 
 lpOD is designed according to a top-down approach. The API is bound to the document
 functional structure and the user's point of view. As a consequence, it may be used without full knowledge of the ODF specification, and allows the application developer to be focused on the business needs instead of the low level storage concerns.
@@ -74,7 +74,7 @@ be removed in the stable version.>
 
 The general access to the documents uses the C<odf_document> class. Before
 processing a document, an odf_document instance must be created using one of
-the allowed constructors. While an odf_document object encapsulate the physical
+the allowed constructors. While an odf_document object encapsulates the physical
 resource access logic, the real data must be handled through document I<parts>,
 knowing that each part represents a specialized aspect of the document.
 
@@ -388,6 +388,11 @@ text editor.
 
 =head2  Using the documentation
 
+The detailed documentation is split into several manual chapters which are
+not necessarily linked to Perl packages.
+
+So the presently implemented features (or most of them) are described in the
+following manual pages
 For details about the main lpOD classes, look at the following manual pages,
 that cover a large part of the presently implemented features (that is a small
 part of the full lpOD scope):
@@ -396,33 +401,35 @@ part of the full lpOD scope):
 
 =item *
 
-L<ODF::lpOD::Document>: General ODF package handling and metadata.
+L<ODF::lpOD::Packages>: General ODF package handling and metadata.
 
 =item *
 
-L<ODF::lpOD::Element>: Common features, available with any element.
+L<ODF::lpOD::Elements>: Common features, available with any element.
 
 =item *
 
-L<ODF::lpOD::TextElement>: Basic text containers (paragraphs, headings), and
+L<ODF::lpOD::TextElements>: Basic text containers (paragraphs, headings), and
 various elements that may take place in paragraphs (bookmarks, index marks,
 bibliography marks).
 
 =item *
 
-L<ODF::lpOD::Table>: Tables and their content.
+L<ODF::lpOD::Tables>: Tables and their content.
 
 =item *
 
-L<ODF::lpOD::StructuredContainer>: High-level structures other than tables
+L<ODF::lpOD::StructuredContainers>: High-level structures other than tables
 
 =item *
 
-L<ODF::lpOD::Common>: Common utlities provided by the Perl lpOD library
+L<ODF::lpOD::Utilities>: Common utlities provided by the Perl lpOD library
 
 =back
 
-Stay tuned, other development releases will come with new features.
+You may have a look at L<http://docs.lpod-project.org> in order to know the
+scope of the lpOD project and get an idea about the additional features that
+will be implemented soon.
 
 =head1	COPYRIGHT & LICENSE
 

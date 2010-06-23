@@ -28,7 +28,7 @@ use strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
 our     $VERSION        = 0.1;
-use constant PACKAGE_DATE => '2010-06-19T21:45:54';
+use constant PACKAGE_DATE => '2010-06-22T08:53:09';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -142,6 +142,18 @@ sub     is
                 alert("Wrong reference");
                 return undef;
                 }
+        }
+
+sub     next
+        {
+        my $self        = shift;
+        return $self->next_sibling($self->get_tag);
+        }
+
+sub     previous
+        {
+        my $self        = shift;
+        return $self->previous_sibling($self->get_tag);
         }
 
 sub     get_class

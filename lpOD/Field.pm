@@ -29,7 +29,7 @@ use     strict;
 package ODF::lpOD::Field;
 use base 'ODF::lpOD::Element';
 our $VERSION    = 0.1;
-use constant PACKAGE_DATE => '2010-06-19T20:36:58';
+use constant PACKAGE_DATE => '2010-06-23T08:52:04';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -112,7 +112,7 @@ sub     set_currency
         my $self        = shift;
         my $currency    = shift;
         $self->set_type('currency') if $currency;
-        return $self->set_att('office:currency', shift);
+        return $self->set_att('office:currency', $currency);
         }
 
 sub     get_value

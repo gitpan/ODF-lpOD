@@ -143,6 +143,29 @@ second row in a table (assuming that C<$t> is a previously selected table):
         $cell = $t->get_cell('B2');
         $cell = $t->get_cell(1, 1);
 
+C<get_cells> extracts rectangular ranges of cells in order to allow the
+applications to store and process them out of the document tree, through
+regular 2D tables. The range selection is defined by the coordinates of the
+top left and the bottom right cells of the target area. C<get_cells> allows
+two possible syntaxes, i.e. the spreadsheet-like one and the numeric one.
+The first one requires an alphanumeric argument whose first character is a
+letter and which includes a ':', while the second one requires four numeric
+arguments. As an example, the two following instructions, which are equivalent,
+return a bi-dimensional array corresponding to the cells of the C<B2:D15> area
+of a table:
+
+        @cells = $table->get_cells("B2:D15");
+        @cells = $table->get_cells(1,1,14,3);
+
+Note that, after such a selection, C<$cells[0][0]> contains the "B2" cell of
+the ODF table. If C<get_cells> is called without argument, the selection covers
+the whole table.
+
+The elements of the Perl table returned by C<get_cells> are references to the
+cells of the ODF table (not copies); the Perl table just maps an ODF table
+area, and any cell property change made through this Perl table affects the
+underlying ODF cell.
+
 C<get_row> allows the user to select a table row as an ODF element. This
 method requires a zero-based numeric value. If the required row exists, it's
 returned; the method returns C<undef> otherwise. C<get_row> provides a
@@ -153,6 +176,8 @@ based position on the needed cell.
 C<get_column> works according to the same logic and returns a table column
 object, that is a C<odf_column> instance. (Remember that a column doesn't
 contain cells.)
+
+C<get_column_list> returns all the columns as a list.
 
 =head1  Row and column customization
 

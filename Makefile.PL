@@ -1,5 +1,5 @@
 #------------------------------------------------------
-# lpOD Perl - Packaging & installation - 2010-06-20
+# lpOD Perl - Packaging & installation - 2010-06-21
 #------------------------------------------------------
 use 5.10.0;
 use ExtUtils::MakeMaker;
@@ -7,7 +7,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile
 	(
     	'NAME'		=> 'ODF::lpOD',
-	'VERSION'	=> '0.110',
+	'VERSION'	=> '0.111',
     	'AUTHOR'	=> 'Jean-Marie Gouarne <jean-marie.gouarne@arsaperta.com>',
 	'LICENSE'	=> 'GPL',
     	'PREREQ_PM'	=>

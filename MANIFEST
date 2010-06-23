@@ -19,12 +19,12 @@ lpOD/templates/presentation.odp
 lpOD/templates/spreadsheet.ods
 lpOD/templates/text.odt
 lpOD.pod
-lpOD/Document.pod
-lpOD/Element.pod
-lpOD/TextElement.pod
-lpOD/Table.pod
-lpOD/StructuredContainer.pod
-lpOD/Common.pod
+lpOD/Packages.pod
+lpOD/Elements.pod
+lpOD/TextElements.pod
+lpOD/Tables.pod
+lpOD/StructuredContainers.pod
+lpOD/Utilities.pod
 t/01w.t
 t/02r.t
 META.yml                                 Module meta-data (added by MakeMaker)
