@@ -28,7 +28,7 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
 our	$VERSION	        = 0.1;
-use constant PACKAGE_DATE => '2010-06-20T00:25:01';
+use constant PACKAGE_DATE => '2010-06-24T14:24:15';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -36,7 +36,7 @@ use Carp;
 use base 'Exporter';
 our @EXPORT     = qw
         (
-        lpod_common lpod lpod_info
+        lpod_common lpod
 
         odf_get_document
         odf_new_document_from_template odf_new_document_from_type
@@ -202,7 +202,6 @@ BEGIN   {
         *odf_value              = *check_odf_value;
 
         *fatal_error            = *Carp::confess;
-        *lpod_info              = *ODF::lpOD::Common::info;
         }
 
 #=== exported utilities ======================================================

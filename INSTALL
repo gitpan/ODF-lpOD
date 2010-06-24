@@ -31,14 +31,10 @@ nnn is the version number);
 
 3) Execute "perl Makefile.PL";
 
-4) If nothing looks wrong, execute "make install" as system administrator from
+4) Execute "make test" (optional but recommended);
+
+5) If nothing looks wrong, execute "make install" as system administrator from
 the same directory.
-
-Note than "make test" doesn't presently work, knowing that the installation
-test suite is not implemented yet.
-
-Once installed, lpOD may be used by all the users of the system; they just have
-to include, of course, the "use ODF::lpOD" statement in their Perl programs.
 
 
 About this release

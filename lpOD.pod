@@ -7,6 +7,7 @@ ODF::lpOD - Languages & platform for OpenDocument - DEVELOPMENT VERSION
         use ODF::lpOD:
         
         my $document = odf_get_document("report.odt");
+
         my $meta = $document->get_meta;
         $meta->set_title("The best document format");
         
@@ -15,18 +16,20 @@ ODF::lpOD - Languages & platform for OpenDocument - DEVELOPMENT VERSION
         my $paragraph = $context->get_paragraph(content => "I look for it");
         $paragraph->set_text("I found it");
         $paragraph->set_style("Standout");
-        my $new_paragraph = odf_create_paragraph
-                                (
+        my $new_paragraph = odf_create_paragraph (
                                 style => "Standard",
                                 text => "A new content"
                                 );
         $context->append_element($new_paragraph);
-        my $table = odf_create_table
-                                ("Main Figures", height => 20, width => 16);
+        my $table = odf_create_table (
+                "Main Figures", height => 20, width => 16
+                );
         $context->insert_element($table, before => $paragraph);
         my $cell = $table->get_cell("B4");
         $cell->set_text("Here B4");
-        
+
+	$content->store;
+        $meta->store;
         $document->save;
         exit;
         
@@ -401,29 +404,30 @@ part of the full lpOD scope):
 
 =item *
 
-L<ODF::lpOD::Packages>: General ODF package handling and metadata.
+L<ODF::lpOD::Document>: General document packaging and metadata handling.
 
 =item *
 
-L<ODF::lpOD::Elements>: Common features, available with any element.
+L<ODF::lpOD::Element>: Common features, available with any element.
 
 =item *
 
-L<ODF::lpOD::TextElements>: Basic text containers (paragraphs, headings), and
-various elements that may take place in paragraphs (bookmarks, index marks,
+L<ODF::lpOD::TextElement>: Text containers (paragraphs, headings), and various
+elements that may take place in paragraphs (bookmarks, index marks,
 bibliography marks).
 
 =item *
 
-L<ODF::lpOD::Tables>: Tables and their content.
+L<ODF::lpOD::Table>: Access to tables and their content
 
 =item *
 
-L<ODF::lpOD::StructuredContainers>: High-level structures other than tables
+L<ODF::lpOD::StructuredContainer>: High-level structures such as sections,
+lists, and draw pages
 
 =item *
 
-L<ODF::lpOD::Utilities>: Common utlities provided by the Perl lpOD library
+L<ODF::lpOD::Common>: Common utility functions
 
 =back
 

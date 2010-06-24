@@ -23,13 +23,19 @@
 #-----------------------------------------------------------------------------
 use     5.010_000;
 use     strict;
+#=============================================================================
+#       Structured containers : Sections, lists, draw pages
 #-----------------------------------------------------------------------------
-#       Structured containers
-#-----------------------------------------------------------------------------
+package ODF::lpOD::StructuredContainer;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '0.000';
+use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+use ODF::lpOD::Common;
+#=============================================================================
 package ODF::lpOD::Section;
 use base 'ODF::lpOD::Element';
-our $VERSION    = 0.1;
-use constant PACKAGE_DATE => '2010-06-03T09:06:12';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-06-24T21:30:36';
 use ODF::lpOD::Common;
 #=============================================================================
 #--- constructors ------------------------------------------------------------

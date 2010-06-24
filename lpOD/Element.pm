@@ -28,15 +28,13 @@ use strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
 our     $VERSION        = 0.1;
-use constant PACKAGE_DATE => '2010-06-22T08:53:09';
+use constant PACKAGE_DATE => '2010-06-24T21:46:17';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
 use ODF::lpOD::TextElement;
 use ODF::lpOD::StructuredContainer;
-use ODF::lpOD::Field;
 use ODF::lpOD::Table;
-
 use ODF::lpOD::Attributes;
 
 use base 'XML::Twig::Elt';
@@ -1362,7 +1360,7 @@ sub     AUTOLOAD
 #=============================================================================
 package ODF::lpOD::BibliographyMark;
 use base 'ODF::lpOD::Element';
-our $VERSION    = 0.1;
+our $VERSION    = '0.000';
 use constant PACKAGE_DATE => '2010-06-11T23:40:55';
 #=============================================================================
 1;
