@@ -548,7 +548,7 @@ sub     contains
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Column;
 use base 'ODF::lpOD::Element';
-our $VERSION    = 0.1;
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-22T15:02:46';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
@@ -603,7 +603,7 @@ sub     set_repeated
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Row;
 use base 'ODF::lpOD::Element';
-our $VERSION    = 0.1;
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-22T19:24:38';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
@@ -975,7 +975,7 @@ sub     set_text
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
 use base 'ODF::lpOD::Field';
-our $VERSION    = 0.1;
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-22T19:24:10';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------

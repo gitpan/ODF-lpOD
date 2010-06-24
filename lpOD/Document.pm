@@ -27,7 +27,7 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = 0.1;
+our     $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-24T21:30:36';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
@@ -215,7 +215,7 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::Container;
-our	$VERSION	= 0.1;
+our	$VERSION	= '0.100';
 use constant PACKAGE_DATE => '2010-06-24T21:30:36';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
@@ -829,13 +829,13 @@ sub     delete_element
 #=============================================================================
 package ODF::lpOD::Content;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.000';
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-24T21:30:36';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Styles;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.000';
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-24T21:30:36';
 use ODF::lpOD::Common;
 #=============================================================================
@@ -1100,13 +1100,13 @@ sub     AUTOLOAD
 #=============================================================================
 package ODF::lpOD::Settings;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.000';
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-24T21:30:36';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Manifest;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.000';
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-24T21:30:36';
 use ODF::lpOD::Common;
 #=============================================================================

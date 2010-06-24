@@ -28,7 +28,7 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::StructuredContainer;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.000';
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-24T21:30:36';
 use ODF::lpOD::Common;
 #=============================================================================
@@ -98,13 +98,13 @@ sub     set_hyperlink
 #=============================================================================
 package ODF::lpOD::List;
 use base 'ODF::lpOD::Element';
-our $VERSION    = 0.1;
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-02T21:44:39';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::DrawPage;
 use base 'ODF::lpOD::Element';
-our $VERSION    = 0.1;
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-02T21:44:39';
 use ODF::lpOD::Common;
 #=============================================================================
