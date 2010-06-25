@@ -28,7 +28,7 @@ use strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
 our     $VERSION        = 0.1;
-use constant PACKAGE_DATE => '2010-06-24T21:46:17';
+use constant PACKAGE_DATE => '2010-06-25T12:33:28';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -64,6 +64,7 @@ BEGIN
         *get_tagname                    = *XML::Twig::Elt::tag;
         *get_children                   = *XML::Twig::Elt::children;
         *get_parent                     = *XML::Twig::Elt::parent;
+        *previous_sibling               = *XML::Twig::Elt::prev_sibling;
         *clone                          = *XML::Twig::Elt::copy;
         *get_root                       = *XML::Twig::Elt::root;
         *is_element                     = *XML::Twig::Elt::is_elt;
@@ -1360,7 +1361,7 @@ sub     AUTOLOAD
 #=============================================================================
 package ODF::lpOD::BibliographyMark;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.000';
+our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-11T23:40:55';
 #=============================================================================
 1;

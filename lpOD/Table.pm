@@ -29,7 +29,7 @@ use     strict;
 package ODF::lpOD::Table;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+use constant PACKAGE_DATE => '2010-06-25T15:11:36';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -174,12 +174,9 @@ sub     create
         $t->set_attribute('print', odf_boolean($opt{print}));
         $t->set_attribute('print ranges', $opt{print_ranges});
         
-        $t->add_column(number => $width);
-        for (my $i = 0 ; $i < $height ; $i++)
-                {
-                my $r = $t->add_row();
-                $r->add_cell(number => $width);
-                }
+        $t->add_column(number => $width, propagate => FALSE);
+        my $r = $t->add_row(number => $height);
+        $r->add_cell(number => $width);
         
         return $t;
         }
@@ -257,7 +254,7 @@ sub     get_row_list
 sub     get_column
         {
         my $self        = shift;
-        my $position    = shift || 0;
+        my $position    = alpha_to_num(shift) || 0;
         my $width       = $self->get_column_count;
         my $max_w       = $self->get_attribute('#lpod:w');
 
@@ -400,7 +397,17 @@ sub     add_row
         my $number = $opt{number};
         return undef unless $number && ($number > 0);
         delete @opt{qw(number before after expand)};
-        my $elt = odf_create_row(%opt);
+        my $elt;
+        unless ($ref_elt)
+                {
+                my $proto = $self->last_child($ROW_FILTER);
+                $elt = $proto ? $proto->copy() : odf_create_row(%opt);
+                }
+        else
+                {
+                $elt = $ref_elt->copy;
+                }
+        $elt->set_repeated($number);
         if ($ref_elt)
                 {
                 $elt->paste($position, $ref_elt);
@@ -409,17 +416,7 @@ sub     add_row
                 {
                 $elt->paste_last_child($self);
                 }
-        if (defined $number && $number > 1)
-                {
-                if (is_true($expand))
-                        {
-                        $elt->repeat($number);
-                        }
-                else
-                        {
-                        $elt->set_repeated($number);
-                        }
-                }
+        $elt->repeat($number) if (is_true($expand) && $number && $number > 1);
         return $elt;
         }
 
@@ -429,10 +426,12 @@ sub     add_column
         my %opt         =
                 (
                 number          => 1,
+                propagate       => TRUE,
                 @_
                 );
         my $ref_elt     = $opt{before} || $opt{after};
         my $expand      = $opt{expand};
+        my $propagate   = $opt{propagate};
         my $position    = undef;
         if ($ref_elt)
                 {
@@ -454,8 +453,18 @@ sub     add_column
                 }
         my $number = $opt{number};
         return undef unless $number && ($number > 0);
-        delete @opt{qw(number before after expand)};
-        my $elt = odf_create_column(%opt);
+        delete @opt{qw(number before after expand propagate)};
+        my $elt;
+        unless ($ref_elt)
+                {
+                my $proto = $self->last_child($COLUMN_FILTER);
+                $elt = $proto ? $proto->copy() : odf_create_column(%opt);
+                }
+        else
+                {
+                $elt = $ref_elt->copy;
+                }
+        $elt->set_repeated($number);
         if ($ref_elt)
                 {
                 $elt->paste($position, $ref_elt);
@@ -464,15 +473,18 @@ sub     add_column
                 {
                 $elt->paste_last_child($self);
                 }
-        if (defined $number && $number > 1)
+        $elt->repeat($number) if (is_true($expand) && $number && $number > 1);
+        if (is_true($propagate))
                 {
-                if (is_true($expand))
+                my $hz_pos = $elt->get_position;
+                foreach my $row ($self->children($ROW_FILTER))
                         {
-                        $elt->repeat($number);
-                        }
-                else
-                        {
-                        $elt->set_repeated($number);
+                        my $ref_cell = $row->get_cell($hz_pos);
+                        $row->add_cell(
+                                number  => $number,
+                                expand  => $expand,
+                                after   => $ref_cell
+                                );
                         }
                 }
         return $elt;
@@ -544,12 +556,96 @@ sub     contains
         }
 
 #=============================================================================
+package ODF::lpOD::TableElement;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-06-25T12:39:44';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     get_repeated
+        {
+        my $self        = shift;
+        my $class = $self->get_class;
+        my $attr;
+        if (($class eq odf_cell) or ($class eq odf_column))
+                {
+                $attr = 'table:number-columns-repeated';
+                }
+        elsif ($class eq odf_row)
+                {
+                $attr = 'table:number-rows-repeated';
+                }
+        else
+                {
+                alert "Unknown object"; return undef;
+                } 
+        my $result = $self->get_attribute($attr) // 1;                  #/
+        if ($result < 1)
+                {
+                alert "Strange repeat property $result";
+                }
+        return $result;
+        }
+
+sub     set_repeated
+        {
+        my $self        = shift;
+        my $class = $self->get_class;
+        my $attr;
+        if (($class eq odf_cell) or ($class eq odf_column))
+                {
+                $attr = 'table:number-columns-repeated';
+                }
+        elsif ($class eq odf_row)
+                {
+                $attr = 'table:number-rows-repeated';
+                }
+        else
+                {
+                alert "Unknown object"; return undef;
+                } 
+        my $rep         = shift;
+        $rep = undef unless $rep && $rep > 1;
+        return $self->set_attribute($attr, $rep);
+        }
+
+sub     repeat
+        {
+        my $self        = shift;
+        my $reps        = shift || $self->get_repeated;
+        $self->set_repeated(undef);
+        return $self->SUPER::repeat($reps);
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     get_position
+        {
+        my $self        = shift;
+        my $parent      = $self->parent('table:table');
+        unless ($parent)
+                {
+                alert "Missing or wrong attachment";
+                return FALSE;
+                }
+        my $position = 0;
+        my $elt = $self->previous;
+        while ($elt)
+                {
+                $position += $elt->get_repeated // 1;                   #/
+                $elt = $elt->previous;
+                }
+        return wantarray ? ($parent->get_name, $position) : $position;
+        }
+
+#=============================================================================
 #       Table columns
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Column;
-use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-22T15:02:46';
+use base 'ODF::lpOD::TableElement';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-06-25T11:10:37';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -572,39 +668,13 @@ sub     create
         return $col;
         }
 
-#-----------------------------------------------------------------------------
-
-sub     repeat
-        {
-        my $self        = shift;
-        my $reps        = shift || $self->get_repeated;
-        $self->set_repeated(undef);
-        return $self->SUPER::repeat($reps);
-        }
-
-#-----------------------------------------------------------------------------
-
-sub     get_repeated
-        {
-        my $self        = shift;
-        return $self->get_attribute('table:number-columns-repeated') // 1;  #/
-        }
-
-sub     set_repeated
-        {
-        my $self        = shift;
-        my $rep         = shift;
-        $rep = undef unless $rep && $rep > 1;
-        return $self->set_attribute('table:number-columns-repeated', $rep);
-        }
-
 #=============================================================================
 #       Table rows
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Row;
-use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-22T19:24:38';
+use base 'ODF::lpOD::TableElement';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-06-25T11:39:11';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -633,14 +703,6 @@ sub     create
 
 
 #-----------------------------------------------------------------------------
-
-sub     repeat
-        {
-        my $self        = shift;
-        my $reps        = shift || $self->get_repeated;
-        $self->set_repeated(undef);
-        return $self->SUPER::repeat($reps);
-        }
 
 sub     clean
         {
@@ -750,7 +812,16 @@ sub     add_cell
         my $number = $opt{number};
         return undef unless $number && ($number > 0);
         delete @opt{qw(number before after expand)};
-        my $elt = odf_create_cell(%opt);
+        my $elt;
+        unless ($ref_elt)
+                {
+                my $proto = $self->last_child($CELL_FILTER);
+                $elt = $proto ? $proto->copy() : odf_create_cell(%opt);
+                }
+        else
+                {
+                $elt = $ref_elt->copy;
+                }
         if ($ref_elt)
                 {
                 $elt->paste($position, $ref_elt);
@@ -759,7 +830,7 @@ sub     add_cell
                 {
                 $elt->paste_last_child($self);
                 }
-        if (defined $number && $number > 1)
+        if ($number && $number > 1)
                 {
                 if (is_true($expand))
                         {
@@ -773,27 +844,11 @@ sub     add_cell
         return $elt;
         }
 
-#-----------------------------------------------------------------------------
-
-sub     get_repeated
-        {
-        my $self        = shift;
-        return $self->get_attribute('table:number-rows-repeated') // 1;  #/
-        }
-
-sub     set_repeated
-        {
-        my $self        = shift;
-        my $rep         = shift;
-        $rep = undef unless $rep && $rep > 1;
-        return $self->set_attribute('table:number-rows-repeated', $rep);
-        }
-        
 #=============================================================================
 package ODF::lpOD::Field;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+use constant PACKAGE_DATE => '2010-06-25T15:39:59';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -910,7 +965,8 @@ sub     set_value
         {
         my $self        = shift;
         my $value       = shift         or return undef;
-        my $type        = $self->get_type;
+        my $type        = $self->get_type();
+
         given ($type)
                 {
                 when ('string')
@@ -952,31 +1008,13 @@ sub     get_text
         return $self->SUPER::get_text(recursive => TRUE);
         }
 
-#-----------------------------------------------------------------------------
-
-sub     set_text
-        {
-        my $self        = shift;
-        my $text        = shift;
-        my %opt         =
-                (
-                style           => undef,
-                @_
-                );
-        $self->cut_children;
-        $self->append_element
-                (odf_create_paragraph(text => $text, style => $opt{style}));
-        }
-
-
-
 #=============================================================================
 #       Table cells
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
-use base 'ODF::lpOD::Field';
+use base ('ODF::lpOD::TableElement', 'ODF::lpOD::Field');
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-22T19:24:10';
+use constant PACKAGE_DATE => '2010-06-25T15:52:08';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 our     %ATTRIBUTE;
@@ -1009,31 +1047,47 @@ sub     previous
         return $self->previous_sibling($ODF::lpOD::Row::CELL_FILTER);
         }
 
-sub     repeat
+sub     get_position
         {
         my $self        = shift;
-        my $reps        = shift || $self->get_repeated;
-        $self->set_repeated(undef);
-        return $self->SUPER::repeat($reps);
+        my $row = $self->parent($ODF::lpOD::Table::ROW_FILTER);
+        unless ($row)
+                {
+                alert "Missing or wrong attachment";
+                return FALSE;
+                }
+        my $position = 0;
+        my $elt = $self->previous;
+        while ($elt)
+                {
+                $position += $elt->get_repeated // 1;                   #/
+                $elt = $elt->previous;
+                }
+        if (wantarray)
+                {
+                return  (
+                        $row->get_position(),
+                        $position
+                        );
+                }
+        return $position;        
         }
 
 #-----------------------------------------------------------------------------
 
-sub     set_repeated
+sub     set_text
         {
         my $self        = shift;
-        my $rep         = shift;
-        $rep = undef unless $rep && $rep > 1;
-        return $self->set_attribute('table:number-columns-repeated', $rep);
+        my $text        = shift;
+        my %opt         =
+                (
+                style           => undef,
+                @_
+                );
+        $self->cut_children;
+        $self->append_element
+                (odf_create_paragraph(text => $text, style => $opt{style}));
         }
-
-sub     get_repeated
-        {
-        my $self        = shift;
-        return $self->get_attribute('table:number-columns-repeated') // 1;  #/
-        }
-
-#-----------------------------------------------------------------------------
 
 sub     get_content
         {
@@ -1052,6 +1106,12 @@ sub     set_content
                         $self->append_element($elt);
                         }
                 }
+        }
+
+sub     get_type
+        {
+        my $self        = shift;
+        return $self->ODF::lpOD::Field::get_type();
         }
 
 #=============================================================================

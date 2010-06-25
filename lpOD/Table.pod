@@ -223,6 +223,17 @@ result (assuming C<$t> is a previously selected or created table):
         $t->add_row(number => 1, after => -1);
         $t->add_row();
 
+The inserted rows are initialized as clones of the row used as the reference
+through the C<after> or C<before> or of the last existing row if the new
+row in appended at the end. So the new rows (and their cells) inherit the same
+style and content as an existing one.
+
+The C<add_column> method does the same thing with columns as C<add_row>
+for rows. However, because the cells belong to rows, it works according to a
+very different logic. C<add_column> inserts new column objects (clones of an
+existing column), then it goes through all the rows and inserts new cells
+(cloning the cell located at the reference position) in each one.
+
 Of course, it's possible to use C<insert_element> in order to insert a row,
 a column or a cell externally created (or copied from an other table from
 another document), provided that the user carefully checks the consistency of
@@ -235,9 +246,6 @@ of the first row of C<$t1> after the 5th row of C<$t2>:
 While a table may be expanded vertically using C<add_row>, each row may be
 expanded using the C<odf_row> C<add_cell> method whose parameters and behaviour
 are the same as the table-based C<add_row> method.
-
-I<The C<add_column> method, which is in the lpOD scope, will be implemented
-soon.>
 
 =head1  Individual cell property handling
 

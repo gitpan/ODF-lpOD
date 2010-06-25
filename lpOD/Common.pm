@@ -28,7 +28,7 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
 our	$VERSION	        = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T14:24:15';
+use constant PACKAGE_DATE => '2010-06-25T14:17:07';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -57,6 +57,7 @@ our @EXPORT     = qw
         odf_element odf_text_element odf_bibliography_mark
         odf_paragraph odf_heading odf_draw_page odf_section
         odf_list odf_table odf_column odf_row odf_cell odf_field
+        odf_table_element
 
         TRUE FALSE PRETTY
         is_true is_false is_odf_datatype odf_boolean process_options
@@ -99,6 +100,7 @@ use constant
         odf_list                => 'ODF::lpOD::List',
         odf_field               => 'ODF::lpOD::Field',
         odf_table               => 'ODF::lpOD::Table',
+        odf_table_element       => 'ODF::lpOD::TableElement',
         odf_column              => 'ODF::lpOD::Column',
         odf_row                 => 'ODF::lpOD::Row',
         odf_cell                => 'ODF::lpOD::Cell',
