@@ -1,6 +1,6 @@
 =head1	NAME
 
-ODF::lpOD - Languages & platform for OpenDocument - DEVELOPMENT VERSION
+ODF::lpOD - Languages & platform for OpenDocument
 
 =head1	SYNOPSIS
 

@@ -23,9 +23,9 @@
 #-----------------------------------------------------------------------------
 use     5.010_000;
 package ODF::lpOD::Attributes;
-use constant PACKAGE_DATE => '2010-06-12T00:06:11';
+use constant PACKAGE_DATE => '2010-06-28T12:52:15';
 #==============================================================================
-# Generated from OpenDocument-schema-v1.1.rng
+# Generated from odf.rng
 #------------------------------------------------------------------------------
 %ODF::lpOD::Heading::ATTRIBUTE =
 	(
@@ -120,6 +120,15 @@ use constant PACKAGE_DATE => '2010-06-12T00:06:11';
 		{
 		attribute => "text:cond-style-name",
 		type      => "styleNameRef"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::RowGroup::ATTRIBUTE =
+	(
+	display                         =>
+		{
+		attribute => "table:display",
+		type      => "boolean"
 		},
 	);
 #------------------------------------------------------------------------------
@@ -287,6 +296,15 @@ use constant PACKAGE_DATE => '2010-06-12T00:06:11';
 		},
 	);
 #------------------------------------------------------------------------------
+%ODF::lpOD::ColumnGroup::ATTRIBUTE =
+	(
+	display                         =>
+		{
+		attribute => "table:display",
+		type      => "boolean"
+		},
+	);
+#------------------------------------------------------------------------------
 %ODF::lpOD::Section::ATTRIBUTE =
 	(
 	style_name                      =>
@@ -308,6 +326,59 @@ use constant PACKAGE_DATE => '2010-06-12T00:06:11';
 		{
 		attribute => "text:protection-key",
 		type      => "string"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Cell::ATTRIBUTE =
+	(
+	number_columns_repeated         =>
+		{
+		attribute => "table:number-columns-repeated",
+		type      => "positiveInteger"
+		},
+	style_name                      =>
+		{
+		attribute => "table:style-name",
+		type      => "styleNameRef"
+		},
+	content_validation_name         =>
+		{
+		attribute => "table:content-validation-name",
+		type      => "string"
+		},
+	formula                         =>
+		{
+		attribute => "table:formula",
+		type      => "string"
+		},
+	protect                         =>
+		{
+		attribute => "table:protect",
+		type      => "boolean"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Column::ATTRIBUTE =
+	(
+	number_columns_repeated         =>
+		{
+		attribute => "table:number-columns-repeated",
+		type      => "positiveInteger"
+		},
+	style_name                      =>
+		{
+		attribute => "table:style-name",
+		type      => "styleNameRef"
+		},
+	visibility                      =>
+		{
+		attribute => "table:visibility",
+		type      => "table-visibility-value"
+		},
+	default_cell_style_name         =>
+		{
+		attribute => "table:default-cell-style-name",
+		type      => "styleNameRef"
 		},
 	);
 #------------------------------------------------------------------------------
@@ -361,30 +432,6 @@ use constant PACKAGE_DATE => '2010-06-12T00:06:11';
 		{
 		attribute => "table:is-sub-table",
 		type      => "boolean"
-		},
-	);
-#------------------------------------------------------------------------------
-%ODF::lpOD::Column::ATTRIBUTE =
-	(
-	number_columns_repeated         =>
-		{
-		attribute => "table:number-columns-repeated",
-		type      => "positiveInteger"
-		},
-	style_name                      =>
-		{
-		attribute => "table:style-name",
-		type      => "styleNameRef"
-		},
-	visibility                      =>
-		{
-		attribute => "table:visibility",
-		type      => "table-visibility-value"
-		},
-	default_cell_style_name         =>
-		{
-		attribute => "table:default-cell-style-name",
-		type      => "styleNameRef"
 		},
 	);
 #------------------------------------------------------------------------------

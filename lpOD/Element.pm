@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = 0.1;
-use constant PACKAGE_DATE => '2010-06-25T12:33:28';
+our     $VERSION        = '0.102';
+use constant PACKAGE_DATE => '2010-06-28T13:54:49';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -49,6 +49,8 @@ our %CLASS    =
         'text:section'                  => odf_section,
         'text:list'                     => odf_list,
         'table:table'                   => odf_table,
+        'table:table-column-group'      => odf_column_group,
+        'table:table-row-group'         => odf_row_group,
         'table:table-column'            => odf_column,
         'table:table-row'               => odf_row,
         'table:table-cell'              => odf_cell,
@@ -66,6 +68,7 @@ BEGIN
         *get_parent                     = *XML::Twig::Elt::parent;
         *previous_sibling               = *XML::Twig::Elt::prev_sibling;
         *clone                          = *XML::Twig::Elt::copy;
+        *ungroup                        = *XML::Twig::Elt::erase;
         *get_root                       = *XML::Twig::Elt::root;
         *is_element                     = *XML::Twig::Elt::is_elt;
         *is_text_segment                = *XML::Twig::Elt::is_text;
@@ -76,6 +79,7 @@ BEGIN
         *get_index_mark_list            = *get_index_marks;
         *get_bibliography_mark_list     = *get_bibliography_marks;
         *get_table_list                 = *get_tables;
+        *get_table                      = *get_table_by_name;
         }
 
 #=== exported constructor ====================================================
@@ -143,16 +147,36 @@ sub     is
                 }
         }
 
+sub     is_child
+        {
+        my $self        = shift;
+        my $ref_elt     = shift;
+        my $parent = $self->parent;
+        return ($parent && $parent == $ref_elt) ? TRUE : FALSE;
+        }
+
 sub     next
         {
         my $self        = shift;
-        return $self->next_sibling($self->get_tag);
+        my $context     = shift;
+        my $tag         = $self->get_tag;
+        unless ($context)
+                {
+                return $self->next_sibling($tag);
+                }
+        return $self->next_elt($context, $tag);
         }
 
 sub     previous
         {
         my $self        = shift;
-        return $self->previous_sibling($self->get_tag);
+        my $context     = shift;
+        my $tag         = $self->get_tag;
+        unless ($context)
+                {
+                return $self->previous_sibling($tag);
+                }
+        return $self->prev_elt($self, $tag);
         }
 
 sub     get_class
@@ -177,6 +201,13 @@ sub     get_descendant_elements
         {
         my $self        = shift;
         return $self->descendants(qr'^[^#]');
+        }
+
+sub     group
+        {
+        my $self        = shift;
+        my @elts        = @_;
+        $_->move(last_child => $self) for @elts;
         }
 
 sub     node_info
@@ -848,7 +879,7 @@ sub     set_attribute
         {
         my $self        = shift;
         my $name        = $self->normalize_name(shift);
-	my $value       = input_conversion(shift);
+        my $value       = input_conversion(shift);
 	return defined $value ?
                 $self->set_att($name, $value) : $self->del_attribute($name);
         }
@@ -1347,7 +1378,14 @@ sub     AUTOLOAD
                         }
                 when ('set')
                         {
-                        return $element->set_attribute($name, @_);
+                        my $value = input_conversion(shift);
+                        if ($type)
+                                {
+                                $value = check_odf_value($value, $type);
+                                }
+                        return defined $value ?
+                                $element->set_att($name => $value) :
+                                $element->del_attribute($name);
                         }
                 default
                         {

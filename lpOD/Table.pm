@@ -23,29 +23,30 @@
 #-----------------------------------------------------------------------------
 use     5.010_000;
 use     strict;
-#-----------------------------------------------------------------------------
-#       Tables
-#-----------------------------------------------------------------------------
-package ODF::lpOD::Table;
+#=============================================================================
+package ODF::lpOD::Matrix;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-25T15:11:36';
+use constant PACKAGE_DATE => '2010-06-28T11:15:31';
 use ODF::lpOD::Common;
-#=============================================================================
+#-----------------------------------------------------------------------------
 
-our $ROW_FILTER         = 'table:table-row';
-our $COLUMN_FILTER      = 'table:table-column';
+use constant    ROW_FILTER      => 'table:table-row';
+use constant    COLUMN_FILTER   => 'table:table-column';
+use constant    CELL_FILTER     => qr'table:(covered-|)table-cell';
+use constant    TABLE_FILTER    => 'table:table';
 
-#--- common utilities --------------------------------------------------------
+#--- utility functions -------------------------------------------------------
 
 sub     alpha_to_num
         {
         my $arg = shift         or return 0;
+        $arg = shift if ref($arg) || $arg eq __PACKAGE__;
         my $alpha = uc $arg;
         unless ($alpha =~ /^[A-Z]*$/)
                 {
-                return $arg if $alpha =~ /^[0-9]*$/;
-                alert "Wrong value $arg";
+                return $arg if $alpha =~ /^[0-9\-]*$/;
+                alert "Wrong alpha value $arg: digits not allowed";
                 return undef;
                 }
 
@@ -62,7 +63,9 @@ sub     alpha_to_num
 
 sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
 	{
-	my $arg	= shift; return ($arg, @_) unless defined $arg;
+	my $arg	= shift // return undef;                                #/
+        $arg = shift if ref($arg) || $arg eq __PACKAGE__;
+	return ($arg, @_) unless defined $arg;
 	my $coord = uc $arg;
 	return ($arg, @_) unless $coord =~ /[A-Z]/;
 
@@ -79,8 +82,9 @@ sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
 
 sub     translate_range
         {
-        my $arg = shift; return ($arg, @_) unless
-                                (defined $arg && $arg =~ /:/);
+        my $arg = shift // return undef;                                #/
+        $arg = shift if ref($arg) || $arg eq __PACKAGE__;
+        return ($arg, @_) unless (defined $arg && $arg =~ /:/);
         my $range = uc $arg;
         $range =~ s/\s*//g;
         my ($start, $end) = split(':', $range);
@@ -98,7 +102,7 @@ sub     translate_range
                                 {
                                 push @r, alpha_to_num($p);
                                 }
-                        when (/^[0-9]*$/)
+                        when (/^[0-9\-]*$/)
                                 {
                                 push @r, ($p - 1);
                                 }
@@ -114,8 +118,9 @@ sub     translate_range
 
 sub     split_rep
         {
-        my      ($elt1, $pos, $limit) = @_;
-        
+        my $elt1 = shift or return undef;
+        $elt1 = shift if $elt1 eq __PACKAGE__;
+        my ($pos, $limit) = @_;
         my $reps = $elt1->get_repeated;
         if ($reps > 1 && defined $limit && ($pos + $reps) > $limit)
                 {
@@ -137,51 +142,7 @@ sub     split_rep
         return $pos;
         }
 
-#--- constructor -------------------------------------------------------------
-
-sub     create
-        {
-        my $name        = shift;
-        unless ($name)
-                {
-                alert "Missing table name";
-                return FALSE;
-                }
-
-        my %opt = process_options
-                (
-                style           => undef,
-                display         => undef,
-                protected       => undef,
-                key             => undef,
-                @_
-                );
-
-        my $width       = $opt{width}   // 0;
-        my $height      = $opt{height}  // 0;
-        if ($width < 0 || $height < 0)
-                {
-                alert "Wrong table size ($height x $width)";
-                return FALSE;
-                }
-
-        my $t = odf_element->new('table:table');
-        $t->set_attribute('name', $name);
-        $t->set_attribute('style name', $opt{style});
-        $t->set_attribute('protected', odf_boolean($opt{protected}));
-        $t->set_attribute('protection key', $opt{key});
-        $t->set_attribute('display', odf_boolean($opt{display}));
-        $t->set_attribute('print', odf_boolean($opt{print}));
-        $t->set_attribute('print ranges', $opt{print_ranges});
-        
-        $t->add_column(number => $width, propagate => FALSE);
-        my $r = $t->add_row(number => $height);
-        $r->add_cell(number => $width);
-        
-        return $t;
-        }
-
-#--- internal method for row & cell repetiion limit --------------------------
+#--- utility methods ---------------------------------------------------------
 
 sub     set_working_area
         {
@@ -194,113 +155,90 @@ sub     set_working_area
 sub     clean
         {
         my $self        = shift;
-        $_->clean() for $self->children($ROW_FILTER);
+        $_->clean() for $self->children(ROW_FILTER);
+        }
+
+sub     all_rows
+        {
+        my $self        = shift;
+        return $self->descendants(ROW_FILTER);
+        }
+
+sub     all_columns
+        {
+        my $self        = shift;
+        return $self->descendants(COLUMN_FILTER);
+        }
+
+sub     all_cells
+        {
+        my $self        = shift;
+        return $self->descendants(CELL_FILTER);
         }
 
 #-----------------------------------------------------------------------------
 
-sub     get_row
+sub     set_group
         {
         my $self        = shift;
-        my $position    = shift || 0;
-        my $height      = $self->get_height;
+        my $type        = shift;
+        my $start       = shift;
+        my $end         = shift;
+        unless ($start && $end)
+                {
+                alert "Range not valid"; return FALSE;
+                }
+        unless ($start->before($end))
+                {
+                alert "Start element is not before end element";
+                return FALSE;
+                }
+        unless ($start->is_child($self) && $end->is_child($self))
+                {
+                alert "Grouping not allowed"; return FALSE;
+                }
+        my $group = odf_element->new('table:table-' . $type . '-group');
+        $group->paste_before($start);
+        my @elts = (); my $e = $start;
+        do      {
+                push @elts, $e;
+                $e = $e->next_sibling;
+                }
+                while ($e && ! $e->after($end));
+        $group->group(@elts);
+        my %opt         = @_;
+        $group->set_attribute('display', odf_boolean($opt{display}));
+        return $group;        
+        }
+
+sub     get_group
+        {
+        my $self        = shift;
+        my $type        = shift;
+        my $position    = shift;
+        return $self->child($position, 'table:table-' . $type . '-group');
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     get_size
+        {
+        my $self        = shift;
+        my $height      = 0;
+        my $width       = 0;
+        my $row         = $self->first_row;
         my $max_h       = $self->att('#lpod:h');
-
-        if ($position < 0)
+        my $max_w       = $self->att('#lpod:w');
+        while ($row)
                 {
-                $position += $height;
+                $height += $row->get_repeated;
+                my $row_width = $row->get_width;
+                $width = $row_width if $row_width > $width;
+                $row = $row->next($self);
                 }
-        if (($position >= $height) || ($position < 0))
-                {
-                alert "Row position $position out of range";
-                return undef;
-                }
-
-        my $row = $self->first_child($ROW_FILTER)
-                or return undef;
-        my $p = 0;
-        my $next_elt;
-        do      {
-                $next_elt = $row->next;          
-                $p = ODF::lpOD::Table::split_rep($row, $p, $max_h);
-                $p++; $row = $next_elt;
-                } until $p >= $position;
-        $row = $self->child($position, $ROW_FILTER);     
-        ODF::lpOD::Table::split_rep($row, $p, $max_h);
-        return $row;
-        }
-
-sub     get_row_list
-        {
-        my $self        = shift;
-        my $arg         = shift;
-        my ($start, $end);
-        if ($arg)
-                {
-                ($start, $end) = translate_range($arg, shift);
-                }
-        $start //= 0; $end //= -1;
-        my @list = ();
-        my $elt = $self->get_row($start);
-        my $last_elt = $self->get_row($end);
-        while ($elt && ! $elt->after($last_elt))
-                {
-                push @list, $elt;
-                $elt = $elt->next;
-                }
-        return @list;
-        }
-
-sub     get_column
-        {
-        my $self        = shift;
-        my $position    = alpha_to_num(shift) || 0;
-        my $width       = $self->get_column_count;
-        my $max_w       = $self->get_attribute('#lpod:w');
-
-        if ($position < 0)
-                {
-                $position += $width;
-                }
-        if (($position >= $width) || ($position < 0))
-                {
-                alert "Column position $position out of range";
-                return undef;
-                }
-
-        my $col = $self->first_child($COLUMN_FILTER)
-                or return undef;
-        my $p = 0;
-        my $next_elt;
-        do      {
-                $next_elt = $col->next_sibling($COLUMN_FILTER);
-                $p = ODF::lpOD::Table::split_rep($col, $p, $max_w);
-                $p++; $col = $next_elt;
-                } until $p >= $position;
-        $col = $self->child($position, $COLUMN_FILTER);
-        ODF::lpOD::Table::split_rep($col, $p, $max_w);
-        return $col;
-        }
-
-sub     get_column_list
-        {
-        my $self        = shift;
-        my $arg         = shift;
-        my ($start, $end);
-        if ($arg)
-                {
-                ($start, $end) = translate_range($arg, shift);
-                }
-        $start //= 0; $end //= -1;
-        my @list = ();
-        my $elt = $self->get_column($start);
-        my $last_elt = $self->get_column($end);
-        while ($elt && ! $elt->after($last_elt))
-                {
-                push @list, $elt;
-                $elt = $elt->next;
-                }
-        return @list;
+        
+        $height = $max_h if defined $max_h and $max_h < $height;
+        return ($height, $width);
         }
 
 sub     get_cell
@@ -365,181 +303,6 @@ sub     get_cell_list
         return $self->get_cells(@_);
         }
 
-sub     add_row
-        {
-        my $self        = shift;
-        my %opt         =
-                (
-                number          => 1,
-                @_
-                );
-        my $ref_elt     = $opt{before} || $opt{after};
-        my $expand      = $opt{expand};
-        my $position    = undef;
-        if ($ref_elt)
-                {
-                if ($opt{before} && $opt{after})
-                        {
-                        alert "'before' and 'after' are mutually exclusive";
-                        return FALSE;
-                        }
-                $position = $opt{before} ? 'before' : 'after';
-                unless  (
-                        $ref_elt->isa(odf_row)
-                                &&
-                        $ref_elt->parent() == $self
-                        )
-                        {
-                        alert "Wrong $position reference";
-                        return FALSE;
-                        }
-                }
-        my $number = $opt{number};
-        return undef unless $number && ($number > 0);
-        delete @opt{qw(number before after expand)};
-        my $elt;
-        unless ($ref_elt)
-                {
-                my $proto = $self->last_child($ROW_FILTER);
-                $elt = $proto ? $proto->copy() : odf_create_row(%opt);
-                }
-        else
-                {
-                $elt = $ref_elt->copy;
-                }
-        $elt->set_repeated($number);
-        if ($ref_elt)
-                {
-                $elt->paste($position, $ref_elt);
-                }
-        else
-                {
-                $elt->paste_last_child($self);
-                }
-        $elt->repeat($number) if (is_true($expand) && $number && $number > 1);
-        return $elt;
-        }
-
-sub     add_column
-        {
-        my $self        = shift;
-        my %opt         =
-                (
-                number          => 1,
-                propagate       => TRUE,
-                @_
-                );
-        my $ref_elt     = $opt{before} || $opt{after};
-        my $expand      = $opt{expand};
-        my $propagate   = $opt{propagate};
-        my $position    = undef;
-        if ($ref_elt)
-                {
-                if ($opt{before} && $opt{after})
-                        {
-                        alert "'before' and 'after' are mutually exclusive";
-                        return FALSE;
-                        }
-                $position = $opt{before} ? 'before' : 'after';
-                unless  (
-                        $ref_elt->isa(odf_column)
-                                &&
-                        $ref_elt->parent() == $self
-                        )
-                        {
-                        alert "Wrong $position reference";
-                        return FALSE;
-                        }
-                }
-        my $number = $opt{number};
-        return undef unless $number && ($number > 0);
-        delete @opt{qw(number before after expand propagate)};
-        my $elt;
-        unless ($ref_elt)
-                {
-                my $proto = $self->last_child($COLUMN_FILTER);
-                $elt = $proto ? $proto->copy() : odf_create_column(%opt);
-                }
-        else
-                {
-                $elt = $ref_elt->copy;
-                }
-        $elt->set_repeated($number);
-        if ($ref_elt)
-                {
-                $elt->paste($position, $ref_elt);
-                }
-        else
-                {
-                $elt->paste_last_child($self);
-                }
-        $elt->repeat($number) if (is_true($expand) && $number && $number > 1);
-        if (is_true($propagate))
-                {
-                my $hz_pos = $elt->get_position;
-                foreach my $row ($self->children($ROW_FILTER))
-                        {
-                        my $ref_cell = $row->get_cell($hz_pos);
-                        $row->add_cell(
-                                number  => $number,
-                                expand  => $expand,
-                                after   => $ref_cell
-                                );
-                        }
-                }
-        return $elt;
-        }
-
-#-----------------------------------------------------------------------------
-
-sub     get_height
-        {
-        my $self        = shift;
-        my $height      = 0;
-        my $row         = $self->first_child($ROW_FILTER);
-        my $max_h       = $self->att('#lpod:h');
-        while ($row)
-                {
-                $height += $row->get_repeated;
-                $row = $row->next;
-                }
-        return (defined $max_h and $max_h < $height) ? $max_h : $height;
-        }
-
-sub     get_column_count
-        {
-        my $self        = shift;
-        my $count       = 0;
-        my $col         = $self->first_child($COLUMN_FILTER);
-        my $max_w       = $self->att('#lpod:w');
-        while ($col)
-                {
-                $count += $col->get_repeated;
-                $col = $col->next;
-                }
-        return (defined $max_w and $max_w < $count) ? $max_w : $count;        
-        }
-
-sub     get_size
-        {
-        my $self        = shift;
-        my $height      = 0;
-        my $width       = 0;
-        my $row         = $self->first_child($ROW_FILTER);
-        my $max_h       = $self->att('#lpod:h');
-        my $max_w       = $self->att('#lpod:w');
-        while ($row)
-                {
-                $height += $row->get_repeated;
-                my $row_width = $row->get_width;
-                $width = $row_width if $row_width > $width;
-                $row = $row->next;
-                }
-        
-        $height = $max_h if defined $max_h and $max_h < $height;
-        return ($height, $width);
-        }
-
 sub     contains
         {
         my $self        = shift;
@@ -556,10 +319,515 @@ sub     contains
         }
 
 #=============================================================================
+package ODF::lpOD::ColumnGroup;
+use base 'ODF::lpOD::Matrix';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-06-28T16:26:04';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create { return odf_element->new('table:table-column-group', @_); }
+
+#-----------------------------------------------------------------------------
+
+sub     first_column
+        {
+        my $self        = shift;
+        my $elt = $self->first_child(qr'column')        or return undef;
+        if      ($elt->isa(odf_column))         { return $elt; }
+        elsif   ($elt->isa(odf_column_group))   { return $elt->first_column; }
+        else                                    { return undef; }
+        }
+
+sub     last_column
+        {
+        my $self        = shift;
+        my $elt = $self->last_child(qr'column')         or return undef;
+        if      ($elt->isa(odf_column))         { return $elt; }
+        elsif   ($elt->isa(odf_column_group))   { return $elt->last_column; }
+        else                                    { return undef; }
+        }
+
+sub     get_column_count
+        {
+        my $self        = shift;
+        my $count       = 0;
+        my $col         = $self->first_column;
+        my $max_w       = $self->att('#lpod:w');
+        while ($col)
+                {
+                $count += $col->get_repeated;
+                $col = $col->next($self);
+                }
+        return (defined $max_w and $max_w < $count) ? $max_w : $count;        
+        }
+
+sub     get_position
+        {
+        my $self        = shift;
+        my $start = $self->first_column;
+        return $start ? $start->get_position : undef;
+        }
+
+sub     _get_column
+        {
+        my $self        = shift;
+        my $position    = shift;
+        my $col = $self->first_column   or return undef;
+        for (my $i = 0 ; $i < $position ; $i++)
+                {
+                $col = $col->next($self) or return undef;
+                }
+        return $col;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     get_column
+        {
+        my $self        = shift;
+        my $position    = odf_matrix->alpha_to_num(shift) || 0;
+        my $width       = $self->get_column_count;
+        my $max_w       = $self->get_attribute('#lpod:w');
+        my $filter      = odf_matrix->COLUMN_FILTER;
+        if ($position < 0)
+                {
+                $position += $width;
+                }
+        if (($position >= $width) || ($position < 0))
+                {
+                alert "Column position $position out of range";
+                return undef;
+                }
+
+        my $col = $self->first_column or return undef;
+        my $p = 0;
+        my $next_elt;
+        do      {
+                $next_elt = $col->next($self);
+                $p = ODF::lpOD::Matrix::split_rep($col, $p, $max_w);
+                $p++; $col = $next_elt;
+                } until $p >= $position;
+        $col = $self->_get_column($position); 
+        ODF::lpOD::Matrix::split_rep($col, $p, $max_w);
+        return $col;
+        }
+
+sub     get_column_list
+        {
+        my $self        = shift;
+        my $arg         = shift;
+        my ($start, $end);
+        if ($arg)
+                {
+                ($start, $end) = odf_matrix->translate_range($arg, shift);
+                }
+        $start //= 0; $end //= -1;
+        my @list = ();
+        my $elt = $self->get_column($start);
+        my $last_elt = $self->get_column($end);
+        while ($elt && ! $elt->after($last_elt))
+                {
+                push @list, $elt;
+                $elt = $elt->next($self);
+                }
+        return @list;
+        }
+
+sub     add_column
+        {
+        my $self        = shift;
+        my %opt         =
+                (
+                number          => 1,
+                propagate       => TRUE,
+                @_
+                );
+        my $ref_elt     = $opt{before} || $opt{after};
+        my $expand      = $opt{expand};
+        my $propagate   = $opt{propagate};
+        my $position    = undef;
+        my $col_filter  = odf_matrix->COLUMN_FILTER;
+        my $row_filter  = odf_matrix->ROW_FILTER;
+        if ($ref_elt)
+                {
+                if ($opt{before} && $opt{after})
+                        {
+                        alert "'before' and 'after' are mutually exclusive";
+                        return FALSE;
+                        }
+                $position = $opt{before} ? 'before' : 'after';
+                $ref_elt = $self->get_column($ref_elt) unless ref $ref_elt;
+                unless  (
+                        $ref_elt->isa(odf_column)
+                                &&
+                        $ref_elt->parent() == $self
+                        )
+                        {
+                        alert "Wrong $position reference";
+                        return FALSE;
+                        }
+                }
+        my $number = $opt{number};
+        return undef unless $number && ($number > 0);
+        delete @opt{qw(number before after expand propagate)};
+        my $elt;
+        unless ($ref_elt)
+                {
+                my $proto = $self->last_child($col_filter);
+                $elt = $proto ? $proto->copy() : odf_create_column(%opt);
+                }
+        else
+                {
+                $elt = $ref_elt->copy;
+                }
+        if ($ref_elt)
+                {
+                $elt->paste($position, $ref_elt);
+                }
+        else
+                {
+                $elt->paste_last_child($self);
+                }
+        if ($number && $number > 1)
+                {
+                if (is_true($expand))
+                        {
+                        $elt->set_repeated(undef);
+                        $elt->repeat($number);
+                        }
+                else
+                        {
+                        $elt->set_repeated($number);
+                        }
+                }
+        else
+                {
+                $elt->set_repeated(undef);
+                }
+        if (is_true($propagate))
+                {
+                my $context = $self;
+                my $hz_pos = $elt->get_position;
+                unless ($self->isa(odf_table))
+                        {
+                        $context = $self->parent('table:table');
+                        }
+                foreach my $row ($context->descendants($row_filter))
+                        {
+                        my $ref_cell = $row->get_cell($hz_pos);
+                        $row->add_cell(
+                                number          => $number,
+                                expand          => $expand,
+                                $position       => $ref_cell
+                                );
+                        }
+                }
+        return $elt;
+        }
+
+sub     set_column_group
+        {
+        my $self        = shift;
+        my ($start, $end) = odf_matrix->translate_range(shift, shift);
+        my $e1 = $self->get_column($start);
+        my $e2 = $self->get_column($end);
+        return $self->set_group('column', $e1, $e2, @_);
+        }
+
+sub     get_column_group
+        {
+        my $self        = shift;
+        return $self->get_group('column', @_);
+        }
+
+sub     collapse
+        {
+        my $self        = shift;
+        $_->set_visibility('collapse') for $self->get_column_list;
+        }
+
+sub     uncollapse
+        {
+        my $self        = shift;
+        $_->set_visibility(undef) for $self->get_column_list;
+        }
+
+#=============================================================================
+package ODF::lpOD::RowGroup;
+use base 'ODF::lpOD::Matrix';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-06-28T15:16:06';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create { return odf_element->new('table:table-row-group', @_); }
+
+#-----------------------------------------------------------------------------
+
+sub     first_row
+        {
+        my $self        = shift;
+        my $elt = $self->first_child(qr'row')   or return undef;
+        if      ($elt->isa(odf_row))            { return $elt; }
+        elsif   ($elt->isa(odf_row_group))      { return $elt->first_row; }
+        else                                    { return undef; }
+        }
+
+sub     last_row
+        {
+        my $self        = shift;
+        my $elt = $self->last_child(qr'row')    or return undef;
+        if      ($elt->isa(odf_row))            { return $elt; }
+        elsif   ($elt->isa(odf_row_group))      { return $elt->last_row; }
+        else                                    { return undef; }
+        }
+
+sub     get_height
+        {
+        my $self        = shift;
+        my $height      = 0;
+        my $row         = $self->first_row;
+        my $max_h       = $self->att('#lpod:h');
+        while ($row)
+                {
+                $height += $row->get_repeated;
+                $row = $row->next($self);
+                }
+        return (defined $max_h and $max_h < $height) ? $max_h : $height;
+        }
+
+sub     get_position
+        {
+        my $self        = shift;
+        my $start = $self->first_row;
+        return $start ? $start->get_position : undef;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     _get_row
+        {
+        my $self        = shift;
+        my $position    = shift;
+        my $row = $self->first_row   or return undef;
+        for (my $i = 0 ; $i < $position ; $i++)
+                {
+                $row = $row->next($self) or return undef;
+                }
+        return $row;
+        }
+
+sub     get_row
+        {
+        my $self        = shift;
+        my $position    = shift || 0;
+        my $height      = $self->get_height;
+        my $max_h       = $self->att('#lpod:h');
+        unless (is_numeric($position))
+                {
+                $position = odf_matrix->alpha_to_num($position);
+                }
+        if ($position < 0)
+                {
+                $position += $height;
+                }
+        if (($position >= $height) || ($position < 0))
+                {
+                alert "Row position $position out of range";
+                return undef;
+                }
+
+        my $row = $self->first_row or return undef;
+        my $p = 0;
+        my $next_elt;
+        do      {
+                $next_elt = $row->next($self);          
+                $p = ODF::lpOD::Matrix::split_rep($row, $p, $max_h);
+                $p++; $row = $next_elt;
+                } until $p >= $position;
+        $row = $self->_get_row($position);    
+        ODF::lpOD::Matrix::split_rep($row, $p, $max_h);
+        return $row;
+        }
+
+sub     get_row_list
+        {
+        my $self        = shift;
+        my $arg         = shift;
+        my ($start, $end);
+        if ($arg)
+                {
+                ($start, $end) = odf_matrix->translate_range($arg, shift);
+                }
+        $start //= 0; $end //= -1;
+        my @list = ();
+        my $elt = $self->get_row($start);
+        my $last_elt = $self->get_row($end);
+        while ($elt && ! $elt->after($last_elt))
+                {
+                push @list, $elt;
+                $elt = $elt->next($self);
+                }
+        return @list;
+        }
+
+sub     add_row
+        {
+        my $self        = shift;
+        my %opt         =
+                (
+                number          => 1,
+                expand          => TRUE,
+                @_
+                );
+        my $ref_elt     = $opt{before} || $opt{after};
+        my $expand      = $opt{expand};
+        my $position    = undef;
+        if ($ref_elt)
+                {
+                if ($opt{before} && $opt{after})
+                        {
+                        alert "'before' and 'after' are mutually exclusive";
+                        return FALSE;
+                        }
+                $position = $opt{before} ? 'before' : 'after';
+                $ref_elt = $self->get_row($ref_elt) unless ref $ref_elt;
+                unless  (
+                        $ref_elt->isa(odf_row)
+                                &&
+                        $ref_elt->parent() == $self
+                        )
+                        {
+                        alert "Wrong $position reference";
+                        return FALSE;
+                        }
+                }
+        my $number = $opt{number};
+        return undef unless $number && ($number > 0);
+        delete @opt{qw(number before after expand)};
+        my $elt;
+        unless ($ref_elt)
+                {
+                my $proto = $self->last_child(odf_matrix->ROW_FILTER);
+                $elt = $proto ? $proto->copy() : odf_create_row(%opt);
+                }
+        else
+                {
+                $elt = $ref_elt->copy;
+                }
+        if ($ref_elt)
+                {
+                $elt->paste($position, $ref_elt);
+                }
+        else
+                {
+                $elt->paste_last_child($self);
+                }
+        if ($number && $number > 1)
+                {
+                if (is_true($expand))
+                        {
+                        $elt->set_repeated(undef);
+                        $elt->repeat($number);
+                        }
+                else
+                        {
+                        $elt->set_repeated($number);
+                        }
+                }
+        else
+                {
+                $elt->set_repeated(undef);
+                }
+        return $elt;
+        }
+
+sub     set_row_group
+        {
+        my $self        = shift;
+        my ($start, $end) = odf_matrix->translate_range(shift, shift);
+        my $e1 = $self->get_row($start);
+        my $e2 = $self->get_row($end);
+        return $self->set_group('row', $e1, $e2, @_);
+        }
+
+sub     get_row_group
+        {
+        my $self        = shift;
+        return $self->get_group('row', @_);
+        }
+
+sub     collapse
+        {
+        my $self        = shift;
+        $_->set_visibility('collapse') for $self->get_row_list;
+        }
+
+sub     uncollapse
+        {
+        my $self        = shift;
+        $_->set_visibility('visible') for $self->get_row_list;
+        }
+
+#=============================================================================
+#       Tables
+#-----------------------------------------------------------------------------
+package ODF::lpOD::Table;
+use base ('ODF::lpOD::ColumnGroup', 'ODF::lpOD::RowGroup');
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-06-28T12:39:16';
+use ODF::lpOD::Common;
+#=============================================================================
+#--- constructor -------------------------------------------------------------
+
+sub     create
+        {
+        my $name        = shift;
+        unless ($name)
+                {
+                alert "Missing table name";
+                return FALSE;
+                }
+
+        my %opt = process_options
+                (
+                style           => undef,
+                display         => undef,
+                protected       => undef,
+                key             => undef,
+                @_
+                );
+
+        my $width       = $opt{width}   // 0;
+        my $height      = $opt{height}  // 0;
+        if ($width < 0 || $height < 0)
+                {
+                alert "Wrong table size ($height x $width)";
+                return FALSE;
+                }
+
+        my $t = odf_element->new('table:table');
+        $t->set_attribute('name', $name);
+        $t->set_attribute('style name', $opt{style});
+        $t->set_attribute('protected', odf_boolean($opt{protected}));
+        $t->set_attribute('protection key', $opt{key});
+        $t->set_attribute('display', odf_boolean($opt{display}));
+        $t->set_attribute('print', odf_boolean($opt{print}));
+        $t->set_attribute('print ranges', $opt{print_ranges});
+        
+        $t->add_column(number => $width, propagate => FALSE);
+        my $r = $t->add_row(); $r->set_repeated($height);
+        $r->add_cell()->set_repeated($width); 
+        
+        return $t;
+        }
+
+#=============================================================================
 package ODF::lpOD::TableElement;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-25T12:39:44';
+use constant PACKAGE_DATE => '2010-06-28T11:51:27';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -623,18 +891,18 @@ sub     repeat
 sub     get_position
         {
         my $self        = shift;
-        my $parent      = $self->parent('table:table');
+        my $parent      = $self->parent(odf_matrix->TABLE_FILTER);
         unless ($parent)
                 {
                 alert "Missing or wrong attachment";
                 return FALSE;
                 }
         my $position = 0;
-        my $elt = $self->previous;
+        my $elt = $self->previous($parent);
         while ($elt)
                 {
                 $position += $elt->get_repeated // 1;                   #/
-                $elt = $elt->previous;
+                $elt = $elt->previous($parent);
                 }
         return wantarray ? ($parent->get_name, $position) : $position;
         }
@@ -645,7 +913,7 @@ sub     get_position
 package ODF::lpOD::Column;
 use base 'ODF::lpOD::TableElement';
 our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-06-25T11:10:37';
+use constant PACKAGE_DATE => '2010-06-27T02:38:16';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -668,18 +936,58 @@ sub     create
         return $col;
         }
 
+sub     next
+        {
+        my $self        = shift;
+        my $context     = shift || $self->parent('table:table');
+        my $filter      = shift || qr'column';
+        my $elt = $self->next_elt($context, $filter);
+        while ($elt)
+                {              
+                if      ($elt->isa(odf_column))
+                        {
+                        return $elt;
+                        }
+                elsif   ($elt->isa(odf_column_group))
+                        {
+                        my $n = $elt->first_column;
+                        return $n if $n;
+                        }
+                $elt = $self->next_elt($context, $filter);
+                }
+        return undef;
+        }
+
+sub     previous
+        {
+        my $self        = shift;
+        my $context     = shift || $self->parent('table:table');
+        my $filter      = shift || odf_matrix->COLUMN_FILTER;
+        my $elt = $self->prev_elt($context, $filter);
+        while ($elt)
+                {
+                if      ($elt->isa(odf_column))
+                        {
+                        return $elt;
+                        }
+                elsif   ($elt->isa(odf_column_group))
+                        {
+                        my $n = $elt->last_column();
+                        return $n if $n;
+                        }
+                $elt = $elt->prev_elt($context, $filter);
+                }
+        return undef;
+        }
+
 #=============================================================================
 #       Table rows
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Row;
 use base 'ODF::lpOD::TableElement';
 our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-06-25T11:39:11';
+use constant PACKAGE_DATE => '2010-06-28T11:51:27';
 use ODF::lpOD::Common;
-#-----------------------------------------------------------------------------
-
-our     $CELL_FILTER    = qr'table:(covered-|)table-cell';
-
 #-----------------------------------------------------------------------------
 
 sub     create
@@ -707,7 +1015,7 @@ sub     create
 sub     clean
         {
         my $self        = shift;
-        my $cell        = $self->last_child($CELL_FILTER)
+        my $cell        = $self->last_child(odf_matrix->CELL_FILTER)
                 or return undef;
         $cell->set_repeated(undef);
         }
@@ -717,7 +1025,7 @@ sub     clean
 sub     get_cell
         {
         my $self        = shift;
-        my $position    = shift || 0;
+        my $position    = odf_matrix->alpha_to_num(shift) || 0;
         my $width       = $self->get_width;
         my $max_w       = $self->parent->get_attribute('#lpod:w');
 
@@ -731,17 +1039,17 @@ sub     get_cell
                 return undef;
                 }
 
-        my $cell = $self->first_child($CELL_FILTER)
+        my $cell = $self->first_child(odf_matrix->CELL_FILTER)
                 or return undef;
         my $p = 0;
         my $next_elt;
         do      {
                 $next_elt = $cell->next;
-                $p = ODF::lpOD::Table::split_rep($cell, $p, $max_w);
+                $p = ODF::lpOD::Matrix::split_rep($cell, $p, $max_w);
                 $p++; $cell = $next_elt;
                 } until $p >= $position;
-        $cell = $self->child($position, $CELL_FILTER);
-        ODF::lpOD::Table::split_rep($cell, $p, $max_w);
+        $cell = $self->child($position, odf_matrix->CELL_FILTER);
+        ODF::lpOD::Matrix::split_rep($cell, $p, $max_w);
         return $cell;
         }
 
@@ -749,11 +1057,15 @@ sub     get_cell_list
         {
         my $self        = shift;
         my $arg         = shift;
+        my ($start, $end);
         unless ($arg)
                 {
-                return $self->children($CELL_FILTER);
+                $start = 0; $end = -1;
                 }
-        my ($start, $end) = ODF::lpOD::Table::translate_range($arg, shift);
+        else
+                {
+                ($start, $end) = odf_matrix->translate_range($arg, shift);
+                }
         $start //= 0; $end //= -1;
         my @list = ();
         my $elt = $self->get_cell($start);
@@ -766,11 +1078,17 @@ sub     get_cell_list
         return @list;
         }
 
+sub     get_cells
+        {
+        my $self        = shift;
+        return $self->get_cell_list(@_);
+        }
+
 sub     get_width
         {
         my $self        = shift;
         my $width       = 0;
-        my $cell        = $self->first_child($CELL_FILTER);
+        my $cell        = $self->first_child(odf_matrix->CELL_FILTER);
         my $max_w       = $self->parent->att('#lpod:w');
         while ($cell)
                 {
@@ -815,7 +1133,7 @@ sub     add_cell
         my $elt;
         unless ($ref_elt)
                 {
-                my $proto = $self->last_child($CELL_FILTER);
+                my $proto = $self->last_child(odf_matrix->CELL_FILTER);
                 $elt = $proto ? $proto->copy() : odf_create_cell(%opt);
                 }
         else
@@ -844,11 +1162,54 @@ sub     add_cell
         return $elt;
         }
 
+sub     next
+        {
+        my $self        = shift;
+        my $context     = shift || $self->parent('table:table');
+        my $filter      = shift || qr'row';
+        my $elt = $self->next_elt($context, $filter);
+        while ($elt)
+                {
+                if      ($elt->isa(odf_row))
+                        {
+                        return $elt;
+                        }
+                elsif   ($elt->isa(odf_row_group))
+                        {
+                        my $n = $elt->first_row;
+                        return $n if $n;
+                        }
+                $elt = $self->next_elt($context, $filter);
+                }
+        }
+
+sub     previous
+        {
+        my $self        = shift;
+        my $context     = shift || $self->parent('table:table');
+        my $filter      = shift || odf_matrix->ROW_FILTER;
+        my $elt = $self->prev_elt($context, $filter);
+        while ($elt)
+                {
+                if      ($elt->isa(odf_row))
+                        {
+                        return $elt;
+                        }
+                elsif   ($elt->isa(odf_row_group))
+                        {
+                        my $n = $elt->last_row();
+                        return $n if $n;
+                        }
+                $elt = $elt->prev_elt($context, $filter);
+                }
+        return undef;
+        }
+
 #=============================================================================
 package ODF::lpOD::Field;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-25T15:39:59';
+use constant PACKAGE_DATE => '2010-06-25T21:47:06';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -971,7 +1332,7 @@ sub     set_value
                 {
                 when ('string')
                         {
-                        return $self->set_text($value);
+                        $self->set_text($value);
                         }
                 when ('date')
                         {
@@ -979,25 +1340,25 @@ sub     set_value
                                 {
                                 $value = iso_date($value);
                                 }
-                        return $self->set_att('office:date-value', $value);
+                        $self->set_att('office:date-value', $value);
                         }
                 when ('time')
                         {
-                        return $self->set_att('office:time-value', $value);
+                        $self->set_att('office:time-value', $value);
                         }
                 when (['float', 'currency', 'percentage'])
                         {
-                        return $self->set_att('office:value', $value);
+                        $self->set_att('office:value', $value);
                         }
                 when ('boolean')
                         {
-                        return $self->set_att
-                                (
+                        $self->set_att(
                                 'office:boolean-value',
                                 odf_boolean($value)
                                 );
                         }
-                }        
+                }
+        return $self->get_value;
         }
 
 #-----------------------------------------------------------------------------
@@ -1014,8 +1375,14 @@ sub     get_text
 package ODF::lpOD::Cell;
 use base ('ODF::lpOD::TableElement', 'ODF::lpOD::Field');
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-25T15:52:08';
+use constant PACKAGE_DATE => '2010-06-25T21:46:36';
 use ODF::lpOD::Common;
+
+BEGIN   {
+        *get_text               = *ODF::lpOD::Field::get_text;
+        *get_type               = *ODF::lpOD::Field::get_type;
+        }
+
 #-----------------------------------------------------------------------------
 our     %ATTRIBUTE;
 #-----------------------------------------------------------------------------
@@ -1038,19 +1405,29 @@ sub     is_covered
 sub     next
         {
         my $self        = shift;
-        return $self->next_sibling($ODF::lpOD::Row::CELL_FILTER);
+        my $row = $self->parent(odf_matrix->ROW_FILTER);
+        unless ($row)
+                {
+                alert "Wrong context"; return FALSE;
+                }
+        return $self->next_elt($row, odf_matrix->CELL_FILTER);
         }
 
 sub     previous
         {
         my $self        = shift;
-        return $self->previous_sibling($ODF::lpOD::Row::CELL_FILTER);
+        my $row = $self->parent(odf_matrix->ROW_FILTER);
+        unless ($row)
+                {
+                alert "Wrong context"; return FALSE;
+                }        
+        return $self->prev_elt($row, odf_matrix->CELL_FILTER);
         }
 
 sub     get_position
         {
         my $self        = shift;
-        my $row = $self->parent($ODF::lpOD::Table::ROW_FILTER);
+        my $row = $self->parent(odf_matrix->ROW_FILTER);
         unless ($row)
                 {
                 alert "Missing or wrong attachment";
@@ -1106,12 +1483,6 @@ sub     set_content
                         $self->append_element($elt);
                         }
                 }
-        }
-
-sub     get_type
-        {
-        my $self        = shift;
-        return $self->ODF::lpOD::Field::get_type();
         }
 
 #=============================================================================

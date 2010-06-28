@@ -247,6 +247,53 @@ While a table may be expanded vertically using C<add_row>, each row may be
 expanded using the C<odf_row> C<add_cell> method whose parameters and behaviour
 are the same as the table-based C<add_row> method.
 
+=head1  Row and column group handling
+
+The content expansion and content selection methods above work with the table
+body. However it's possible to manage groups of rows or columns. A group may
+be created with existing adjacent rows or columns, using C<set_row_group()>
+and C<set_column_group()> respectively. These methods take two arguments, which
+are the numeric positions of the starting and ending elements of the group.
+However, these numeric arguments may be replaced by a single alphanumeric
+range definition argument, so the following instructions are equivalent; both
+create a group including the same 3 columns ("C" to "E"):
+
+        $column_group = $table->set_column_group(3, 5);
+        $column_group = $table->set_column_group("C:E");
+
+The same idea apply to row groups; however, beware that in range alphanumeric
+notation, the numbers represents the spreadsheet end-user point of view, so
+they are one-based; as an example, the two following instructions, that create
+a row group including the rows 3 to 5, are equivalent:
+
+        $row_group = $table->set_row_group(3, 5);
+        $row_group = $table->set_row_group("4:6");
+
+In addition, an optional C<display> named boolean parameter may be provided
+(default=C<TRUE>), instructing the applications about the visibility of the
+group.
+
+Both C<set_row_group()> and C<set_column_group()> return an object which can
+be used later as a context object for any row, column or cell retrieval or
+processing. An existing group may be retrieved according to its numeric
+position using C<get_row_group()> or C<get_column_group()> with the position
+as argument, or without argument to get the first (or the only one) group.
+
+A group can't bring a particular style; it's just visible or not. Once created,
+its visibility may be turned on and off by changing its C<display> value
+through C<set_attribute()>.
+
+Knowing that cells depends on rows, a row group provides the same C<get_cell()>
+method as a table. It provides a C<get_row()> method, while a column group
+provides a C<get_column()> one.
+
+A row group provides a C<add_row()> method, while a column group provides a
+C<add_column()> method. These methods work like their table-based versions,
+and they allow the user to expand the content of a particular group. 
+
+Row and column group may be collapsed or expanded using their C<collapse()> and
+C<uncollapse()> methods.
+
 =head1  Individual cell property handling
 
 A cell owns both a I<content> and some I<properties> which may be processed
