@@ -1,6 +1,6 @@
 =head1	NAME
 
-ODF::lpOD::Common - Common utlities provided by the Perl lpOD library
+ODF::lpOD::Common - Common utilities provided by the Perl lpOD library
 
 =head1  DESCRIPTION
 

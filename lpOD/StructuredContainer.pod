@@ -64,6 +64,209 @@ A section may be retrieved using C<get_section> with the unique name of the
 needed section as argument, while C<get_section_list> returns all the
 sections (if any) of the context.
 
+=head1  Draw pages
+
+Draw pages are structured containers belonging to presentation or drawing
+documents. They shouldn't appear in text or spreadsheet documents.
+
+A draw page can contain forms, drawing shapes, frames, presentation animations,
+and/or presentation notes (§9.1.4 in the ODF specification).
+
+A draw page is created using C<odf_create_draw_page()> and integrated through
+C<insert_element()> or C<append_element()>. Note that a draw page should be
+inserted at the document body level, knowing that it's a top level content
+element.
+
+A draw page must have an identifier (unique for the document) and may have the
+following parameters, to be set at creation time or later:
+
+=over
+
+=item
+
+C<name>: an optional, but unique if provided, name (which may be made visible
+for the end-users); this parameter is strongly recommended knowing that some
+ODF applications don't preserve the draw page identifier, so the name remains
+the only stable identifier;
+
+=item
+
+C<style>: the name of a drawing page style (existing or to be defined);
+
+=item
+
+C<master>: the name of a master page whose structure is appropriate for
+   draw pages (beware, a master page defined for a text document don't always
+   fit for draw pages);
+
+=item
+
+C<layout>: the name of a I<presentation page layout> as defined
+in §14.15 of the ODF specification (if such a layout is used); beware, such
+objects are neither similar nor related to general I<page layouts> as defined
+in §14.3 (a general page layout may be used through a I<master page> only,
+and should never be directly connected to a draw page) (sorry, this confusing
+vocabulary is not a choice of the lpOD team)
+
+=back
+
+The following example creates a draw page with these usual parameters and
+integrates it as the last page of a presentation document::
+
+        $dp = odf_create_draw_page(
+                'xyz1234',
+                name    => 'Introduction',
+                style   => 'DrawPageOneStyle',
+                master  => 'DrawPageOneMaster',
+                layout  => 'DrawPageOneLayout'
+                );
+        $context->append_element($dp);
+
+All these parameters may retrieved or changed later using C<get_attributes()>
+and C<set_attributes()> with draw page objects.
+
+An existing draw page may be retrieved in a given context (that should be the
+document body or root) through C<get_draw_page()> with the identifier as
+argument. This methods attempt to retrieve a draw page whose identifier matches
+the argument, then, in case of failure, it looks for a draw page whose name
+matches. Alternatively, the user can explicitly select a draw page by name
+using C<get_draw_page_by_name()> or according to its zero-based position in
+the document using C<get_draw_page_by_position()>. The whole list of draw
+pages may be returned by C<get_draw_page_list()>.
+
+Populating a draw page doesn't require element-specific methods, knowing that:
+
+=over
+
+=item
+
+all the fixed parts, the layout and the background are defined by the
+associated C<style>, C<master> and C<layout>;
+
+=item
+
+all the content objects are created separately and attached to the draw page
+using the regular C<insert_element()> or C<append_element()> method from
+the draw page object.
+
+=back
+
+=head1  Frames
+
+A frame is a rectangular container that may contain text boxes and images. It
+may contain other kinds of elements that are not presently covered by the lpOD
+level 1 specification.
+
+A frame is created using C<odf_create_frame()> with the following properties:
+
+=over
+
+=item
+
+C<name>: the optional name of the object (for the end-user);
+
+=item
+
+C<id>: an arbitrary string, that is the unique identifier of the frame;
+
+=item
+
+C<style>: the name of a graphic style for the frame;
+
+=item
+
+C<position>, the coordinates of the frame, as a list of 2 strings or as 2
+comma-separated fields in a single string, containing the X and Y positions,
+each string specifying the number and the unit (ex. "1cm", "2pt"), knowing
+that the default value is 0 and the default length unit is "cm" (centimeter);
+
+=item
+
+C<size>: the size, provided either in absolute values like the position, as
+percentages, or using the special keywords C<scale> or C<scale-min> (see
+ODF §9.3 for details); both absolute and relative values may be provided as
+a string, separated by a comma, if needed, like "10cm, 12%"; or as a list of
+2 strings;
+
+=item
+
+C<z index>: an optional sequence number that allows the user to assign a
+particular order of rendering, knowing that frames are rendered by default
+according to their sequential position in the document tree;
+
+=item
+
+C<class>: an optional presentation class (see the "Class" subsection in
+ODF §9.6.1).
+
+=back
+
+For an existing frame, the properties above may be read or changed using
+C<get_xxx()> or C<set_xxx()> methods where "xxx" designates the appropriate
+property.
+
+A frame may have a title and/or a description, that may be get or set using
+C<get_title()>, C<set_title()>, C<get_description()>, or C<set_description()>.
+
+A frame may be inserted in place through the standard C<insert_element()>
+method, but the behavior depends on the context.
+
+In a text document, a frame may be attached to the document body, as long as
+it's anchored to a page; as an consequence, a C<page> parameter must be
+provided with the page number.
+
+Simply put, with the exception above, a frame is anchored to the calling
+context element. The ODF elements that may insert a frame in the present
+lpOD API are *draw pages*, *paragraphs*, *tables*, and *cells*.
+
+In a presentation or drawing document, the calling element is typically a draw
+page.
+
+When C<insert_element()> is called from a paragraph, an optional C<offset>
+parameter, specifying the position in the text where the frame will be inserted,
+may be provided (the default position is the beginning of the paragraph).
+
+An existing frame may be selected using C<get_frame()> with the identifier.
+
+It's possible, of course, to populate a frame using C<insert_element()> or
+C<append_element()> from the frame itself. However, the API provides frame-
+specific methods in order to directly create and incorporate the most common
+objects in a frame context, namely *text boxes* and *images*. These methods are
+respectively:
+
+=over
+
+=item
+
+C<set_text_box()>, which requires no argument, but which may be called with
+a list of existing ODF elements that could become a valid content for a
+text box (paragraphs, item lists, etc); this method returns an object that
+may be later used to insert additional content;
+
+=item
+
+C<set_image()>, which creates an image element that will cover the whole
+area of the frame (the parameters are the same as with C<odf_create_image()>
+introduced later); alternatively, if C<set_image()> is called with an
+existing ODF image element as argument, this element is incoporated as is
+without creation; C<set_image()> returns the new (or newly inserted) ODF
+image element.
+
+=back
+
+=head1  Images
+
+An image element may be created out of any document with C<odf_create_image()>.
+This constructor requires only one named parameter, that is either C<url> or
+C<content>. The first one is a link to an external graphic resource, while the
+second one is the binary content of an image in BASE64 encoding.
+
+These properties may be retrieved or changed later using C<get_uri()>,
+C<set_uri()>, C<get_content()>, C<set_content()>.
+
+An image should be incorporated in a document through a I<frame> (see above).
+
+
 =head1	COPYRIGHT & LICENSE
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.

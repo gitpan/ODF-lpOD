@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our     $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-07-18T17:57:37';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -59,7 +59,7 @@ sub     create_from_template
                 alert "Missing template"; return FALSE;
                 }
 
-        my $container = odf_get_container_from_template($resource);
+        my $container = odf_new_container_from_template($resource);
         return $container ?
                 odf_document->new(container => $container)       :
                 FALSE;        
@@ -99,66 +99,75 @@ sub     DESTROY
         $COUNT--;
         }
 
+#--- XML part detection ------------------------------------------------------
+
+sub     is_xmlpart
+        {
+        my $name        = shift;
+        return ODF::lpOD::XMLPart::class_of($name) ? TRUE : FALSE;
+        }
+
 #--- document part accessors -------------------------------------------------
 
 sub     get_container
         {
         my $self        = shift;
-        return $self->{container};
+        my %opt         = @_;
+        my $container   = $self->{container};
+        unless ($container || is_false($opt{warning}))
+                {
+                alert "No available container";
+                }
+        return $container;
         }
 
 sub     get_xmlpart
         {
         my $self        = shift;
-
-        unless ($self->{container})
-                {
-                alert "No available container";
-                return FALSE;
-                }
+        my $container   = $self->get_container(warning => TRUE)
+                or return FALSE; 
 
         my $part_name   = shift         or return FALSE;
 
         unless ($self->{$part_name})
                 {
-                $self->{$part_name} = odf_get_xmlpart
-                                        ($self->{container}, $part_name);
+                $self->{$part_name} = odf_get_xmlpart($container, $part_name);
+                $self->{$part_name}->{document} = $self;
                 }
-        $self->{$part_name}->{document} = $self;
         return $self->{$part_name};
         }
 
-sub     get_content
+sub     get_body
         {
         my $self        = shift;
-        return $self->get_xmlpart('content');
-        }
-
-sub     get_styles
-        {
-        my $self        = shift;
-        return $self->get_xmlpart('styles');
-        }
-
-sub     get_meta
-        {
-        my $self        = shift;
-        return $self->get_xmlpart('meta');
-        }
-
-sub     get_manifest
-        {
-        my $self        = shift;
-        return $self->get_xmlpart('manifest');
-        }
-
-sub     get_settings
-        {
-        my $self        = shift;
-        return $self->get_xmlpart('settings');
+        return $self->get_xmlpart(CONTENT)->get_body;
         }
 
 sub     get_part
+        {
+        my $self        = shift;
+        my $container   = $self->get_container(warning => TRUE)
+                                or return FALSE;
+        my $part_name   = shift;
+        if (is_xmlpart($part_name))
+                {
+                return $self->get_xmlpart($part_name);
+                }
+        else
+                {
+                return $container->get_part($part_name);
+                }
+        }
+
+sub     get_parts
+        {
+        my $self        = shift;
+        my $container   = $self->get_container(warning => TRUE)
+                                or return FALSE;
+        return $container->get_parts;
+        }
+
+sub     set_part
         {
         my $self        = shift;
         unless ($self->{container})
@@ -166,11 +175,29 @@ sub     get_part
                 alert "No available container";
                 return FALSE;                
                 }
-        my $part_name   = shift;
-        unless ($self->{$part_name})
+        return $self->{container}->set_part(@_);
+        }
+
+sub     del_part
+        {
+        my $self        = shift;
+        unless ($self->{container})
                 {
-                $self->{$part_name} = $self->{container}->get_part($part_name);
+                alert "No available container";
+                return FALSE;                
                 }
+        return $self->{container}->del_part(@_);
+        }
+
+sub     add_file
+        {
+        my $self        = shift;
+        unless ($self->{container})
+                {
+                alert "No available container";
+                return FALSE;                
+                }
+        return $self->{container}->add_file(@_);
         }
 
 sub     get_mimetype
@@ -205,21 +232,24 @@ sub     get_type
 sub     save
         {
         my $self        = shift;
-        unless ($self->{container})
-                {
-                alert "No associated container";
-                return FALSE;
-                }
-        return $self->{container}->save(@_);
+        my $container   = $self->get_container(warning => TRUE)
+                                or return FALSE;
+        return $container->save(@_);
         }
 
 #=============================================================================
 package ODF::lpOD::Container;
-our	$VERSION	= '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our	$VERSION	= '0.102';
+use constant PACKAGE_DATE => '2010-07-17T17:35:59';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use Archive::Zip        1.30    qw ( :DEFAULT :CONSTANTS :ERROR_CODES );
+#=============================================================================
+
+BEGIN   {
+        *get_parts              = *parts;
+        }
+
 #=== parameters ==============================================================
 
 our %ODF_PARTS  =
@@ -360,7 +390,9 @@ sub     get_mimetype
 sub     set_mimetype
         {
         my $self        = shift;
-        return $self->set_part(MIMETYPE, shift, compress => FALSE);
+        return $self->set_part(
+                MIMETYPE, shift, compress => FALSE, string => TRUE
+                );
         }
 
 #-----------------------------------------------------------------------------
@@ -397,7 +429,7 @@ sub     raw_set_part
                 @_
                 );
 
-        my $compress = $opt{compress} // $COMPRESSION{$part_name} // TRUE;
+        my $compress = $opt{compress} // $COMPRESSION{$part_name} // FALSE;
         my $p   = $opt{string} ?
                         $self->{zip}->addString($data, $part_name)    :
                         $self->{zip}->addFileOrDirectory($data, $part_name);
@@ -455,17 +487,10 @@ sub     set_part
         my $data        = shift // "";                                  #/
         my %opt         =
                 (
-                string          => TRUE,
-                compress        => undef,
+                string          => FALSE,
+                compress        => FALSE,
                 @_
                 );
-
-        unless (defined $opt{'compress'})
-                {
-                $opt{compress} = 
-                        (($part_name eq META) or ($part_name eq MIMETYPE)) ?
-                                FALSE : TRUE;
-                }
 
         $self->{stored}{$part_name}{data}       = $data;
         $self->{stored}{$part_name}{string}     = $opt{string};
@@ -474,6 +499,36 @@ sub     set_part
         $self->del_part($part_name);
         
         return $part_name;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     add_file
+        {
+        my $self        = shift;
+        my $path        = shift         or return undef;
+        my $destination = shift;
+        my %opt         =
+                (
+                string          => FALSE,
+                @_
+                );
+        unless ($destination)
+                {
+                my $mimetype = file_type($path);
+                my $filename = file_parse($path);
+                if ($mimetype && $mimetype =~ /^image/)
+                        {
+                        $destination = 'Pictures/' . $filename;
+                        $opt{compress} = FALSE;
+                        }
+                else
+                        {
+                        $destination = $filename;
+                        $opt{compress} = TRUE;
+                        }
+                }
+        return $self->set_part($destination, $path, %opt);
         }
 
 #-----------------------------------------------------------------------------
@@ -492,7 +547,8 @@ sub     get_part
                 alert("Unknown part $part_name");
                 return FALSE;
                 }
-        return $self->{'zip'}->contents($part_name);
+        my ($result, $status) =  $self->{'zip'}->contents($part_name);
+        return $status == AZ_OK ? $result : undef;
         }
 
 #-----------------------------------------------------------------------------
@@ -529,9 +585,9 @@ sub     save
                 }
         my $target      = $opt{target};
         my $packaging   = $opt{packaging};
-        
+
         $self->raw_del_part($_) for @{$self->{deleted}};
-      
+
         foreach my $part_name (keys %{$self->{stored}})
                 {
                 my $data        = $self->{stored}{$part_name}{data};
@@ -573,8 +629,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our     $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-07-14T13:40:05';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Element;
@@ -584,6 +640,20 @@ BEGIN   {
         *get_container  = *container;
         *get_document   = *document;
         *root           = *get_root;
+        }
+
+sub     class_of
+        {
+        my $part        = shift;
+        given($part)
+                {
+                when (CONTENT)          { return odf_content   }
+                when (STYLES)           { return odf_styles    }
+                when (META)             { return odf_meta      }
+                when (SETTINGS)         { return odf_settings  }
+                when (MANIFEST)         { return odf_manifest  }
+                default                 { return undef         }
+                }
         }
 
 our %CLASS      =
@@ -606,7 +676,7 @@ sub     get
                 return FALSE;
                 }
         my $part_name   = shift;
-        unless ($CLASS{$part_name})
+        unless (class_of($part_name))
                 {
                 alert "Missing or unknown document part";
                 return FALSE;
@@ -638,7 +708,13 @@ sub     new
                 context         => undef,
                 @_
                 };
-        
+
+        my $part_class = class_of($self->{part});
+        unless ($class)
+                {
+                alert "Unknown ODF XML part"; return FALSE;
+                }
+
         $self->{twig} //= XML::Twig->new        # twig init /
                                 (
                                 elt_class       => $self->{elt_class},
@@ -647,7 +723,7 @@ sub     new
                                 );
         $self->{twig}->set_output_encoding('UTF-8');
 
-        bless $self, $CLASS{$self->{part}};
+        bless $self, $part_class;
         if ($self->{load})
                 {
                 my $status = $self->load();
@@ -781,6 +857,10 @@ sub     store
                 %storage = %{$opt{storage}};
                 delete $opt{storage};
                 }
+        else
+                {
+                %storage = (compress => TRUE, string => TRUE);
+                }
         return
                 $self->{container}->set_part
                         (
@@ -841,8 +921,8 @@ use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Meta;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-07-06T19:18:47';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1064,7 +1144,7 @@ sub     AUTOLOAD
 
         unless ($action && $object)
                 {
-                alert "Unsupported method";
+                alert "Unsupported method $method";
                 return undef;
                 }
 
@@ -1095,6 +1175,18 @@ sub     AUTOLOAD
                         }
                 }
         return undef; 
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     store
+        {
+        my $self        = shift;
+        my %opt         =
+                (
+                storage     => { compress => FALSE, string => TRUE }
+                );
+        return $self->SUPER::store(%opt);
         }
 
 #=============================================================================

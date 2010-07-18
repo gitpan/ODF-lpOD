@@ -197,7 +197,10 @@ sub     set_group
                 {
                 alert "Grouping not allowed"; return FALSE;
                 }
-        my $group = odf_element->new('table:table-' . $type . '-group');
+        my $tag = ($type ~~ ['column', 'row']) ?
+                        'table:table-' . $type . '-group'       :
+                        'table:table-' . $type;
+        my $group = odf_element->new($tag);
         $group->paste_before($start);
         my @elts = (); my $e = $start;
         do      {
@@ -210,6 +213,7 @@ sub     set_group
         $group->set_attribute('display', odf_boolean($opt{display}));
         return $group;        
         }
+
 
 sub     get_group
         {
@@ -322,7 +326,7 @@ sub     contains
 package ODF::lpOD::ColumnGroup;
 use base 'ODF::lpOD::Matrix';
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-28T16:26:04';
+use constant PACKAGE_DATE => '2010-06-28T20:26:24';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -333,7 +337,8 @@ sub     create { return odf_element->new('table:table-column-group', @_); }
 sub     first_column
         {
         my $self        = shift;
-        my $elt = $self->first_child(qr'column')        or return undef;
+        my $elt = $self->first_child(qr'(column$|column-group)')
+                                        or return undef;
         if      ($elt->isa(odf_column))         { return $elt; }
         elsif   ($elt->isa(odf_column_group))   { return $elt->first_column; }
         else                                    { return undef; }
@@ -342,7 +347,8 @@ sub     first_column
 sub     last_column
         {
         my $self        = shift;
-        my $elt = $self->last_child(qr'column')         or return undef;
+        my $elt = $self->last_child(qr'(column$|column-group)')
+                                        or return undef;
         if      ($elt->isa(odf_column))         { return $elt; }
         elsif   ($elt->isa(odf_column_group))   { return $elt->last_column; }
         else                                    { return undef; }
@@ -557,7 +563,7 @@ sub     uncollapse
 package ODF::lpOD::RowGroup;
 use base 'ODF::lpOD::Matrix';
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-28T15:16:06';
+use constant PACKAGE_DATE => '2010-06-28T20:24:21';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -568,7 +574,7 @@ sub     create { return odf_element->new('table:table-row-group', @_); }
 sub     first_row
         {
         my $self        = shift;
-        my $elt = $self->first_child(qr'row')   or return undef;
+        my $elt = $self->first_child(qr'(row$|row-group)') or return undef;
         if      ($elt->isa(odf_row))            { return $elt; }
         elsif   ($elt->isa(odf_row_group))      { return $elt->first_row; }
         else                                    { return undef; }
@@ -577,7 +583,7 @@ sub     first_row
 sub     last_row
         {
         my $self        = shift;
-        my $elt = $self->last_child(qr'row')    or return undef;
+        my $elt = $self->last_child(qr'(row$|row-group)') or return undef;
         if      ($elt->isa(odf_row))            { return $elt; }
         elsif   ($elt->isa(odf_row_group))      { return $elt->last_row; }
         else                                    { return undef; }
@@ -776,7 +782,7 @@ sub     uncollapse
 package ODF::lpOD::Table;
 use base ('ODF::lpOD::ColumnGroup', 'ODF::lpOD::RowGroup');
 our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-06-28T12:39:16';
+use constant PACKAGE_DATE => '2010-06-28T19:56:05';
 use ODF::lpOD::Common;
 #=============================================================================
 #--- constructor -------------------------------------------------------------
@@ -821,6 +827,48 @@ sub     create
         $r->add_cell()->set_repeated($width); 
         
         return $t;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     set_column_header
+        {
+        my $self        = shift;
+        if ($self->get_column_header)
+                {
+                alert "Column header already defined for this table";
+                return FALSE;
+                }
+        my $number      = shift || 1;
+        my $start       = $self->get_row(0);
+        my $end         = $self->get_row($number > 1 ? $number-1 : 0);
+        return $self->set_group('header-rows', $start, $end);
+        }
+
+sub     get_column_header
+        {
+        my $self        = shift;
+        return $self->first_child('table:table-header-rows');
+        }
+
+sub     set_row_header
+        {
+        my $self        = shift;
+        if ($self->get_row_header)
+                {
+                alert "Row header already defined for this table";
+                return FALSE;
+                }
+        my $number      = shift || 1;
+        my $start       = $self->get_column(0);
+        my $end         = $self->get_column($number > 1 ? $number-1 : 0);
+        return $self->set_group('header-columns', $start, $end);
+        }
+
+sub     get_row_header
+        {
+        my $self        = shift;
+        return $self->first_child('table:table-header-columns');
         }
 
 #=============================================================================
@@ -986,7 +1034,7 @@ sub     previous
 package ODF::lpOD::Row;
 use base 'ODF::lpOD::TableElement';
 our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-06-28T11:51:27';
+use constant PACKAGE_DATE => '2010-06-28T21:41:27';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1176,6 +1224,7 @@ sub     next
                         }
                 elsif   ($elt->isa(odf_row_group))
                         {
+
                         my $n = $elt->first_row;
                         return $n if $n;
                         }
@@ -1193,6 +1242,12 @@ sub     previous
                 {
                 if      ($elt->isa(odf_row))
                         {
+                        if ($elt->parent->is('table:table-header-rows'))
+                                {
+                                return undef unless $self
+                                        ->parent
+                                        ->is('table:table-header-rows');
+                                }
                         return $elt;
                         }
                 elsif   ($elt->isa(odf_row_group))
@@ -1374,8 +1429,8 @@ sub     get_text
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
 use base ('ODF::lpOD::TableElement', 'ODF::lpOD::Field');
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-25T21:46:36';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-06-29T10:47:27';
 use ODF::lpOD::Common;
 
 BEGIN   {
@@ -1483,6 +1538,90 @@ sub     set_content
                         $self->append_element($elt);
                         }
                 }
+        }
+
+sub     remove_span
+        {
+        my $self        = shift;
+        my $hspan = $self->get_attribute('number columns spanned') || 1;
+        my $vspan = $self->get_attribute('number rows spanned') || 1;
+        $self->del_attribute('number columns spanned');
+        $self->del_attribute('number rows spanned');
+        my $row = $self->parent(odf_matrix->ROW_FILTER);
+        my $table = $self->parent(odf_matrix->TABLE_FILTER);
+        my $vpos = $row->get_position;
+        my $hpos = $self->get_position;
+	my $vend = $vpos + $vspan - 1;
+	my $hend = $hpos + $hspan - 1;
+        ROW: for (my $i = $vpos ; $i <= $vend ; $i++)
+                {
+                my $cr = $table->get_row($i) or last ROW;
+                CELL: for (my $j = $hpos ; $j <= $hend ; $j++)
+                        {
+                        my $covered = $cr->get_cell($j) or last CELL;
+                        next CELL if $covered == $self;
+                        $covered->set_tag('table:table-cell');
+                        $covered->set_atts($self->atts);
+                        }
+                }
+        return ($hspan, $vspan);
+        }
+
+sub     set_span
+        {
+        my $self        = shift;
+        if ($self->is_covered)
+                {
+                alert "Span expansion is not allowed for covered cells";
+                return FALSE;
+                }
+        my %opt         = @_;
+        my $hspan = $opt{columns}       // 1;
+        my $vspan = $opt{rows}          // 1;
+        my $old_hspan = $self->get_attribute('number columns spanned') || 1;
+        my $old_vspan = $self->get_attribute('number rows spanned') || 1;
+        unless  (($hspan > 1) || ($vspan > 1))
+                {
+                return $self->remove_span;
+                } 
+        unless  (($hspan != $old_hspan) || ($vspan != $old_vspan))
+                {
+                return ($old_vspan, $old_hspan);
+                }
+        $self->remove_span;
+	$hspan	= $old_hspan unless $hspan;
+	$vspan	= $old_vspan unless $vspan;
+        my $row = $self->parent(odf_matrix->ROW_FILTER);
+        my $table = $self->parent(odf_matrix->TABLE_FILTER);
+        my $vpos = $row->get_position;
+        my $hpos = $self->get_position;
+	my $vend = $vpos + $vspan - 1;
+	my $hend = $hpos + $hspan - 1;
+	$self->set_attribute('number columns spanned', $hspan);
+	$self->set_attribute('number rows spanned', $vspan);
+        ROW: for (my $i = $vpos ; $i <= $vend ; $i++)
+                {
+                my $cr = $table->get_row($i) or last ROW;
+                CELL: for (my $j = $hpos ; $j <= $hend ; $j++)
+                        {
+                        my $covered = $cr->get_cell($j) or last CELL;
+                        next CELL if $covered == $self;
+                        $_->move(last_child => $self)
+                                for $covered->get_content;
+                        $covered->remove_span;
+                        $covered->set_tag('table:covered-table-cell');
+                        }
+                }
+        return ($hspan, $vspan);
+        }
+
+sub     get_span
+        {
+        my $self        = shift;
+        return  (
+                $self->get_attribute('number rows spanned') // 1,
+                $self->get_attribute('number columns spanned') // 1
+                );
         }
 
 #=============================================================================

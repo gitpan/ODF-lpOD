@@ -3,6 +3,7 @@
 #-----------------------------------------------------------------------------
 
 use 5.010_000;
+use strict;
 
 use Test;
 BEGIN	{ plan tests => 6 }
@@ -16,13 +17,13 @@ my $test_date   = ODF::lpOD->PACKAGE_DATE;
 
 #-----------------------------------------------------------------------------
 
-my $doc = odf_new_document_from_type('text');
+my $doc = odf_new_document('text');
 ok($doc);                                       # doc instance test
 
-my $meta = $doc->get_meta;
+my $meta = $doc->get_part(META);
 ok($meta);                                      # meta instance test
 
-my $content = $doc->get_content;
+my $content = $doc->get_part(CONTENT);
 ok($content);                                   # content instance test
 
 $meta->set_generator($generator);

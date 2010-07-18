@@ -168,7 +168,7 @@ to a C<position> parameter, whose possible values are:
 
 =item
 
-C<FIRST_CHILD>: the odf_element will be the first child.
+C<FIRST_CHILD>: the odf_element will be the first child (default).
 
 =item
 

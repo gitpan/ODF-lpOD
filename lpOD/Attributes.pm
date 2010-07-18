@@ -22,49 +22,11 @@
 #    http://www.apache.org/licenses/LICENSE-2.0
 #-----------------------------------------------------------------------------
 use     5.010_000;
+use	strict;
 package ODF::lpOD::Attributes;
-use constant PACKAGE_DATE => '2010-06-28T12:52:15';
+use constant PACKAGE_DATE => '2010-07-18T16:43:06';
 #==============================================================================
-# Generated from odf.rng
-#------------------------------------------------------------------------------
-%ODF::lpOD::Heading::ATTRIBUTE =
-	(
-	style_name                      =>
-		{
-		attribute => "text:style-name",
-		type      => "styleNameRef"
-		},
-	class_names                     =>
-		{
-		attribute => "text:class-names",
-		type      => "styleNameRefs"
-		},
-	cond_style_name                 =>
-		{
-		attribute => "text:cond-style-name",
-		type      => "styleNameRef"
-		},
-	outline_level                   =>
-		{
-		attribute => "text:outline-level",
-		type      => "positiveInteger"
-		},
-	restart_numbering               =>
-		{
-		attribute => "text:restart-numbering",
-		type      => "boolean"
-		},
-	start_value                     =>
-		{
-		attribute => "text:start-value",
-		type      => "nonNegativeInteger"
-		},
-	is_list_header                  =>
-		{
-		attribute => "text:is-list-header",
-		type      => "boolean"
-		},
-	);
+# Generated from OpenDocument-schema-v1.1.rng
 #------------------------------------------------------------------------------
 %ODF::lpOD::List::ATTRIBUTE =
 	(
@@ -77,30 +39,6 @@ use constant PACKAGE_DATE => '2010-06-28T12:52:15';
 		{
 		attribute => "text:continue-numbering",
 		type      => "boolean"
-		},
-	);
-#------------------------------------------------------------------------------
-%ODF::lpOD::Row::ATTRIBUTE =
-	(
-	number_rows_repeated            =>
-		{
-		attribute => "table:number-rows-repeated",
-		type      => "positiveInteger"
-		},
-	style_name                      =>
-		{
-		attribute => "table:style-name",
-		type      => "styleNameRef"
-		},
-	default_cell_style_name         =>
-		{
-		attribute => "table:default-cell-style-name",
-		type      => "styleNameRef"
-		},
-	visibility                      =>
-		{
-		attribute => "table:visibility",
-		type      => "table-visibility-value"
 		},
 	);
 #------------------------------------------------------------------------------
@@ -358,83 +296,6 @@ use constant PACKAGE_DATE => '2010-06-28T12:52:15';
 		},
 	);
 #------------------------------------------------------------------------------
-%ODF::lpOD::Column::ATTRIBUTE =
-	(
-	number_columns_repeated         =>
-		{
-		attribute => "table:number-columns-repeated",
-		type      => "positiveInteger"
-		},
-	style_name                      =>
-		{
-		attribute => "table:style-name",
-		type      => "styleNameRef"
-		},
-	visibility                      =>
-		{
-		attribute => "table:visibility",
-		type      => "table-visibility-value"
-		},
-	default_cell_style_name         =>
-		{
-		attribute => "table:default-cell-style-name",
-		type      => "styleNameRef"
-		},
-	);
-#------------------------------------------------------------------------------
-%ODF::lpOD::TextElement::ATTRIBUTE =
-	(
-	style_name                      =>
-		{
-		attribute => "text:style-name",
-		type      => "styleNameRef"
-		},
-	class_names                     =>
-		{
-		attribute => "text:class-names",
-		type      => "styleNameRefs"
-		},
-	);
-#------------------------------------------------------------------------------
-%ODF::lpOD::Table::ATTRIBUTE =
-	(
-	name                            =>
-		{
-		attribute => "table:name",
-		type      => "string"
-		},
-	style_name                      =>
-		{
-		attribute => "table:style-name",
-		type      => "styleNameRef"
-		},
-	protected                       =>
-		{
-		attribute => "table:protected",
-		type      => "boolean"
-		},
-	protection_key                  =>
-		{
-		attribute => "table:protection-key",
-		type      => "Inconnu"
-		},
-	print                           =>
-		{
-		attribute => "table:print",
-		type      => "boolean"
-		},
-	print_ranges                    =>
-		{
-		attribute => "table:print-ranges",
-		type      => "cellRangeAddressList"
-		},
-	is_sub_table                    =>
-		{
-		attribute => "table:is-sub-table",
-		type      => "boolean"
-		},
-	);
-#------------------------------------------------------------------------------
 %ODF::lpOD::DrawPage::ATTRIBUTE =
 	(
 	name                            =>
@@ -481,6 +342,209 @@ use constant PACKAGE_DATE => '2010-06-28T12:52:15';
 		{
 		attribute => "presentation:use-date-time-name",
 		type      => "string"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Heading::ATTRIBUTE =
+	(
+	style_name                      =>
+		{
+		attribute => "text:style-name",
+		type      => "styleNameRef"
+		},
+	class_names                     =>
+		{
+		attribute => "text:class-names",
+		type      => "styleNameRefs"
+		},
+	cond_style_name                 =>
+		{
+		attribute => "text:cond-style-name",
+		type      => "styleNameRef"
+		},
+	outline_level                   =>
+		{
+		attribute => "text:outline-level",
+		type      => "positiveInteger"
+		},
+	restart_numbering               =>
+		{
+		attribute => "text:restart-numbering",
+		type      => "boolean"
+		},
+	start_value                     =>
+		{
+		attribute => "text:start-value",
+		type      => "nonNegativeInteger"
+		},
+	is_list_header                  =>
+		{
+		attribute => "text:is-list-header",
+		type      => "boolean"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Frame::ATTRIBUTE =
+	(
+	copy_of                         =>
+		{
+		attribute => "draw:copy-of",
+		type      => "string"
+		},
+	class                           =>
+		{
+		attribute => "presentation:class",
+		type      => "presentation-classes"
+		},
+	placeholder                     =>
+		{
+		attribute => "presentation:placeholder",
+		type      => "boolean"
+		},
+	user_transformed                =>
+		{
+		attribute => "presentation:user-transformed",
+		type      => "boolean"
+		},
+	caption_id                      =>
+		{
+		attribute => "draw:caption-id",
+		type      => "IDREF"
+		},
+	width                           =>
+		{
+		attribute => "svg:width",
+		type      => "length"
+		},
+	height                          =>
+		{
+		attribute => "svg:height",
+		type      => "length"
+		},
+	x                               =>
+		{
+		attribute => "svg:x",
+		type      => "coordinate"
+		},
+	y                               =>
+		{
+		attribute => "svg:y",
+		type      => "coordinate"
+		},
+	z_index                         =>
+		{
+		attribute => "draw:z-index",
+		type      => "nonNegativeInteger"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Row::ATTRIBUTE =
+	(
+	number_rows_repeated            =>
+		{
+		attribute => "table:number-rows-repeated",
+		type      => "positiveInteger"
+		},
+	style_name                      =>
+		{
+		attribute => "table:style-name",
+		type      => "styleNameRef"
+		},
+	default_cell_style_name         =>
+		{
+		attribute => "table:default-cell-style-name",
+		type      => "styleNameRef"
+		},
+	visibility                      =>
+		{
+		attribute => "table:visibility",
+		type      => "table-visibility-value"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Image::ATTRIBUTE =
+	(
+	filter_name                     =>
+		{
+		attribute => "draw:filter-name",
+		type      => "string"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Table::ATTRIBUTE =
+	(
+	name                            =>
+		{
+		attribute => "table:name",
+		type      => "string"
+		},
+	style_name                      =>
+		{
+		attribute => "table:style-name",
+		type      => "styleNameRef"
+		},
+	protected                       =>
+		{
+		attribute => "table:protected",
+		type      => "boolean"
+		},
+	protection_key                  =>
+		{
+		attribute => "table:protection-key",
+		type      => "Inconnu"
+		},
+	print                           =>
+		{
+		attribute => "table:print",
+		type      => "boolean"
+		},
+	print_ranges                    =>
+		{
+		attribute => "table:print-ranges",
+		type      => "cellRangeAddressList"
+		},
+	is_sub_table                    =>
+		{
+		attribute => "table:is-sub-table",
+		type      => "boolean"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::TextElement::ATTRIBUTE =
+	(
+	style_name                      =>
+		{
+		attribute => "text:style-name",
+		type      => "styleNameRef"
+		},
+	class_names                     =>
+		{
+		attribute => "text:class-names",
+		type      => "styleNameRefs"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Column::ATTRIBUTE =
+	(
+	number_columns_repeated         =>
+		{
+		attribute => "table:number-columns-repeated",
+		type      => "positiveInteger"
+		},
+	style_name                      =>
+		{
+		attribute => "table:style-name",
+		type      => "styleNameRef"
+		},
+	visibility                      =>
+		{
+		attribute => "table:visibility",
+		type      => "table-visibility-value"
+		},
+	default_cell_style_name         =>
+		{
+		attribute => "table:default-cell-style-name",
+		type      => "styleNameRef"
 		},
 	);
 #------------------------------------------------------------------------------

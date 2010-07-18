@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               ODF-lpOD
-version:            0.115
+version:            0.120
 abstract:           ~
 author:
     - Jean-Marie Gouarne <jean-marie.gouarne@arsaperta.com>
@@ -11,12 +11,15 @@ configure_requires:
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    Archive::Zip:  1.30
-    File::Find:    1.01
-    File::Temp:    0.12
-    IO::File:      1.14
-    Time::Local:   1.07
-    XML::Twig:     3.32
+    Archive::Zip:    1.30
+    File::Basename:  2.76
+    File::Find:      1.01
+    File::Temp:      0.12
+    File::Type:      0.22
+    Image::Size:     3.2
+    IO::File:        1.14
+    Time::Local:     1.07
+    XML::Twig:       3.32
 no_index:
     directory:
         - t

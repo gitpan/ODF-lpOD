@@ -8,7 +8,7 @@ This manual page describes the C<odf_document>, the common features of any
 C<odf_part> of a C<odf_document>, and the particular features of the
 C<odf_meta> part (that handles the global document metadata).
 
-Every C<odf_document> is associated with a C<odf_container> that encapsulate
+Every C<odf_document> is associated with a C<odf_container> that encapsulates
 all the physical access logic. On the other hand, every C<odf_document> is
 made of several components so-called I<parts>. The lpOD API is mainly focused
 on parts that describe the global metadata, the text content, the layout and
@@ -16,21 +16,21 @@ the structure of the document, and that are physically stored according to an
 XML schema. The common lpOD class for these parts is C<odf_xmlpart> (whose Perl
 implementation is the C<ODF::lpOD::XMLPart> package).
 
-lpOD provides specialized classes for the simplest parts, such as C<odf_meta>
-which provides methods dedicated to get or set the document metadata (other
-C<odf_xmlpart> subclasses will come later in the final version).
+lpOD provides specialized classes for the conventional ODF XML parts, namely
+C<odf_meta>, C<odf_content>, C<odf_styles>, C<odf_settings>, C<odf_manifest>;
+some of them provide methods dedicated to get or set the document metadata.
 
-The most complex C<odf_part> includes the I<content> of the document; however,
-knowing that any piece of content belongs to an C<odf_element>, this complexity
-is handled through the C<odf_element> class (introduced in
-L<ODF::lpOD::Element>) and its various subclasses.
+In order to process particular pieces of content in the most complex parts,
+i.e. C<odf_content> and C<odf_styles>, the C<odf_element> class and its various
+specialized derivatives are available. They are described in other chapters of
+the lpOD documentation.
 
-=head1  Document & part initialization
+=head1  Document initialization
 
 Any access to a document requires a valid C<odf_document> instance, that may be
 created from an existing document or from scratch, using one of the constructors
 introduced below. Once created, this instance gives access to individual parts
-through C<get_xxx> methods, each one dedicated to a particular part.
+through the C<get_part()> method.
 
 =head3  odf_get_document(uri)
 
@@ -47,7 +47,7 @@ Example:
 
         my $doc = odf_get_document("C:\MyDocuments\test.odt");
 
-If the C<save> method of C<odf_document> is late used without explicit target,
+If the C<save> method of C<odf_document> is later used without explicit target,
 the document is wrote back to the same resource.
 
 =head3  odf_new_document_from_template(uri)
@@ -66,7 +66,7 @@ no file is created before an explicit use of the C<save> method.
 
 The following example creates a spreadsheet document instance:
 
-        my $doc = odf_new_document_from_type('spreadsheet').
+        my $doc = odf_new_document_from_type('spreadsheet');
 
 The real content of the instance depends on the default template.
 
@@ -76,6 +76,8 @@ use their own template files. To do so, they have to replace the ODF files
 present in the C<templates> subdirectory of the lpOD installation; the path to
 the lpOD installation may be retrieved through the C<lpod->installation_path>
 common function. The user-provided template files must have the same names.
+
+=head1  Document MIME type check and control
 
 =head3  get_mimetype
 
@@ -89,77 +91,60 @@ the document type). An example of regular ODF MIME type is:
 Allows the user to force a new arbitrary MIME type (not to use in ordinary
 lpOD applications !).
 
+=head1  Access to individual document parts
+
 =head3  get_part(name)
 
 Generic C<odf_document> method allowing access to any I<part> of a previously
 created document intance, including parts that are not handled by lpOD.
-The lpOD library provides symbolic constants that represent the most usual
-part names: C<CONTENT>, C<STYLES>, C<META>, C<MANIFEST>, C<SETTINGS>, and
-C<MIMETYPE>.
+The lpOD library provides symbolic constants that represent the ODF usual
+XML parts: C<CONTENT>, C<STYLES>, C<META>, C<MANIFEST>, C<SETTINGS>.
 
-The use of this low level method is not encouraged unless the user wants to
-work closely with the physical ODF file.
+This instruction returns the I<CONTENT> part of a document as a C<odf_content>
+object:
 
-=head3  get_content
+        $content = $document->get_part(CONTENT);
 
-Returns a handler to the document part that contains the text and structure
-information, and possibly some automatic style definitions. This is generally
-the most important, the most used and the most complex part. The structure
-of the C<content> part depends on the document type. For example, the content
-of a spreadsheet document is a sequence of tables, while the content of a
-presentation document is a sequence of draw pages. With text documents, the
-content may be made of a huge variety of elements.
+With C<MIMETYPE> as argument, C<get_part()> returns the MIME type of the
+document as a text string, i.e. the same result as C<get_mimetype()>.
 
-        my $workspace = $doc->get_content;
+This method may be used in order to get any other document part, such an
+image or any other non-XML part. To do so, the real path of the needed part
+must be specified instead of one of the XML part symbolic names. As an example,
+the instruction below returns the binary content of an image:
 
-The returned part handler may be used either to execute part-related operations
-or to get specific elements in order to use them for context-based operations.
+        $img = $document->get_part('Pictures/logo.jpg');
 
-The most part of the content-oriented lpOD features are provided through
-element-based methods (see L<ODF::lpOD::Element>).
+In such a case, the method returns the data as an uninterpreted sequence of
+bytes.
 
-=head3  get_manifest
+(Remember that images files included in an ODF package are stored in a
+C<Pictures> folder.)
 
-Returns a handler for the ODF document manifest (i.e. the XML catalog of
-all the parts included in the document instance). There is no specific feature
-in the present development version for this handler, which may be used and/or
-updated using the generic part-based and element-based methods.
+Returns C<undef> if case of failure.
 
-=head3  get_meta
+=head3  get_parts
 
-Returns a handler for the global document metadata. See the I<Global document
-metadata> section for details about its features.
-
-=head3  get_settings
-
-Returns a handler for the ODF document settings. There is no specific feature
-in the present development version for this handler, which may be used and/or
-updated using the generic part-based and element-based methods.
-
-=head3  get_styles
-
-Returns a handler for the ODF document styles part. There is no specific feature
-in the present development version for this handler, which may be used and/or
-updated using the generic part-based and element-based methods.
+Returns the list of the document parts.
 
 =head1  Accessing data inside a part
 
 Everything in the part is stored as a set of C<odf_element> instances. So, for
-complex parts (such as C<content>) or parts that are not explictly covered in
+complex parts (such as C<CONTENT>) or parts that are not explictly covered in
 the present documentation, the applications need to get access to an "entry
 point" that is a particular element. The most used entry points are the C<root>
-and the C<body>. Every part handler provides a C<get_root> and a C<get_body>
+and the C<body>. Every part handler provides the C<get_root()> and C<get_body()>
 methods, each one returning a C<odf_element> instance, that provides all the
 element-based features (including the creation, insertion or retrieval of other
 elements that may become in turn working contexts).
 
-For those who know the ODF XML schema, two part-based methods allows the
-selection of elements according to XPath expressions, namely C<get_element>
-and C<get_element_list>. The first one requires an XPath expression and a
+For those who know the ODF XML schema, two part-based methods allow the
+selection of elements according to XPath expressions, namely C<get_element()>
+and C<get_element_list()>. The first one requires an I<XPath> expression and a
 positional number; it returns the element corresponding to the given position
 in the result set of the XPath expression (if any). The second one returns
 the full result set (i.e. a list of C<odf_element> instances). For example,
-the instructions below returns respectively the first paragraph and all the
+the instructions below return respectively the first paragraph and all the
 paragraphs of a part (assuming C<$part> is a previously selected document part):
 
         my $paragraph = $part->get_element('text:p', 0);
@@ -169,10 +154,10 @@ Note that the position argument of C<get_element> is zero-based, and that it
 may be a negative value (if so, it specifies a position counted backward from
 the last matching element, -1 being the position of the last one).
 
-So a large part of the lpOD functionality is described with
-L<ODF::lpOD::Element>.
+So a large part of the lpOD functionality is described with the C<odf_element>
+class, i.e. L<ODF::lpOD::Element>.
 
-=head1  Global document metadate
+=head1  Global document metadata
 
 From the handler provided by the C<get_meta> document method, several metadata
 of the document may be directly get or set.
@@ -344,7 +329,7 @@ Examples:
         $meta->set_user_field("Security status", "Classified");
         $meta->set_user_field("Ready for release", FALSE, "boolean");
 
-=head1  How to commit the document updates
+=head1  How to persistently update a document
 
 Every part may be updated using specific methods that creates, change or remove
 elements, but this methods don't produce any persistent effect.
@@ -357,7 +342,7 @@ original document is not persistently changed. The second option instructs the
 C<odf_document> that the part has been changed and that this change should be
 reflected as soon as the physical resource is wrote back. However, a part-based
 method can't directly update the resource. The changes may be made persistent
-through a C<odf_document> method.
+through a C<save()> method of the C<odf_document> object.
 
 =head3  serialize
 
@@ -368,40 +353,112 @@ part in another document, or to feed another application.
 A C<pretty> named option may be provided. If set to C<TRUE>, this option
 specifies that the XML export should be as human-readable as possible.
 
+The example below returns a conveniently indented XML representation of the
+content part of a document:
+
+        $doc = odf_get_document("C:\MyDocuments\test.odt");
+        $part = $doc->get_part(CONTENT);
+        $xml = part->serialize(pretty => TRUE);
+
+
 =head3  store
 
 This part-based method stores the present state (possibly changed) of the part
 in a temporary, non-persistent space, waiting for the execution of the next
 call of the document-based C<save> method.
 
-Like C<serialize>, C<store> allows the C<pretty> option.
+The following example selects the C<CONTENT> part of a document, removes the
+last paragraph of this content, then sends back the changed content to the
+document, that in turn is made persistent:
 
-=head3 save
+        $content = $document->get_part(CONTENT);
+        $p = $content->get_body->get_paragraph(-1);
+        $p->delete;
+        $content->store;
+        $document->save;
+
+Like C<serialize()>, C<store()> allows the C<pretty> option.
+
+=head3  add_file
+
+This document-based method stores an external file "as is" in the document
+container, without interpretation. The first argument is the path of the
+source file. The second one is the destination path within the ODF package.
+As an example, the instruction below inserts a binary image file available
+in the current directory in the C<Thumbnails> folder of the document package:
+
+        $document->add_file("logo.png", "Thumbnails/thumbnail.png");
+
+The second argument may be omitted. In such as case, the destination folder
+in the package is either C<Pictures> if the source is identified as an
+image file (caution: such a recognition may not work with any image type in
+any environment) or the root folder.
+
+This method may be used in order to import an external XML file as a replacement
+of a conventional ODF XML part without interpretation. As an example, the
+following instruction replaces the C<STYLES> part of a document by an
+arbitrary file:
+
+        $document->add_file("custom_styles.xml", STYLES);
+
+Note that the physical effet of C<add_file()> is not immediate; the file is
+really added (and the source is really required) only when the C<save()>
+method, introduced below, is called. As a consequence, any update that could be
+done in a document part loaded using C<add_file()> is lost. According to the
+same logic, a document part loaded using C<add_file()> is never available in
+the current document instance; it becomes available if the current instance
+is made persistent through a C<save()> call then a new instance is created
+using the saved package with C<odf_get_document>.
+
+=head3  set_part
+
+Allows the user to create or replace a document part using data in memory.
+The first argument is the target ODF part, while the second one is the source
+string.
+
+=head3  del_part
+
+Deletes a part in the document package. The deletion is physically done through
+the subsequent call of C<save()>. The argument may be either the symbolic
+constant standing for a conventional ODF XML part or the real path of
+the part in the package.
+
+The following sequence replaces (without interpretation) the current document
+content part by an external content:
+
+        $document->del_part(CONTENT);
+        $document->add_file("/somewhere/stuff.xml", CONTENT);
+
+Note that the order of these instructions is not significant; when C<save()>
+is called, it executes all the deletions then all the part insertions and/or
+updates.
+
+=head3  save
 
 This method is provided by the C<odf_document>. If the document instance is
 associated with a regular ODF resource available for update (meaning that it
 has been created using C<odf_get_container> and that the user has a write
-access to the resource), the resource is wrote back and reflecting all the
+access to the resource), the resource is wrote back and reflects all the
 changes previously committed by one or more document parts using their
 respective C<store> methods.
 
 As an example, the sequence below updates a ODF file according to changes made
-in the C<meta> and C<content> parts:
+in the C<META> and C<CONTENT> parts:
 
         my $doc = odf_get_document("/home/users/jmg/report.odt");
-        my $meta = $doc->get_meta;
-        my $content = $doc->get_content;
+        my $meta = $doc->get_part(META);
+        my $content = $doc->get_part(CONTENT);
         # meta updates are made here
         $meta->store;
         # content updates are made here
         $content->store;
         $document->save;
-        
-An optional C<target> parameter may be provided to C<save>. If set, this
+
+An optional C<target> parameter may be provided to C<save()>. If set, this
 parameter specifies an alternative destination for the file (it produces the
 same effect as the "File/Save As" feature of a typical office software).
 The C<target> option is always allowed, but it's mandatory with C<odf_document>
-instances created using C<odf_new_document_from...> constructor.
+instances created using a C<odf_new_document_from...> constructor.
 
 =head1	COPYRIGHT & LICENSE
 

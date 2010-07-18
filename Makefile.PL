@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# lpOD Perl - Packaging & installation - 2010-06-24
+# lpOD Perl - Packaging & installation - 2010-07-07
 #-----------------------------------------------------------------------------
 use 5.10.0;
 use ExtUtils::MakeMaker;
@@ -80,7 +80,10 @@ WriteMakefile
 		'File::Temp'		=> '0.12',
 		'File::Find'		=> '1.01',
 		'Time::Local'		=> '1.07',
-		'IO::File'		=> '1.14'
+		'IO::File'		=> '1.14',
+		'File::Basename'        => '2.76',
+		'File::Type'            => '0.22',
+		'Image::Size'           => '3.2'
 		},
 	'EXE_FILES'	=>
 		[

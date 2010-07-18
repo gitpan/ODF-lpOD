@@ -294,6 +294,44 @@ and they allow the user to expand the content of a particular group.
 Row and column group may be collapsed or expanded using their C<collapse()> and
 C<uncollapse()> methods.
 
+=head1 Table headers
+
+One or more rows or columns in the beginning of a table may be organized as
+a I<header>. Row and columns headers are created using the C<set_row_header()>
+and C<set_column_header()> table-based methods, and retrieved using
+C<get_row_header()> and C<get_column_header()>. A row header object brings its
+own C<add_row()> method, which works like the table-based C<add_row()> but
+appends the new rows in the space of the row header. The same logic applies to
+column headers which have a C<add_column()> method. An optional positive
+integer argument may specify the number or rows or columns to include in the
+header (default=1).
+
+Note that a I<column header> is a I<row> or a set of I<rows> containing
+column titles that should be automatically repeated on every page if the table
+does not fit on a single page, while a I<row headers> is a I<column> or a set
+of I<columns> containing I<row titles>. In the present version, I<row headers>
+are not fully supported.
+
+A table can't directly contain more than one row header and one column header.
+However, a column group can contain a column header, while a row group can
+contain a row header. So the header-focused methods above work with groups as
+well as with tables.
+
+A table header doesn't bring particular properties; it's just a construct
+allowing the author to designate rows and columns that should be automatically
+repeated on every page if the table doesn't fit on a single page.
+
+The ``get_xxx()`` table-based retrieval methods ignore the content of the
+headers. However, it's always possible to select a header, then to used it as
+the context object to select an object using its coordinates inside the header.
+For example, the first instruction below gets the first cell of a table body,
+while the third and third instructions select the first cell of a table header::
+
+   c1 = table.get_cell(0,0)
+   header = table.get_header()
+   c2 = header.get_cell(0,0)
+
+
 =head1  Individual cell property handling
 
 A cell owns both a I<content> and some I<properties> which may be processed
@@ -362,6 +400,31 @@ can't be edited.
 If C<set_currency> is used with a non-null value, then the C<type> of the
 cell is automatically set to C<'currency'>. If C<set_type> forces a type that
 is not C<'currency'>, then the cell currency is unset.
+
+=head1 Cell span expansion
+
+A cell may be expanded in so it covers one or more adjacent columns and/or rows.
+The cell-based C<set_span()> method allows the user to control this expansion.
+It takes C<rows> and C<columns> as parameters, specifying the number of rows
+and the number of columns covered. The following example selects the "B4" cell
+then expands it over 4 columns and 3 rows:
+
+        $cell = $table->get_cell('B4');
+        $cell->set_span(rows => 3, columns => 4);
+
+The existing span of a cell may be get using C<get_span()>, which returns the
+C<rows> and C<columns> values.
+
+This method changes the previous span of the cell. The default value for each
+parameter is 1, so a C<set_span()> without argument reduces the cell at its
+minimal span.
+
+When a cell is covered due to the span of another cell, it remains present and
+holds its content and properties. However, it's possible to know at any time if
+a given cell is covered or not through the boolean C<is_covered()> cell method.
+In addition, the span values of a covered cell are automatically set to 1, and
+C<set_span()> is forbidden with covered cells.
+
 
 =head1	COPYRIGHT & LICENSE
 

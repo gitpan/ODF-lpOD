@@ -27,8 +27,8 @@ use strict;
 #       The main module for the lpOD Project
 #-----------------------------------------------------------------------------
 package ODF::lpOD;
-our $VERSION                    =       "0.115";
-use constant PACKAGE_DATE       =>      "2010-06-28T17:00:43";
+our $VERSION                    =       "0.120";
+use constant PACKAGE_DATE       =>      "2010-07-18T18:45:25";
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Document;

@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.101';
-use constant PACKAGE_DATE => '2010-06-26T19:12:50';
+our	$VERSION	        = '0.102';
+use constant PACKAGE_DATE => '2010-07-18T17:45:59';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -38,7 +38,7 @@ our @EXPORT     = qw
         (
         lpod_common lpod
 
-        odf_get_document
+        odf_get_document odf_new_document
         odf_new_document_from_template odf_new_document_from_type
 
         odf_get_container
@@ -47,7 +47,10 @@ our @EXPORT     = qw
         odf_get_xmlpart
 
         odf_create_element odf_create_paragraph odf_create_heading
-        odf_create_section
+        odf_create_section odf_create_draw_page
+        odf_create_frame odf_create_text_frame odf_create_image_frame
+        odf_create_image
+        odf_create_list
         odf_create_table odf_create_column odf_create_row odf_create_cell
         odf_create_column_group odf_create_row_group
         odf_create_field
@@ -56,9 +59,10 @@ our @EXPORT     = qw
         odf_xmlpart odf_content odf_styles odf_meta odf_settings odf_manifest
         
         odf_element odf_text_element odf_bibliography_mark
-        odf_paragraph odf_heading odf_draw_page odf_section
+        odf_paragraph odf_heading odf_draw_page odf_frame odf_image
         odf_list odf_table odf_column odf_row odf_cell odf_field
         odf_matrix odf_column_group odf_row_group odf_table_element
+        odf_section
 
         TRUE FALSE PRETTY
         is_true is_false is_odf_datatype odf_boolean process_options
@@ -70,9 +74,12 @@ our @EXPORT     = qw
         input_conversion output_conversion search_string
         get_local_encoding set_local_encoding
         is_numeric iso_date numeric_date check_odf_value odf_value
+        file_parse file_type image_size
         alert fatal_error not_implemented
         
         PRETTY_PRINT EMPTY_TAGS
+        
+        FIRST_CHILD LAST_CHILD NEXT_SIBLING PREV_SIBLING WITHIN
         );
 
 #=== package name aliases ====================================================
@@ -109,6 +116,8 @@ use constant
         odf_row                 => 'ODF::lpOD::Row',
         odf_cell                => 'ODF::lpOD::Cell',
         odf_draw_page           => 'ODF::lpOD::DrawPage',
+        odf_frame               => 'ODF::lpOD::Frame',
+        odf_image               => 'ODF::lpOD::Image',
         odf_section             => 'ODF::lpOD::Section',
         odf_bibliography_mark   => 'ODF::lpOD::BibliographyMark'
         };
@@ -155,6 +164,15 @@ use constant                            # XML::Twig specific
         EMPTY_TAGS      => 'normal'
         };
 
+use constant                            # element insert positions
+        {
+        FIRST_CHILD     => 'FIRST_CHILD',
+        LAST_CHILD      => 'LAST_CHILD',
+        NEXT_SIBLING    => 'NEXT_SIBLING',
+        PREV_SIBLING    => 'PREV_SIBLING',
+        WITHIN          => 'WITHIN'
+        };
+
 our %ODF_TEMPLATE           =
         (
         'text'          => 'text.odt',
@@ -184,6 +202,8 @@ BEGIN   {
                 *ODF::lpOD::Document::create_from_template;
         *odf_new_document_from_type            =
                 *ODF::lpOD::Document::create;
+        *odf_new_document                       =
+                *ODF::lpOD::Document::create;
 
         *odf_get_container                      =
                 *ODF::lpOD::Container::get_from_uri;
@@ -206,6 +226,12 @@ BEGIN   {
         *odf_create_row         = *ODF::lpOD::Row::create;
         *odf_create_cell        = *ODF::lpOD::Cell::create;
         *odf_create_section     = *ODF::lpOD::Section::create;
+        *odf_create_list        = *ODF::lpOD::List::create;
+        *odf_create_draw_page   = *ODF::lpOD::DrawPage::create;
+        *odf_create_frame       = *ODF::lpOD::Frame::create;
+        *odf_create_image       = *ODF::lpOD::Image::create;
+        *odf_create_text_frame  = *ODF::lpOD::Frame::create_text;
+        *odf_create_image_frame = *ODF::lpOD::Frame::create_image;
 
         *is_numeric             = *Scalar::Util::looks_like_number;
         *odf_value              = *check_odf_value;
@@ -338,7 +364,7 @@ sub     check_odf_value
                         }
                 default
                         {
-                        $value  = undef;
+                        # unknown type : no translation
                         }
                 }
         return $value;
@@ -489,6 +515,28 @@ sub     search_string
                         return $count ? $content : undef;
                         }
                 }
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     file_type
+        {
+        require File::Type;
+        return File::Type->new->mime_type(shift);
+        }
+
+sub     file_parse
+        {
+        require File::Basename;
+        return File::Basename::fileparse(shift, '\.*');
+        }
+
+sub     image_size
+        {
+        require Image::Size;
+        my ($w, $h) = Image::Size::imgsize(shift);
+        $w .= 'pt'; $h .= 'pt';
+        return ($w, $h);
         }
 
 #-----------------------------------------------------------------------------

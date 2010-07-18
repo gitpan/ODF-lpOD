@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.102';
-use constant PACKAGE_DATE => '2010-06-28T13:54:49';
+our     $VERSION        = '0.103';
+use constant PACKAGE_DATE => '2010-07-18T16:13:06';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -50,12 +50,16 @@ our %CLASS    =
         'text:list'                     => odf_list,
         'table:table'                   => odf_table,
         'table:table-column-group'      => odf_column_group,
+        'table:table-header-columns'    => odf_column_group,
         'table:table-row-group'         => odf_row_group,
+        'table:table-header-rows'       => odf_row_group,
         'table:table-column'            => odf_column,
         'table:table-row'               => odf_row,
         'table:table-cell'              => odf_cell,
         'table:covered-table-cell'      => odf_cell,
-        'draw:page'                     => odf_draw_page
+        'draw:page'                     => odf_draw_page,
+        'draw:frame'                    => odf_frame,
+        'draw:image'                    => odf_image
         );
 
 #=== aliases and initialization ==============================================
@@ -145,6 +149,18 @@ sub     is
                 alert("Wrong reference");
                 return undef;
                 }
+        }
+
+sub     set_id
+        {
+        my $self        = shift;
+        return $self->set_attribute('id' => shift);
+        }
+
+sub     get_id
+        {
+        my $self        = shift;
+        return $self->get_attribute('id');
         }
 
 sub     is_child
@@ -537,6 +553,24 @@ sub     get_heading_list
         return $self->get_element_list('text:h', %opt);        
         }
 
+sub      get_list
+        {
+        my $self        = shift;
+        return $self->get_element('text:list', @_);
+        }
+
+sub     get_list_by_id
+        {
+        my $self        = shift;
+        return $self->get_list(attribute => 'xml:id', value => shift);
+        }
+
+sub     get_list_list
+        {
+        my $self        = shift;
+        return $self->get_element_list('text:list', @_);
+        }
+
 #--- table retrieval ---------------------------------------------------------
 
 sub     get_tables
@@ -855,6 +889,52 @@ sub     get_section_list
         return $self->get_element_list('text:section', @_);
         }
 
+#--- frame & draw page retrieval ---------------------------------------------
+
+sub     get_frame
+        {
+        my $self        = shift;
+        return $self->get_element(
+                'draw:frame', attribute => 'draw:name', value => shift
+                );
+        }
+
+sub     get_frame_list
+        {
+        my $self        = shift;
+        return $self->get_element_list('draw:frame', @_);
+        }
+
+sub     get_draw_page_by_position
+        {
+        my $self        = shift;
+        return $self->get_element('draw:page', position => shift);
+        }
+
+sub     get_draw_page_by_name
+        {
+        my $self        = shift;
+        return $self->get_element(
+                'draw:page', attribute => 'name', value => shift
+                );
+        }
+
+sub     get_draw_page
+        {
+        my $self        = shift;
+        my $arg         = shift;
+        return $self->get_element(
+                'draw:page', attribute => 'id', value => $arg
+                )               ||
+                $self->get_draw_page_by_name($arg);
+        }
+
+sub     get_draw_page_list
+        {
+        my $self        = shift;
+        return $self->get_element_list('draw:page', @_);
+        }
+
 #-----------------------------------------------------------------------------
 
 sub     get_attribute
@@ -1012,6 +1092,22 @@ sub     set_text_content
                 }
         $p->set_style($opt{style}) if $opt{style};
         return $p->set_text($text);
+        }
+
+sub     get_name
+        {
+        my $self        = shift;
+        return $self->get_attribute('name');
+        }
+
+sub     set_name
+        {
+        my $self        = shift;
+        my $name        = shift;
+        return undef unless defined $name;
+        return caller() eq 'XML::Twig::Elt' ?
+                $self->set_tag($name)           :
+                $self->set_attribute('name' => $name);
         }
 
 sub     get_style
