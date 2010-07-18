@@ -8,10 +8,10 @@ ODF::lpOD - Languages & platform for OpenDocument
         
         my $document = odf_get_document("report.odt");
 
-        my $meta = $document->get_meta;
+        my $meta = $document->get_part(META);
         $meta->set_title("The best document format");
         
-        my $content = $document->get_content;
+        my $content = $document->get_part(CONTENT);
         my $context = $content->get_body;
         my $paragraph = $context->get_paragraph(content => "I look for it");
         $paragraph->set_text("I found it");
@@ -115,23 +115,23 @@ be an ODF-compliant zip file (odt, ods, odp, and so on). Example:
 I<In the presente version, the source argument must be provided either as a
 regular file path or as a C<IO::Handle> object.>
 
-=head3  odf_new_document_from_template(source)
-
-Returns a new odf_document instantiated from an existing ODF template
-package. Same as C<odf_get_document>, but the source package is read-only.
-
-=head3  odf_new_document_from_type(document_type)
+=head3  odf_new_document(document_type)
 
 Returns a new odf_document corresponding to the given ODF document type.
 Allowed document types are presently C<'text'>, C<'spreadsheet'>,
 C<'presentation'>, and C<'drawing'>). Example:
 
-        my $document = odf_new_document_from_type('spreadsheet');
+        my $document = odf_new_document('spreadsheet');
 
 Technically, the new document is generated as a clone of an existing template
 document, provided with the lpOD distribution. It operates in the same way as
 C<odf_new_document_from_template>, but the user doesn't need to provide the
 template document.
+
+=head3  odf_new_document_from_template(source)
+
+Returns a new odf_document instantiated from an existing ODF template
+package. Same as C<odf_get_document>, but the source package is read-only.
 
 =head3  save([destination])
 
@@ -139,8 +139,8 @@ This function is a I<method>. It must be called from an odf_document instance.
 
 Without argument, it attempts to write it's content back to the resource that
 was used to create it. A warning is issued and nothing is done if the document
-has been created from a template (i.e. through C<odf_new_document_from_type>
-or C<odf_new_document_from_template>).
+has been created without source file or from a read-only template (i.e. through
+C<odf_new_document> or C<odf_new_document_from_template>).
 
 This method produces a file whose basic format is the same as the format of
 the source document or template (whatever the target filename, if any).
@@ -163,26 +163,21 @@ A regular ODF document contains various I<parts>, some of them mandatory.
 The interesting parts in the lpOD scope are C<'content'>, C<'styles'>, C<'meta'>,
 C<'settings'>, and C<'manifest'>.
 
-I<The present development release covers C<'content'> and C<'meta only'>.
-However, the common, low level odf_element methods work with other parts as
-well.>
+The odf_document class provides a C<get_part()> method, that must be used with
+an argument that specifies the needed part. Example:
 
-The odf_document class provides a set of C<get_part> methods, where C<'part'> may
-be replaced by the name of the needed part, in order to provide access to every
-individual part. Example:
+        my $content = $document->get_part(CONTENT);
+        my $meta = $document->get_part(META);
 
-        my $content = $document->get_content;
-        my $meta = $document->get_meta;
+The sequence above gives access to the content and meta parts of a previously
+created C<odf_document> instance.
 
-The sequence above give access to the content and meta parts of a previously
-created odf_document instance.
+Beware: if C<get_part()> is called twice or more from the same C<odf_document>
+instance and with the same part designation, it returns the same object. As a
+consequence, after the sequence below, C<$p1> and C<$p2> will be synonyms:
 
-Beware: if the same get_part method is called twice or more from the same
-odf_document instance, it returns the same object. As a consequence, after the
-sequence below, C<$p1> and C<$p2> will be synonyms:
-
-        my $p1 = $document->get_content;
-        my $p2 = $document->get_content;
+        my $p1 = $document->get_part(CONTENT);
+        my $p2 = $document->get_part(CONTENT);
 
 In order to make persistent the changes made in a part, an explicit
 serialization must be done. Two methods are provided to do so.
@@ -191,19 +186,19 @@ C<serialize()> returns an XML export of the whole part (the application is then
 responsible of the fate of this export). An optional B<pretty> argument, if set
 to TRUE, specifies that the XML output must be human-readable. Example:
 
-        my $content = $document->get_content;
+        my $content = $document->get_part(CONTENT);
         # here some content processing
         my $xml = $content->serialize(pretty => TRUE);
 
 C<store()> commits the changes at the document level; in other words, this
-method tells the odf_document instance the current part comes from that it
-should be updated at the next C<save()>. The example below shows the way to
-commit and write back the changes made in the C<'meta'> and C<'content'>
-parts of a previously loaded C<odf_document>:
+method tells the C<odf_document> instance that the current part comes from that
+it should be updated at the next C<save()>. The example below shows the way to
+commit and write back the changes made in the C<META> and C<CONTENT> parts of a
+previously loaded C<odf_document>:
 
         my $document = odf_get_document($source);
-        my $meta = $document->get_meta;
-        my $content = $document->get_content;
+        my $meta = $document->get_part(META);
+        my $content = $document->get_part(CONTENT);
         # some processing of meta elements
         # some processing of content elements
         $meta->store;
@@ -223,17 +218,17 @@ based (i.e. a zero value means the first matching element). As an example, the
 instruction below returns the last paragraph of the document.
 
         my $document = odf_get_document($source);
-        my $content = $document->get_content;
+        my $content = $document->get_part(CONTENT);
         my $p = $part->get_element("//text:p", -1);
 
 However, this way is not the smartest one because it requires the knowledge
 of the ODF schema (and some XPath skills for more complicated cases).
 
 lpOD provides more user-friendly, XPath-free methods for the most used elements
-in the C<content> part of a document. These methods are provided through the
+in the C<CONTENT> part of a document. These methods are provided through the
 C<odf_element> class. Any individual element in a part is an C<odf_element>
 object. There is a shortcut to get the top (or root) element of any part: the
-C<get_root> method. Once selected, the top element provides all the I<context
+C<get_root()> method. Once selected, the top element provides all the I<context
 methods> of the lpOD API.
 
 A I<context method> is a method owned by an element (the context) and whose
@@ -244,7 +239,7 @@ element provided by the C<odf_element> class, the last example could be wrote
 as shown below:
 
         my $document = odf_get_document($source);
-        my $context = $document->get_content->get_root;
+        my $context = $document->get_part(CONTENT)->get_root;
         my $p = $context->get_paragraph(-1);
 
 In most cases (including the previous example), C<get_root> may be replaced
@@ -257,7 +252,7 @@ of its attributes, and/or its sequential position in the context. As an example,
 the sequence below displays the name of the last page that uses the draw page
 style "dp1" (assuming we are using a presentation or drawing document):
 
-        my $context = $document->get_content->get_body;
+        my $context = $document->get_part(CONTENT)->get_body;
         my $page = $context->get_element(
                 'draw:page',
                 attribute       => 'style name',
@@ -272,7 +267,7 @@ there is no need of a context element, as shown below in the following example
 that displays the title of a document:
 
         my $document = odf_get_document($source);
-        my $meta = $document->get_meta;
+        my $meta = $document->get_part(META);
         say $meta->get_title;
 
 The title (like an other metadata value) may be updated or created with the
@@ -334,7 +329,7 @@ a new paragraph (with given style and content), then appends it to a selected
 section:
 
         my $document = odf_get_document($source);
-        my $context = $document->get_content->get_body;
+        my $context = $document->get_part(CONTENT)->get_body;
         my $section = $context->get_section("Prologue");
         my $paragraph = odf_create_paragraph(
                 style => "Standard", text => "The End of the Beginning"
@@ -359,8 +354,8 @@ of the big picture through this simple program:
 
         use ODF::lpOD;
         
-        my $doc = odf_new_document_from_type('text');
-        my $content = $doc->get_content;
+        my $doc = odf_new_document('text');
+        my $content = $doc->get_part(CONTENT);
         my $context = $content->get_body;
         $context->append_element(
                 odf_create_paragraph(
@@ -378,7 +373,7 @@ then introduce more sophistication using the metadata part of the document.
 To do so, you can (for example) insert the lines below somewhere before the
 C<save> instruction (and after the C<odf_new_document> one).
 
-        my $meta = $doc->get_meta;
+        my $meta = $doc->get_part(META);
         $meta->set_title("Hello World Test");
         $meta->set_creator("Me");
         $meta->set_creation_date(iso_date);
