@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.102';
-use constant PACKAGE_DATE => '2010-07-18T17:45:59';
+our	$VERSION	        = '0.103';
+use constant PACKAGE_DATE => '2010-07-23T08:35:37';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -41,7 +41,7 @@ our @EXPORT     = qw
         odf_get_document odf_new_document
         odf_new_document_from_template odf_new_document_from_type
 
-        odf_get_container
+        odf_get_container odf_new_container
         odf_new_container_from_template odf_new_container_from_type
 
         odf_get_xmlpart
@@ -63,6 +63,7 @@ our @EXPORT     = qw
         odf_list odf_table odf_column odf_row odf_cell odf_field
         odf_matrix odf_column_group odf_row_group odf_table_element
         odf_section
+        odf_file_entry
 
         TRUE FALSE PRETTY
         is_true is_false is_odf_datatype odf_boolean process_options
@@ -119,7 +120,8 @@ use constant
         odf_frame               => 'ODF::lpOD::Frame',
         odf_image               => 'ODF::lpOD::Image',
         odf_section             => 'ODF::lpOD::Section',
-        odf_bibliography_mark   => 'ODF::lpOD::BibliographyMark'
+        odf_bibliography_mark   => 'ODF::lpOD::BibliographyMark',
+        odf_file_entry          => 'ODF::lpOD::FileEntry'
         };
         
 #--- lpOD common tools and parameters ----------------------------------------
@@ -209,6 +211,8 @@ BEGIN   {
                 *ODF::lpOD::Container::get_from_uri;
         *odf_new_container_from_template        =
                 *ODF::lpOD::Container::create_from_template;
+        *odf_new_container                      =
+                *ODF::lpOD::Container::create;
         *odf_new_container_from_type            =
                 *ODF::lpOD::Container::create;
         
@@ -522,7 +526,9 @@ sub     search_string
 sub     file_type
         {
         require File::Type;
-        return File::Type->new->mime_type(shift);
+        my $f   = shift;
+        return undef    unless (-r $f && -f $f);
+        return File::Type->new->mime_type($f);
         }
 
 sub     file_parse
@@ -534,9 +540,12 @@ sub     file_parse
 sub     image_size
         {
         require Image::Size;
-        my ($w, $h) = Image::Size::imgsize(shift);
+        my $f           = shift;
+        return undef    unless (-r $f && -f $f);
+        my ($w, $h) = Image::Size::imgsize($f);
+        return undef    unless defined $w;
         $w .= 'pt'; $h .= 'pt';
-        return ($w, $h);
+        return [ $w, $h ];
         }
 
 #-----------------------------------------------------------------------------

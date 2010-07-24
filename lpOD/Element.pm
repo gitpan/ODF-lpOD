@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.103';
-use constant PACKAGE_DATE => '2010-07-18T16:13:06';
+our     $VERSION        = '0.104';
+use constant PACKAGE_DATE => '2010-07-23T19:20:01';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -59,7 +59,8 @@ our %CLASS    =
         'table:covered-table-cell'      => odf_cell,
         'draw:page'                     => odf_draw_page,
         'draw:frame'                    => odf_frame,
-        'draw:image'                    => odf_image
+        'draw:image'                    => odf_image,
+        'manifest:file-entry'           => odf_file_entry
         );
 
 #=== aliases and initialization ==============================================
@@ -1408,12 +1409,12 @@ sub     search
         my $match = undef;
         if(is_false($backward))
                 {
-                ($r{segment}, $r{position}, $match, $r{end}) =
+                ($r{segment}, $r{offset}, $match, $r{end}) =
                         $self->_search_forward($expr, %opt);
                 }
         else
                 {
-                ($r{segment}, $r{position}, $match, $r{end}) =
+                ($r{segment}, $r{offset}, $match, $r{end}) =
                         $self->_search_backward($expr, %opt);
                 }
         $r{match} = output_conversion($match);
@@ -1492,11 +1493,99 @@ sub     AUTOLOAD
         return undef; 
         }
 
+sub     not_allowed
+        {
+        my $self        = shift;
+        my $tag         = $self->get_tag;
+        alert "Not allowed for this $tag elements";
+        return undef;
+        }
+
 #=============================================================================
 package ODF::lpOD::BibliographyMark;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-11T23:40:55';
+#=============================================================================
+package ODF::lpOD::FileEntry;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-07-21T09:35:55';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN   {
+        *set_text       = *not_allowed;
+        *insert_element = *not_allowed;
+        *append_element = *not_allowed;
+        }
+
+#-----------------------------------------------------------------------------
+
+our     @ALLOWED_ATTRIBUTES = ('manifest:media-type', 'manifest:full-path');
+
+sub     set_attribute
+        {
+        my $self        = shift;
+        my $name        = $self->normalize_name(shift);
+        unless ($name ~~ [ @ALLOWED_ATTRIBUTES ])
+                {
+                alert "Attribute $name is not allowed";
+                return FALSE;
+                }
+        return $self->SUPER::set_attribute($name, @_);
+        }
+
+sub     get_path
+        {
+        my $self        = shift;
+        return $self->get_attribute('full path');
+        }
+
+sub     set_path
+        {
+        my $self        = shift;
+        my $path        = shift;
+        unless ($path)
+                {
+                alert "Missing or wrong path"; return FALSE;
+                }
+        my $old_path = $self->get_path;
+        my $lpod_part = $self->lpod_part;
+        my $other = $lpod_part ? $lpod_part->get_entry($path) : undef;
+        if ($other)
+                {
+                if ($other == $self)
+                        {
+                        return TRUE;
+                        }
+                else
+                        {
+                        alert "Non unique entry path $path";
+                        return FALSE;
+                        }
+                }
+        $self->set_attribute('full path' => $path);
+        if ($path =~ /.\/$/)
+                {
+                $self->set_attribute('media type' => "");
+                }
+        return TRUE;
+        }
+
+sub     get_type
+        {
+        my $self        = shift;
+        return $self->get_attribute('media type');
+        }
+
+sub     set_type
+        {
+        my $self        = shift;
+        my $type        = shift // "";                                  #/
+        return $self->set_attribute('media type' => $type);
+        }
+
 #=============================================================================
 1;
 

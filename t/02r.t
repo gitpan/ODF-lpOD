@@ -12,7 +12,7 @@ use ODF::lpOD;
 lpod->debug(TRUE);
 
 my $test_file   = $ARGV[0] || 'lpod_test.odt';
-my $generator   = "lpOD installation test";
+my $generator   = scalar lpod->info;
 my $test_date   = ODF::lpOD->PACKAGE_DATE;
 
 #-----------------------------------------------------------------------------

@@ -204,7 +204,7 @@ A paragraph may contain special markup elements. A I<text span> is a particular
 substring whose style is not the paragraph style; it's a "sub-paragraph" with
 its own style. A I<hyperlink> is a variant of text span; it associates a text
 segment with a URL instead of a style. A I<bookmark> is either a place holder
-that specifies a particular position in the text of a paragraph, or a named
+that specifies a particular offset in the text of a paragraph, or a named
 text segment that may spread over more than one paragraph. An I<index mark> is
 a particular bookmark that may be used in order to create a document index. 
 A I<bibliography mark> is an element that specifies a relationship between a
@@ -221,23 +221,23 @@ be created in the same document). C<set_span> may uses a string or a regular
 expression, which may match zero, one or several times the text content of
 the calling object, so the spans can apply repeatedly to every substring that
 matches. The string is provided through a C<filter> parameter. Alternatively,
-C<set_span> may be called with given C<position> and C<length> parameters,
-in order to apply the span once whatever the content. Note that C<position> is
+C<set_span> may be called with given C<offset> and C<length> parameters,
+in order to apply the span once whatever the content. Note that C<offset> is
 an offset that may be a positive integer (starting to 0 for the 1st position),
 or a negative integer (starting to -1 for the last position) if the user prefers
 to count back from the end of the target. If the C<length> parameter is omitted
-or set to 0 the span runs up to the end of the target content. If C<position>
-is out of range, nothing is done; if C<position> is OK, extra length (if any)
+or set to 0 the span runs up to the end of the target content. If C<offset>
+is out of range, nothing is done; if C<offset> is OK, extra length (if any)
 is ignored. The following instructions create two text spans with a so-called
 "HighLight" style; the first one applies the given style to any "The lpOD
 Project" substring while the second one does it once on a fixed length substring
-at a given position, C<$p> being the target paragraph:
+at a given offset, C<$p> being the target paragraph:
 
         $p->set_span(filter => 'The lpOD Project', style => 'HighLight');
-        $p->set_span(position => 3, length => 5, style => 'HighLight');
+        $p->set_span(offset => 3, length => 5, style => 'HighLight');
 
 A hyperlink span is created through C<set_hyperlink>, which waits for the
-same positioning parameters (by regex or by position and length). However,
+same positioning parameters (by regex or by offset and length). However,
 there is no style, and a C<url> parameter (whose value is any kind of path
 specification that is supported by the application) is required instead.
 A hyperlink span can't contain any other span, while a style span can contain
@@ -253,19 +253,19 @@ The following example associates an hyperlink in the last 5 characters of the
 C<$p> container (note that the C<length> parameter is omitted, meaning that
 the hyperlink will run up to the end):
 
-        $p->set_hyperlink(position => -5, url => 'http://here.org');
+        $p->set_hyperlink(offset => -5, url => 'http://here.org');
 
 The sequence hereafter show the way to set a style span and a hyperlink for
 the same text run. The style span is created first, then it's used as the
 context to create a hyperlink span that spreads over its whole content:
 
         $s = $p->set_span(
-                filter          => 'The lpOD Project',
-                style           => 'Outstanding'
+                filter  => 'The lpOD Project',
+                style   => 'Outstanding'
                 );
         $s->set_hyperlink(
-                position        => 0,
-                url             => 'http://www.lpod-project.org'
+                offset  => 0,
+                url     => 'http://www.lpod-project.org'
                 );
 
 =head2  Bookmarks
@@ -274,7 +274,7 @@ A I<position bookmark> is a location mark somewhere in a text container, which
 is identified by a unique name, but without any content. Its just a named
 location somewhere in a text container.
 
-By default, the bookmark is created and inserted using C<set_bookmark>
+By default, the bookmark is created and inserted using C<set_bookmark()>
 before the first character of the content in the calling element (which may be a
 paragraph, a heading, or a text span). As an example, this instruction creates
 a position bookmark before the first character of a paragraph:
@@ -287,29 +287,29 @@ retrieve it later (with an interactive text processor or by program with lpOD or
 another ODF toolkit). It's probably the most frequent use of bookmarks. However,
 the API offers more sophisticated functionality.
 
-The position can be explicitly provided by the user with a C<position>
+The offset can be explicitly provided by the user with a C<offset>
 parameter. Alternatively, the user can provide a regular expression using a
 C<before> or C<after> parameter, whose value is a search string (or a regex)
 so the bookmark is set immediately before or after the first substring that
 matches the expression. The code below illustrates these possibilities:
 
-        $paragraph->set_bookmark("BM1", before="xyz")
-        $paragraph->set_bookmark("BM2", position=4)
+        $paragraph->set_bookmark("BM1", before => "xyz");
+        $paragraph->set_bookmark("BM2", offset => 4);
 
 This method returns the new bookmark element (that is an C<odf_element>) in
 case of success, or a null value otherwise.
 
 When the bookmark must be put at the very end of the calling element, the
-C<position> parameter may be set to C<'end'> instead of a numeric value.
+C<offset> parameter may be set to C<'end'> instead of a numeric value.
 
 For performance reasons, the uniqueness of the given name is not checked. If
 needed, this check should be done by the applications, by calling
-C<get_bookmark> (with the same name and from the root element) just
-before C<set_bookmark>; as long as C<get_bookmark> returns a null value,
+C<get_bookmark()> (with the same name and from the root element) just
+before C<set_bookmark()>; as long as C<get_bookmark()> returns a null value,
 the given bookmark name is not in use in the context.
 
 There is no need to specify the creation of a position bookmark;
-C<set_bookmark> creates a position bookmark by default; an additional
+C<set_bookmark()> creates a position bookmark by default; an additional
 C<role> parameter is required for range bookmarks only, as introduced later.
 
 The first instruction in the last example sets a bookmark before the first
@@ -318,29 +318,30 @@ regular expression. The second instruction sets a bookmark in the same
 paragraph at a given (zero-based), so before the 5th character.
 
 In order to put a bookmark according to a regexp that could be matched more than
-once in the same paragraph, it's possible to combine the position and text
-options, so the search area begins at the given position. The following example
+once in the same paragraph, it's possible to combine the C<offset> and text
+options, so the search area begins at the given C<offset>. The following example
 puts a bookmark at the end of the first substring that matches a given
-expression after a given position:
+expression after a given offset:
 
-        $paragraph->set_bookmark("BM3", position => 4, after => "xyz");
+        $paragraph->set_bookmark("BM3", offset => 4, after => "xyz");
 
-Thanks to the generic C<set_attribute> and C<set_attributes> methods,
+Thanks to the generic C<set_attribute()> and C<set_attributes()> methods,
 the user can set or unset any arbitrary attribute later, without automatic
 compliance check. In addition, arbitrary attributes may be set at the creation
 time (without check) using an optional C<attributes> parameter, whose content
-is a hash ref of attribute/value pairs (like with C<set_attributes>).
+is a hash ref of attribute/value pairs (like with C<set_attributes()>).
 
-A bookmark can be retrieved by its unique name using C<get_bookmark> from
+A bookmark can be retrieved by its unique name using C<get_bookmark()> from
 any element (including the root context).
 The ODF element that contains the bookmark then can be obtained as the parent of
-the bookmark element, using the C<get_parent> method from the retrieved
-bookmark. Alternatively, C<get_element_by_bookmark>, whose argument is a
+the bookmark element, using the C<get_parent()> method from the retrieved
+bookmark. Alternatively, C<get_element_by_bookmark()>, whose argument is a
 bookmark name, directly returns the element that contains the bookmark. However,
 a bookmark may belong to a text span, that in turn may belong to another text
 span, and so on. In order to directly get the real paragraph or heading element
 that contains the bookmark (whatever the possible intermediate hierarchy of
-sub-containers), an additional C<get_paragraph_by_bookmark> method is available.
+sub-containers), an additional C<get_paragraph_by_bookmark()> method is
+available.
 
 In the following example, the first instruction returns the text container
 (whatever its type, paragraph, heading or text span) where the bookmark is
@@ -351,7 +352,7 @@ the same element)::
         $element = $context->get_element_by_bookmark("BM1");
         $element = $context->get_paragraph_by_bookmark("BM1");
 
-The C<remove_bookmark> method may be used from any context above the
+The C<remove_bookmark()> method may be used from any context above the
 container or the target bookmark, including the document root, in order to
 delete a bookmark whatever its container. The only required parameter is the
 bookmark name.
@@ -366,7 +367,7 @@ The API allows the user to create a range bookmark within an existing content,
 as well as to retrieve and extract it according to its name. Range bookmarks
 share some common functionality with position bookmarks
 
-A range bookmark may be inserted using C<set_bookmark> like a position
+A range bookmark may be inserted using C<set_bookmark()> like a position
 bookmark. However, this method must be sometimes called twice knowing that the
 start and end points aren't always in the same context. In such a situation,
 an additional C<role> parameter is required. The value of C<role> is either
@@ -375,19 +376,19 @@ same bookmark name but with the two different values of C<role>. Example:
 
         $paragraph1->set_bookmark(
                 "MyRange",
-                position        => 12,
-                role            => "start"
+                offset  => 12,
+                role    => "start"
                 );
         $paragraph2->set_bookmark(
                 "MyRange",
-                position        => 3,
-                role="end"
+                offset  => 3,
+                role    => "end"
                 );
 
-The sequence above creates a range bookmark starting at a given position in a
-paragraph and ending at another position in another paragraph.
+The sequence above creates a range bookmark starting at a given offset in a
+paragraph and ending at another offset in another paragraph.
 
-Knowing that the default position is C<0>, and the last position in a string is
+Knowing that the default offset is C<0>, and the last offset in a string is
 C<'end'>, the following example creates a range bookmark that just covers the
 full content of a single paragraph::
 
@@ -395,19 +396,19 @@ full content of a single paragraph::
                 "AnotherBookmark", role => 'start'
                 );
         $paragraph->set_bookmark(
-                "AnotherBookmark", role => 'end', position => 'end'
+                "AnotherBookmark", role => 'end', offset => 'end'
                 );
 
 A range bookmark may be entirely contained in the same paragraph. As a
 consequence, it's possible to create it with a single call of
-C<set_bookmark>, with parameters that make sense for such a situation. If a
+C<set_bookmark()>, with parameters that make sense for such a situation. If a
 C<content> parameter, whose value is a regex, is provided instead of the
 C<before> or C<after> option, the given expression is regarded as covering
 the whole text content to be enclosed by the bookmark, and this content is
 supposed to be entirely included in the calling paragraph. So the range bookmark
 is immediately created and automatically balanced. As soon as C<content> is
 present, C<role> is not needed (and is ignored). Like C<before> and C<after>,
-C<content> may be combined with C<position>. In addition, the range bookmark
+C<content> may be combined with C<offset>. In addition, the range bookmark
 is automatically complete and consistent.
 
 Note that the following instruction::
@@ -425,18 +426,18 @@ paragraph remains the same between the two instructions):
                 );
 
 Another way to create a range bookmark in a single instruction is to provide
-a list of two positions through the C<position> optional parameter. These two
-positions will be processed as the respective C<position> parameters of the
+a list of two offsets through the C<offset> optional parameter. These two
+offsets will be processed as the respective C<offset> parameters of the
 start en end elements, respectively.
 
-        $paragraph->set_bookmark("MyRange", position => [3,15]);
+        $paragraph->set_bookmark("MyRange", offset => [3,15]);
 
-When two positions are provided, the second position can't be before the first
-one and the method fails if one of the given positions is off limits, so the
-consistency of the bookmark is secured as soon as C<set_bookmark> returns a
+When two offsets are provided, the second offset can't be before the first
+one and the method fails if one of the given offsets is off limits, so the
+consistency of the bookmark is secured as soon as C<set_bookmark()> returns a
 non-null value with this parameter.
 
-The C<position> and C<content> parameters may be combined in order to create a
+The C<offset> and C<content> parameters may be combined in order to create a
 range bookmark whose content matches a given filter string in a delimited
 substring in the calling element. The next example creates a range bookmark
 whose content will begin before the first substring that matches a "xyz"
@@ -444,14 +445,14 @@ expression contained in a range whose the 5 first characters and the 6 last
 characters are excluded:
 
         $paragraph->set_bookmark(
-                "MyRange", content => "xyz", position => [5, -6]
+                "MyRange", content => "xyz", offset => [5, -6]
                 );
 
 When C<set_bookmark> creates a range bookmark in a single instruction, it
 returns a pair of elements according to the same logic as C<get_bookmark>
 (see below).
 
-If the start position is not before the end position, a warning is issued and
+If the start offset is not before the end offset, a warning is issued and
 nothing is done.
 
 The consistency of an existing range bookmark may be verified using the
@@ -459,13 +460,13 @@ C<check_bookmark> context-based method, whose mandatory argument
 is the name of the bookmark, and that returns C<TRUE> if and only if the
 corresponding range bookmark exists, has defined start and end points I<and> if
 the end point is located after the start point. This method returns C<FALSE>
-if anyone of these conditions is not met (as a consequence, C<get_bookmark>
+if anyone of these conditions is not met (as a consequence, C<get_bookmark()>
 may succeed while C<check_bookmark> fails for the same bookmark name). Of
 course, C<check_bookmark> always succeeds with a regular position bookmark,
 so, with a position bookmark, this method is just en existence check.
 
 A range bookmark is not a single object; it's a pair of distinct ODF elements
-whose parent elements may differ. With a range bookmark, C<get_bookmark>
+whose parent elements may differ. With a range bookmark, C<get_bookmark()>
 returns the pair instead of a single element like with a position bookmark.
 Of course, the first element of the pair is the start point while the second
 one is the end point. So it's possible, with the generic element-based
@@ -474,23 +475,24 @@ start and the end points (in most situations, it's the same container).
 
 The context-based C<get_element_by_bookmark>, when the given name designates
 a range bookmark, returns the parent element of the start point by default.
-However, it's possible to use the same C<role> options as with C<set_bookmark>;
-if the C<role> value is C<'end'>, then C<get_element_by_bookmark> will return
-the container of the end point (or null if the given name designates a position
-bookmark or an non-consistent range bookmark whose end point doesn't exist).
+However, it's possible to use the same C<role> options as with
+C<set_bookmark()>; if the C<role> value is C<'end'>, then
+C<get_element_by_bookmark()> will return the container of the end point (or
+null if the given name designates a position bookmark or an non-consistent
+range bookmark whose end point doesn't exist).
 
-A C<get_bookmark_text> context-based method whose argument is the name of a
-range bookmark returns the text content of the bookmark as a flat string,
+A C<get_bookmark_text()> context-based method, whose argument is the name of a
+range bookmark, returns the text content of the bookmark as a flat string,
 without the structure; this string is just a concatenation of all the pieces of
 text occurring in the range, whatever the style and the type of their
 respective containers; however, the paragraph boundaries are replaced by blank
 spaces. Note that, when called with a position bookmark or an inconsistent
-range bookmark, C<get_bookmark_text> just returns an null value, while it
+range bookmark, C<get_bookmark_text()> just returns an null value, while it
 always returns a string (possibly empty) when called from a regular range
 bookmark.
 
 A range bookmark (consistent or not) may be safely removed through the
-C<remove_bookmark> method (which deletes the start point and the end point).
+C<remove_bookmark()> method (which deletes the start point and the end point).
 
 A range bookmark can be safely processed only if it's entirely contained in the
 calling context. A context that is not the whole document can contain a bookmark
@@ -498,13 +500,13 @@ start or a bookmark end but not both.  In addition, a bookmark spreading across
 several elements gets corrupt if the element containing its start point or its
 end point is later removed.
 
-The C<remove_bookmark> method (which can be used at any level, including the
+The C<remove_bookmark()> method (which can be used at any level, including the
 document root) allows the applications to safely remove balanced and
 non-balanced range bookmarks. Nothing is done if the given bookmark is not
 entirely contained in the calling context element. The return value is C<TRUE>
 if a bookmark has really been removed, or C<FALSE> otherwise.
 
-In addition, C<clean_marks> automatically removes non-balanced range
+In addition, C<clean_marks()> automatically removes non-balanced range
 bookmarks (as well as non-balanced index marks). Caution: this method is
 potentially harmful, knowing that a bookmark may be non-balanced in a given
 element while it's consistent at a higher level, knowing that its start and end
@@ -536,12 +538,12 @@ office applications).
 
 =back
 
-An index mark, just like a text bookmark, is either a mark associated to a
-position in a text, or a pair of location marks that defines a delimited range
+An index mark, just like a text bookmark, is either a mark associated to an
+offset in a text, or a pair of location marks that defines a delimited range
 of text.
 
-An index mark is created in place using the C<set_index_mark> context-based
-method, according to the same basic logic as C<set_bookmark>, with some
+An index mark is created in place using the C<set_index_mark()> context-based
+method, according to the same basic logic as C<set_bookmark()>, with some
 important differences:
 
 =over
@@ -620,15 +622,15 @@ be used.
 
 =back
 
-See C<set_bookmark> for details about the index mark positioning options.
+See C<set_bookmark()> for details about the index mark positioning options.
 
 The example hereafter successively creates, in the same paragraph, a range TOC
 mark, two range index marks associated to the same user-defined index, and a
-lexical position index mark at the default position (i.e. before the first
+lexical position index mark at the default offset (i.e. before the first
 character of the paragraph):
 
         $paragraph->set_index_mark(
-                "id1", type => "toc", position => [3,5]
+                "id1", type => "toc", offset => [3,5]
                 );
         $paragraph->set_index_mark(
                 "id2", index_name => "OpenStandards", content => "XML"
@@ -647,10 +649,10 @@ text will appear in the document as a reference to the paragraph as soon as a
 standard lexical index is generated (by the current program or later by an
 end-user office software).
 
-There is a C<get_index_marks> context-based method that allows the applications
-to retrieve a list of index entries present in a document or in a more
-restricted context. This method needs a C<type> parameter, whose possible
-values are the same as with C<set_index_mark>, in order to select the kind of
+There is a C<get_index_marks()> context-based method that allows the
+applications to retrieve a list of index entries present in a document or in a
+more restricted context. This method needs a C<type> parameter, whose possible
+values are the same as with C<set_index_mark()>, in order to select the kind of
 index entries; the C<'lexical'> type is the default. If the C<'user'> type is
 selected, the name of the user-defined index must be provided too,
 through a C<index name> parameter. However, if C<index name> is provided,
@@ -679,12 +681,12 @@ format).
 
 A bibliography mark is created using the C<set_bibliography_mark> method from
 a paragraph, a heading or a text span element. Its placement is controlled with
-the same arguments as a position bookmark, i.e. C<position>, C<before> or
+the same arguments as a position bookmark, i.e. C<offset>, C<before> or
 C<after> (look at the I<Bookmarks> section for details). Without explicit
 placement parameters, the bibliography mark is inserted at the beginning of the
 calling container.
 
-Unlike C<set_bookmark>, C<set_bibliography_mark> doesn't require a name as
+Unlike C<set_bookmark()>, C<set_bibliography_mark()> doesn't require a name as
 its first argument, but it requires a named C<type> parameter whose value
 is one of the publication types listed in the §7.1.4 of the ODF 1.1
 specification (examples: C<'article'>, C<'book'>, C<'conference'>,
@@ -725,21 +727,22 @@ viewer:
                 editor          => "The lpOD Team"
                 );
 
-The positioning parameters as the same as with C<set_bookmark> (the C<after>
+The positioning parameters as the same as with C<set_bookmark()> (the C<after>
 parameter is used in this example), according to the same logic as for a
 position bookmark.
 
-C<set_bibliography_mark> returns an ODF element whose any property may be
-set or changed later through the generic element-based C<set_attribute> method.
+C<set_bibliography_mark()> returns an ODF element whose any property may be
+set or changed later through the generic element-based C<set_attribute()>
+method.
 
 Knowing that there is no persistent unique name for this class of objects, there
-is a context-based C<get_bibliography_marks> method that returns the list of
+is a context-based C<get_bibliography_marks()> method that returns the list of
 all the the bibliography marks. If this method is called with a string argument
 (which may be a regexp), the search is restricted to the entries whose so-called
 C<identifier> property is defined and matches this argument. Each element of
 the returned list (if any) may be then checked or updated using the generic
-C<get_attribute>, C<get_attributes>, C<set_attribute> and C<set_attributes>
-methods.
+C<get_attribute()>, C<get_attributes()>, C<set_attribute()>, and
+C<set_attributes()> methods.
 
 =head1	COPYRIGHT & LICENSE
 

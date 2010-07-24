@@ -6,7 +6,8 @@ ODF::lpOD::Document - General ODF package handling and metadata
 
 This manual page describes the C<odf_document>, the common features of any
 C<odf_part> of a C<odf_document>, and the particular features of the
-C<odf_meta> part (that handles the global document metadata).
+C<odf_meta> and C<odf_manifest> parts (that handle the global document metadata
+and the manifest of the associated container).
 
 Every C<odf_document> is associated with a C<odf_container> that encapsulates
 all the physical access logic. On the other hand, every C<odf_document> is
@@ -55,7 +56,33 @@ the document is wrote back to the same resource.
 Same as C<odf_get_document>, but the ODF resource is used in read only mode,
 i.e. it's used as a template in order to generate other ODF physical documents.
 
-=head3  odf_new_document_from_type(doc_type)
+Some metadata of the new document are intialized to the following values:
+
+=over
+
+=item
+
+the creation and modification dates are set to the current date;
+
+=item
+
+the creator and initial creator are set to the owner of the current process
+as reported by the operating system (if this information is available);
+
+=item
+
+the number of editing cycles is set to 1;
+
+=item
+
+the idenfication string of the current lpOD distribution is used as the
+generator identifier string;
+
+=back
+
+Each piece of metadata may be changed later by the application.
+
+=head3  odf_new_document(doc_type)
 
 Unlike other constructors, this one generates a C<odf_document> instance from
 scratch. Technically, it's a variant of C<odf_new_document_from_template>, but
@@ -76,6 +103,9 @@ use their own template files. To do so, they have to replace the ODF files
 present in the C<templates> subdirectory of the lpOD installation; the path to
 the lpOD installation may be retrieved through the C<lpod->installation_path>
 common function. The user-provided template files must have the same names.
+
+Some metadata are initialized in the same way as with
+C<odf_new_document_from_template>.
 
 =head1  Document MIME type check and control
 
@@ -221,6 +251,17 @@ C<subject>: the subject (or short description) of the document
 C<title>: the title of the document.
 
 =back
+
+When used without argument, some C<set> accessors may automatically set default
+values, according to the capabilities of the runtime environment.
+For C<set_creation_date()> and C<set_modification_date()>, the default
+is the current system date. For C<set_creator()> and C<set_initial_creator()>,
+the default is the identifier of the current system user. For
+C<set_generator()> the default is the system name of the current program (as
+it would appear in a command line) or, if not available, the current process
+identifier. If the execution environment can't provide such informations, no
+default value is provided. C<set_editing_cycles()>, without argument,
+increments the C<editing_cycles> indicator by 1.
 
 Both C<set_creation_date> and C<set_modification_date> allow the user to provide
 the date in the ODF-compliant (ISO-8601) format, or in numeric format (like the
@@ -382,24 +423,39 @@ Like C<serialize()>, C<store()> allows the C<pretty> option.
 =head3  add_file
 
 This document-based method stores an external file "as is" in the document
-container, without interpretation. The first argument is the path of the
-source file. The second one is the destination path within the ODF package.
+container, without interpretation. The mandatory argument is the path of the
+source file.
+
+Optional named parameters C<path> and C<type> are allowed; C<path> specifies
+the destination path in the ODF package, while C<type> is the MIME type of the
+added resource.
+
 As an example, the instruction below inserts a binary image file available
-in the current directory in the C<Thumbnails> folder of the document package:
+in the current directory in the "Thumbnails" folder of the document package:
 
-        $document->add_file("logo.png", "Thumbnails/thumbnail.png");
+        $document->add_file("logo.png", path => "Thumbnails/thumbnail.png");
 
-The second argument may be omitted. In such as case, the destination folder
-in the package is either C<Pictures> if the source is identified as an
-image file (caution: such a recognition may not work with any image type in
-any environment) or the root folder.
+If the C<path> parameter is omitted, the destination folder in the package is
+either C<Pictures> if the source is identified as an image file (caution: such
+a recognition may not work with any image type in any environment) or the root
+folder.
+
+The following example creates an entry whose every property is specified:
+
+        $document->add_file(
+                "portrait.jpg",
+                path    => "Pictures/portrait.jpg",
+                type    => "image/jpeg"
+                );
+
+The return value is the destination path.
 
 This method may be used in order to import an external XML file as a replacement
 of a conventional ODF XML part without interpretation. As an example, the
-following instruction replaces the C<STYLES> part of a document by an
-arbitrary file:
+following instruction replaces the C<STYLES> part of a document by an arbitrary
+file:
 
-        $document->add_file("custom_styles.xml", STYLES);
+        $document->add_file("custom_styles.xml", path => STYLES);
 
 Note that the physical effet of C<add_file()> is not immediate; the file is
 really added (and the source is really required) only when the C<save()>
@@ -427,7 +483,7 @@ The following sequence replaces (without interpretation) the current document
 content part by an external content:
 
         $document->del_part(CONTENT);
-        $document->add_file("/somewhere/stuff.xml", CONTENT);
+        $document->add_file("/somewhere/stuff.xml", path => CONTENT);
 
 Note that the order of these instructions is not significant; when C<save()>
 is called, it executes all the deletions then all the part insertions and/or
@@ -459,6 +515,105 @@ parameter specifies an alternative destination for the file (it produces the
 same effect as the "File/Save As" feature of a typical office software).
 The C<target> option is always allowed, but it's mandatory with C<odf_document>
 instances created using a C<odf_new_document_from...> constructor.
+
+=head1  Manifest
+
+The manifest part of a document holds the list of the files included in the
+container associated to the C<odf_document>. It's represented by a
+C<odf_manifest> object, that is a particular C<odf_xmlpart>.
+
+Each included file is represented by a C<odf_file_entry> object, whose
+properties are
+
+=over
+
+=item
+
+C<path>: full path of the file in the container;
+
+=item
+
+C<type> : the media type (or MIME type) of the file.
+
+=back
+
+=head2 Initialization
+
+A C<odf_manifest> instance is created through the C<get_part()> method of
+C<odf_document>, with C<MANIFEST> as part selector:
+
+        $manifest = $document->get_part(MANIFEST);
+
+=head2  Entry access
+
+The full list of manifest entries may be obtained using C<get_entries()>.
+
+It's possible to restrict the list with an optional C<type> parameter whose
+value is a string of a regular expression. If C<type> is set, then the method
+returns the entries whose media type string matches the given expression.
+
+As an example, the first instruction below returns the entries that correspond
+to XML parts only, while the next one returns all the XML entries, including
+those whose type is not "text/xml" (such as "application/rdf+xml"), and the
+last returns all the "image/xxx" entries (whatever the image format):
+
+        @xmlp_entries = $manifest->get_entries(type => 'text/xml');
+        @xml_entries = $manifest->get_entries(type => 'xml');
+        @image_entries = $manifest->get_entries(type => 'image');
+
+An individual entry may be selected according to its C<path>, knowing that the
+path is the entry identifier. The C<get_entry()> method, whose mandatory
+argument is the C<path>, does the job. The following instruction returns the
+entry that stands for a given image resource included in the package (if any):
+
+        $img_entry = $manifest->get_entry('Pictures/13BE2000BDD8EFA.jpg');
+
+=head2  Entry creation and removal
+
+Once selected, an entry may be deleted using the generic C<delete> method.
+The C<del_entry()> method, whose mandatory argument is an entry path, deletes
+the corresponding entry, if any. If the given entry doesn't exist, nothing is
+done. The return value is the removed entry, or C<undef>.
+
+A new entry may be added using the C<set_entry()> method. This method requires
+a unique path as its mandatory argument. A C<type> optional named parameter
+may be provided, but is not required; without C<type> specification, the media
+type remains empty. This method returns the new entry object, or a null value
+in case of failure. The example below adds an entry corresponding to an image
+file:
+
+        $manifest->set_entry('Pictures/xyz.jpg', type => 'image/jpeg');
+
+If C<set_entry()> is called with the same path as an existing entry, the old
+entry is removed and replaced by the new one.
+
+If the entry path is a folder, i.e. if its last character is "/", then the
+media type is automatically set to an empty value. However, this rule doesn't
+apply to the root folder, i.e. "/", whose type should be the MIME type of the
+document.
+
+Beware: adding or removing a manifest entry doesn't automatically add or remove
+the corresponding file in the container, and there is no automatic consistency
+check between the real content of the part and the manifest.
+
+=head2  Entry property handling
+
+An individual manifest entry is a C<odf_file_entry> object, that is a
+particular C<odf_element> object.
+
+It provides the C<get_path()>, C<set_path()>, C<get_type()>, C<set_type()>
+accessors, to get or set the C<path> and C<type> properties. There is no check
+with C<set_type()>, so the user is responsible for the consistency between the
+given type and the real content of the corresponding file. On the other hand,
+C<set_path()> fails if the given C<path> is already used by another entry;
+but there is no other check regarding this property, so the user must check the
+consistency between the given path and the real path of the corresponding
+resource.
+
+If C<set_path()> puts a path whose last character is "/", the media type of
+the entry is automatically set to an empty string. However, for users who know
+exactly what they do, C<set_type()> allows to force a non-empty type I<after>
+C<set_path()>.
 
 =head1	COPYRIGHT & LICENSE
 

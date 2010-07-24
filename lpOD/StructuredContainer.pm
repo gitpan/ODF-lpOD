@@ -271,8 +271,8 @@ sub     set_id
 #=============================================================================
 package ODF::lpOD::Frame;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-07-18T14:13:43';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-07-21T19:24:13';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -317,7 +317,12 @@ sub     create_text
 sub     create_image
         {
         my $link        = shift;
-        my $frame       = create(@_)    or return FALSE;
+        my %opt         = @_;
+        unless ($opt{size})
+                {
+                $opt{size} = image_size($link);
+                }
+        my $frame       = create(%opt)    or return FALSE;
         $frame->set_image($link);
         return $frame;
         }
@@ -357,7 +362,7 @@ sub     set_size
         my ($w, $h)     = odf_frame->input_2d(@_);
         $self->set_attribute('svg:width' => $w);
         $self->set_attribute('svg:height' => $h);
-        return ($w, $h);
+        return wantarray ? ($w, $h) : [$w, $h];
         }
 
 sub     get_size

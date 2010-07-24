@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-07-23T19:16:39';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -103,7 +103,7 @@ sub     split_content
                 (
                 tag             => undef,
                 search          => undef,
-                position        => undef,
+                offset          => undef,
                 length          => undef,
                 content         => undef,
                 insert          => undef,
@@ -119,11 +119,11 @@ sub     split_content
                 {
                 delete $opt{repeat};
                 my $start = $opt{start_mark};
-                if ($opt{position})
+                if ($opt{offset})
                         {
                         $start = $self->split_content(%opt);
                         }
-                $opt{position} = 0;
+                $opt{offset} = 0;
                 my @elts = ();
                 do      {
                         $opt{start_mark} = $start;
@@ -137,9 +137,9 @@ sub     split_content
         my $search      = $opt{search};
         if (defined $opt{start_mark} || defined $opt{end_mark})
                 {
-                $opt{position} //= 0; #/
+                $opt{offset} //= 0; #/
                 }
-        if (defined $search && ! defined $opt{position})
+        if (defined $search && ! defined $opt{offset})
                 {
                 my $attr =
                         $self->input_convert_attributes($opt{attributes});
@@ -158,7 +158,7 @@ sub     split_content
                 }
         else
                 {
-                my $position = $opt{position} || 0;
+                my $position = $opt{offset} || 0;
                 if ($position eq 'end')
                         {
                         my $e = $self->append_element($tag);
@@ -182,30 +182,30 @@ sub     split_content
                         unless ($opt{insert})
                                 {
                                 my $t = $r{segment}->_get_text;
-                                $range = $r{end} - $r{position}
+                                $range = $r{end} - $r{offset}
                                                 if defined $search;
                                 if (defined $range)
                                         {
-                                        substr($t, $r{position}, $range, "")
+                                        substr($t, $r{offset}, $range, "")
                                         }
                                 else
                                         {
-                                        $t = substr($t, 0, $r{position});
+                                        $t = substr($t, 0, $r{offset});
                                         }
                                 $r{segment}->_set_text($t);
                                 $e->set_text($opt{text} // $r{match}); #/
                                 if      (
                                                 (
-                                                defined $opt{position}
+                                                defined $opt{offset}
                                                         &&
-                                                $opt{position} >= 0
+                                                $opt{offset} >= 0
                                                 )
                                                 ||
                                                 defined $search
                                         )
                                         {
                                         $e->paste_within
-                                                ($r{segment}, $r{position});
+                                                ($r{segment}, $r{offset});
                                         }
                                 else
                                         {
@@ -224,7 +224,7 @@ sub     split_content
                         else
                                 {
                                 my $p = $opt{insert} eq 'after' ?
-                                        $r{end} : $r{position};
+                                        $r{end} : $r{offset};
                                 $e->paste_within($r{segment}, $p);
                                 $e->set_text($opt{text});
                                 }
@@ -267,7 +267,7 @@ sub     set_position_mark
         my $tag         = shift;
         my %opt         =
                 (
-                position        => undef,
+                offset          => undef,
                 before          => undef,
                 after           => undef,
                 @_
@@ -278,7 +278,7 @@ sub     set_position_mark
                 return FALSE;
                 }
         
-        $opt{position}  //= 0;                          #/
+        $opt{offset}  //= 0;                            #/
         $opt{search}    = $opt{before} // $opt{after};  #/
         if      (defined $opt{after})   { $opt{insert} = 'after'  }
         else                            { $opt{insert} = 'before' }
@@ -293,31 +293,31 @@ sub     set_text_mark
         {
         my $self        = shift;
         my %opt         = @_;
-        if (defined $opt{content} || ref $opt{position})
+        if (defined $opt{content} || ref $opt{offset})
                 {
                 my $content = $opt{content};
                 my ($p1, $p2, $range_end);
-                if (ref $opt{position})
+                if (ref $opt{offset})
                         {
-                        $p1 = $opt{position}[0];
-                        $p2 = $opt{position}[1];
+                        $p1 = $opt{offset}[0];
+                        $p2 = $opt{offset}[1];
                         $range_end = $self->set_lpod_mark
-                                        (position => $p2, length => 0)
+                                        (offset => $p2, length => 0)
                                 if defined $p2 && defined $opt{content};
                         $opt{end_mark} = $range_end if $range_end;
                         }
                 else
                         {
-                        $p1 = $opt{position};
-                        $p2 = $opt{position};
+                        $p1 = $opt{offset};
+                        $p2 = $opt{offset};
                         }
-                delete @opt{qw(content position)};
-                $opt{position}  = $p1;
+                delete @opt{qw(content offset)};
+                $opt{offset}  = $p1;
                 $opt{before}    = $content      if defined $content;
                 $opt{role}      = 'start';
                 my $start = $self->set_text_mark(%opt)
                         or return FALSE;
-                $opt{position}  = $p2;
+                $opt{offset}  = $p2;
                 if (defined $content)
                         {
                         $opt{after}     = $content;
@@ -408,6 +408,11 @@ sub     get_text
         {
         my $self        = shift;
         my %opt         = @_;
+        
+        unless (is_true($opt{recursive}))
+                {
+                return $self->SUPER::get_text;
+                }
         
         my $text        = undef;
         foreach my $node ($self->descendants)
@@ -558,7 +563,7 @@ sub     set_index_mark
                         }
                 }
 
-        if (defined $opt{content} || ref $opt{position} || $opt{role})
+        if (defined $opt{content} || ref $opt{offset} || $opt{role})
                 {       # it's a range index mark
                 $attr{'id'} = $text;
                 }
@@ -590,7 +595,7 @@ sub     set_bibliography_mark
                         }
                 unless  (
                         $k ~~   [
-                                'before', 'after', 'position',
+                                'before', 'after', 'offset',
                                 'start_mark', 'end_mark'
                                 ]
                         )

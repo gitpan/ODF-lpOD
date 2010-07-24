@@ -12,7 +12,7 @@ use ODF::lpOD;
 lpod->debug(TRUE);
 
 my $test_file   = $ARGV[0] || 'lpod_test.odt';
-my $generator   = "lpOD installation test";
+my $generator   = scalar lpod->info;
 my $test_date   = ODF::lpOD->PACKAGE_DATE;
 
 #-----------------------------------------------------------------------------
@@ -27,11 +27,8 @@ my $content = $doc->get_part(CONTENT);
 ok($content);                                   # content instance test
 
 $meta->set_generator($generator);
-my $current_date = time;
-$meta->set_creation_date($current_date);
-$meta->set_modification_date($current_date);
 
-my $t = odf_create_table("TestTable", height => 5, width => 5);
+my $t = odf_create_table("TestTable", length => 5, width => 5);
 ok($t);                                         # table creation test
 
 my $cell = $t->get_cell("E5");
@@ -42,9 +39,7 @@ $cell->set_value($test_date);
 $cell->set_text($test_date);
 $content->get_body->append_element($t);
 
-$content->store(pretty => TRUE);
-$meta->store(pretty => TRUE);
-$doc->save(target => $test_file);
+$doc->save(target => $test_file, pretty => TRUE);
 
 if (-r -f -e $test_file)
         { ok(TRUE) } else { ok(FALSE) }         # file creation test

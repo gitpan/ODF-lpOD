@@ -27,13 +27,14 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-07-18T17:57:37';
+our     $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-07-23T13:10:43';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN   {
         *container      = *get_container;
+        *add_part       = *add_file;
         }
 
 #--- specific constructors ---------------------------------------------------
@@ -72,10 +73,23 @@ sub     create
                 {
                 alert "Missing document type"; return FALSE;
                 }
-        my $container = odf_new_container_from_type($type);
-        return $container ?
-                odf_document->new(container => $container)       :
-                FALSE;        
+        my $container = odf_new_container($type)
+                                or return FALSE;
+        my $doc = odf_document->new(container => $container)
+                                or return FALSE;
+        my $meta = $doc->get_part(META);
+        if ($meta)
+                {
+                my $d = iso_date;
+                $meta->set_creation_date($d);
+                $meta->set_modification_date($d);
+                $meta->set_editing_duration('PT00H00M00S');
+                $meta->set_generator(scalar lpod->info);
+                $meta->set_initial_creator();
+                $meta->set_creator();
+                $meta->set_editing_cycles(1);
+                }
+        return $doc;
         }
 
 #--- generic constructor & destructor ----------------------------------------
@@ -131,10 +145,22 @@ sub     get_xmlpart
 
         unless ($self->{$part_name})
                 {
-                $self->{$part_name} = odf_get_xmlpart($container, $part_name);
+                my $xmlpart = odf_get_xmlpart($container, $part_name);
+                unless ($xmlpart)
+                        {
+                        alert "Unavailable part"; return FALSE;
+                        }
+                $self->{$part_name} = $xmlpart;
                 $self->{$part_name}->{document} = $self;
+                push @{$self->{xmlparts}}, $part_name;
                 }
         return $self->{$part_name};
+        }
+
+sub     loaded_xmlparts
+        {
+        my $self        = shift;
+        return wantarray ? @{$self->{xmlparts}} : $self->{xmlparts};
         }
 
 sub     get_body
@@ -197,7 +223,19 @@ sub     add_file
                 alert "No available container";
                 return FALSE;                
                 }
-        return $self->{container}->add_file(@_);
+        my $source      = shift;
+        my %opt         = @_;
+        my $path = $self->{container}->add_file($source, $opt{path});
+        if ($path)
+                {
+                my $manifest = $self->get_part(MANIFEST);
+                if ($manifest)
+                        {
+                        my $type = $opt{type} || file_type($source);
+                        $manifest->set_entry($path, type => $type);
+                        }
+                }
+        return $path;
         }
 
 sub     get_mimetype
@@ -234,13 +272,24 @@ sub     save
         my $self        = shift;
         my $container   = $self->get_container(warning => TRUE)
                                 or return FALSE;
-        return $container->save(@_);
+        my %opt         = @_;
+        my $pretty;
+        if ($opt{pretty})
+                {
+                $pretty = $opt{pretty}; delete $opt{pretty};
+                }
+        foreach my $part_name ($self->loaded_xmlparts)
+                {
+                my $part = $self->{$part_name}  or next;
+                $part->store(pretty => $pretty) if is_true($part->{update});
+                }
+        return $container->save(%opt);
         }
 
 #=============================================================================
 package ODF::lpOD::Container;
-our	$VERSION	= '0.102';
-use constant PACKAGE_DATE => '2010-07-17T17:35:59';
+our	$VERSION	= '0.103';
+use constant PACKAGE_DATE => '2010-07-19T08:27:59';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use Archive::Zip        1.30    qw ( :DEFAULT :CONSTANTS :ERROR_CODES );
@@ -248,6 +297,7 @@ use Archive::Zip        1.30    qw ( :DEFAULT :CONSTANTS :ERROR_CODES );
 
 BEGIN   {
         *get_parts              = *parts;
+        *add_part               = *add_file;
         }
 
 #=== parameters ==============================================================
@@ -629,8 +679,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-07-14T13:40:05';
+our     $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-07-22T19:46:13';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Element;
@@ -703,6 +753,7 @@ sub     new
                 container       => undef,
                 part            => undef,
                 load            => TRUE,
+                update          => TRUE,
                 elt_class       => odf_element,
                 twig            => undef,
                 context         => undef,
@@ -921,8 +972,8 @@ use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Meta;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-07-06T19:18:47';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-07-23T12:47:08';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1169,7 +1220,34 @@ sub     AUTOLOAD
                         my $v = shift;
                         if ($object =~ /date$/)
                                 {
-                                $v = check_odf_value($v, 'date');
+                                unless ($v)
+                                        {
+                                        $v = iso_date;
+                                        }
+                                else
+                                        {
+                                        $v = check_odf_value($v, 'date');
+                                        }
+                                }
+                        elsif ($object =~ /creator$/)
+                                {
+                                $v      =
+                                        $v =    (scalar getlogin())     ||
+                                                (scalar getpwuid($<))   ||
+                                                $<
+                                        unless $v;
+                                }
+                        elsif ($object =~ /generator$/)
+                                {
+                                $v = $0 || $$   unless $v;
+                                }
+                        elsif ($object =~ /cycles$/)
+                                {
+                                unless ($v)
+                                        {
+                                        $v = $e->get_text() || 0;
+                                        $v++;
+                                        }
                                 }
                         return $e->set_text($v);
                         }
@@ -1184,7 +1262,8 @@ sub     store
         my $self        = shift;
         my %opt         =
                 (
-                storage     => { compress => FALSE, string => TRUE }
+                storage     => { compress => FALSE, string => TRUE },
+                @_
                 );
         return $self->SUPER::store(%opt);
         }
@@ -1198,9 +1277,74 @@ use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Manifest;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-07-22T07:16:23';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     get_entries
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        my @all_entries = $self->{context}->get_element_list
+                                                ('manifest:file-entry');
+        unless (defined $opt{type})
+                {
+                return @all_entries;
+                }
+        my @selected_entries = ();
+        ENTRY: foreach my $e (@all_entries)
+                {
+                my $type = $e->get_attribute('media type');
+                next ENTRY unless defined $type;
+                if ($opt{type} eq "")
+                        {
+                        push @selected_entries, $e      if $type eq "";
+                        next ENTRY;
+                        }
+                push @selected_entries, $e      if $type =~ /$opt{type}/;
+                }
+        return @selected_entries;
+        }
+
+sub     get_entry
+        {
+        my $self        = shift;
+        return $self->{context}->get_element(
+                        'manifest:file-entry',
+                        attribute       => 'full path',
+                        value           => shift
+                        );
+        }
+
+sub     set_entry
+        {
+        my $self        = shift;
+        my $path        = shift;
+        unless ($path)
+                {
+                alert "Missing entry path"; return FALSE;
+                }
+        my $e = $self->get_entry($path);
+        my %opt         = @_;
+        unless ($e)
+                {
+                $e = odf_create_element('manifest:file-entry');
+                $e->set_attribute('full path' => $path);
+                $e->paste_last_child($self->{context});
+                }
+        $e->set_type($opt{type});
+        return $e;
+        }
+
+sub     del_entry
+        {
+        my $self        = shift;
+        my $e = $self->get_entry(@_);
+        $e->delete() if $e;
+        return $e;
+        }
+
 #=============================================================================
 1;
 

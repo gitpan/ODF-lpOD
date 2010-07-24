@@ -781,8 +781,8 @@ sub     uncollapse
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Table;
 use base ('ODF::lpOD::ColumnGroup', 'ODF::lpOD::RowGroup');
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-06-28T19:56:05';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-07-22T13:23:22';
 use ODF::lpOD::Common;
 #=============================================================================
 #--- constructor -------------------------------------------------------------
@@ -806,7 +806,7 @@ sub     create
                 );
 
         my $width       = $opt{width}   // 0;
-        my $height      = $opt{height}  // 0;
+        my $height      = $opt{length}  // 0;
         if ($width < 0 || $height < 0)
                 {
                 alert "Wrong table size ($height x $width)";
@@ -822,10 +822,23 @@ sub     create
         $t->set_attribute('print', odf_boolean($opt{print}));
         $t->set_attribute('print ranges', $opt{print_ranges});
         
-        $t->add_column(number => $width, propagate => FALSE);
-        my $r = $t->add_row(); $r->set_repeated($height);
-        $r->add_cell()->set_repeated($width); 
-        
+        $t->add_column(
+                number          => $width,
+                expand          => $opt{expand},
+                propagate => FALSE
+                );
+        my $r = $t->add_row;
+        unless (is_true($opt{expand}))
+                {
+                $r->add_cell()->set_repeated($width);
+                $r->set_repeated($height);
+                }
+        else
+                {
+                $r->add_cell(number => $width, expand => TRUE);
+                $r->repeat($height);
+                }
+
         return $t;
         }
 
