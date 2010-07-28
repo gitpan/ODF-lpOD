@@ -28,8 +28,6 @@ ODF::lpOD - Languages & platform for OpenDocument
         my $cell = $table->get_cell("B4");
         $cell->set_text("Here B4");
 
-	$content->store;
-        $meta->store;
         $document->save;
         exit;
         
@@ -154,9 +152,6 @@ Example:
 
         $document->save(target => "/myfiles/target.odt");
 
-Note that this document-based method saves only the changes that had been
-committed at the document level (see below).
-
 =head2  Document part initalization and handling
 
 A regular ODF document contains various I<parts>, some of them mandatory.
@@ -179,9 +174,6 @@ consequence, after the sequence below, C<$p1> and C<$p2> will be synonyms:
         my $p1 = $document->get_part(CONTENT);
         my $p2 = $document->get_part(CONTENT);
 
-In order to make persistent the changes made in a part, an explicit
-serialization must be done. Two methods are provided to do so.
-
 C<serialize()> returns an XML export of the whole part (the application is then
 responsible of the fate of this export). An optional B<pretty> argument, if set
 to TRUE, specifies that the XML output must be human-readable. Example:
@@ -189,23 +181,6 @@ to TRUE, specifies that the XML output must be human-readable. Example:
         my $content = $document->get_part(CONTENT);
         # here some content processing
         my $xml = $content->serialize(pretty => TRUE);
-
-C<store()> commits the changes at the document level; in other words, this
-method tells the C<odf_document> instance that the current part comes from that
-it should be updated at the next C<save()>. The example below shows the way to
-commit and write back the changes made in the C<META> and C<CONTENT> parts of a
-previously loaded C<odf_document>:
-
-        my $document = odf_get_document($source);
-        my $meta = $document->get_part(META);
-        my $content = $document->get_part(CONTENT);
-        # some processing of meta elements
-        # some processing of content elements
-        $meta->store;
-        $content->store;
-        $document->save(target => $destination);
-
-Like C<serialize()>, C<store()> allows the C<'pretty'> optional parameter.
 
 =head1  Basic ODF element handling
 
@@ -260,6 +235,12 @@ style "dp1" (assuming we are using a presentation or drawing document):
                 position        => -1
         );
         say $page->get_attribute('name');
+
+lpOD provide special name-based retrieval methods for some elements that own
+unique names. For example the instruction below selects the table whose name
+is "T1" (if any):
+
+	$table = $context->get_table_by_name("T1");
 
 The C<meta> document part, unlike others such as the C<content> one, provides
 direct C<get> and C<set> accessors for the content of the usual metadata, so

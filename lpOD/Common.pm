@@ -27,12 +27,11 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.103';
-use constant PACKAGE_DATE => '2010-07-23T08:35:37';
+our	$VERSION	        = '0.104';
+use constant PACKAGE_DATE => '2010-07-28T12:42:15';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
-use Carp;
 use base 'Exporter';
 our @EXPORT     = qw
         (
@@ -48,6 +47,9 @@ our @EXPORT     = qw
 
         odf_create_element odf_create_paragraph odf_create_heading
         odf_create_section odf_create_draw_page
+        odf_create_shape
+        odf_create_area odf_create_rectangle odf_create_ellipse
+        odf_create_vector odf_create_line odf_create_connector
         odf_create_frame odf_create_text_frame odf_create_image_frame
         odf_create_image
         odf_create_list
@@ -59,7 +61,10 @@ our @EXPORT     = qw
         odf_xmlpart odf_content odf_styles odf_meta odf_settings odf_manifest
         
         odf_element odf_text_element odf_bibliography_mark
-        odf_paragraph odf_heading odf_draw_page odf_frame odf_image
+        odf_paragraph odf_heading odf_draw_page odf_image
+        odf_shape odf_frame
+        odf_area odf_rectangle odf_ellipse
+        odf_vector odf_line odf_connector
         odf_list odf_table odf_column odf_row odf_cell odf_field
         odf_matrix odf_column_group odf_row_group odf_table_element
         odf_section
@@ -76,7 +81,7 @@ our @EXPORT     = qw
         get_local_encoding set_local_encoding
         is_numeric iso_date numeric_date check_odf_value odf_value
         file_parse file_type image_size
-        alert fatal_error not_implemented
+        alert not_implemented
         
         PRETTY_PRINT EMPTY_TAGS
         
@@ -117,6 +122,13 @@ use constant
         odf_row                 => 'ODF::lpOD::Row',
         odf_cell                => 'ODF::lpOD::Cell',
         odf_draw_page           => 'ODF::lpOD::DrawPage',
+        odf_shape               => 'ODF::lpOD::Shape',
+        odf_area                => 'ODF::lpOD::Area',
+        odf_rectangle           => 'ODF::lpOD::Rectangle',
+        odf_ellipse             => 'ODF::lpOD::Ellipse',
+        odf_vector              => 'ODF::lpOD::Vector',
+        odf_line                => 'ODF::lpOD::Line',
+        odf_connector           => 'ODF::lpOD::Connector',
         odf_frame               => 'ODF::lpOD::Frame',
         odf_image               => 'ODF::lpOD::Image',
         odf_section             => 'ODF::lpOD::Section',
@@ -232,6 +244,13 @@ BEGIN   {
         *odf_create_section     = *ODF::lpOD::Section::create;
         *odf_create_list        = *ODF::lpOD::List::create;
         *odf_create_draw_page   = *ODF::lpOD::DrawPage::create;
+        *odf_create_shape       = *ODF::lpOD::Shape::create;
+        *odf_create_area        = *ODF::lpOD::Area::create;
+        *odf_create_rectangle   = *ODF::lpOD::Rectangle::create;
+        *odf_create_ellipse     = *ODF::lpOD::Ellipse::create;
+        *odf_create_vector      = *ODF::lpOD::Vector::create;
+        *odf_create_line        = *ODF::lpOD::Line::create;
+        *odf_create_connector   = *ODF::lpOD::Connector::create;
         *odf_create_frame       = *ODF::lpOD::Frame::create;
         *odf_create_image       = *ODF::lpOD::Image::create;
         *odf_create_text_frame  = *ODF::lpOD::Frame::create_text;
@@ -239,8 +258,6 @@ BEGIN   {
 
         *is_numeric             = *Scalar::Util::looks_like_number;
         *odf_value              = *check_odf_value;
-
-        *fatal_error            = *Carp::confess;
         }
 
 #=== exported utilities ======================================================
@@ -249,7 +266,12 @@ our     $DEBUG          = FALSE;
 
 sub     alert
         {
-        return $DEBUG ? Carp::cluck(@_) : say for @_;
+        if ($DEBUG)
+                {
+                require Carp;
+                return Carp::cluck(@_);
+                }
+        say for @_;
         }
 
 sub     info
@@ -525,7 +547,7 @@ sub     search_string
 
 sub     file_type
         {
-        require File::Type;
+        return undef unless eval('require File::Type');
         my $f   = shift;
         return undef    unless (-r $f && -f $f);
         return File::Type->new->mime_type($f);
@@ -539,7 +561,7 @@ sub     file_parse
 
 sub     image_size
         {
-        require Image::Size;
+        return undef unless eval('require Image::Size');
         my $f           = shift;
         return undef    unless (-r $f && -f $f);
         my ($w, $h) = Image::Size::imgsize($f);

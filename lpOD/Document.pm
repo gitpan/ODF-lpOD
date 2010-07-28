@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-07-23T13:10:43';
+our     $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-07-28T11:21:46';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -225,6 +225,14 @@ sub     add_file
                 }
         my $source      = shift;
         my %opt         = @_;
+        unless ($opt{path})
+                {
+                if ($opt{type} && $opt{type} =~ /^image/)
+                        {
+                        my $filename = file_parse($source);
+                        $opt{path} = 'Pictures/' . $filename;
+                        }
+                }
         my $path = $self->{container}->add_file($source, $opt{path});
         if ($path)
                 {

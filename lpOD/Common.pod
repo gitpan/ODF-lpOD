@@ -8,7 +8,7 @@ This manual page describes miscellaneous functions and auxiliary features of
 the lpOD Perl implementation that are not directly linked to the lpOD functional
 specification. 
 
-=head1  Data conversion utilities
+=head1  Data conversion and type checking utilities
 
 The utilities introduced in this section are implemented as exported functions.
 They may be used without package or object reference.
@@ -63,10 +63,42 @@ version.>
 
 Translates a numeric C<time> into an ISO-8601, ODF-compliant date.
 
+Without argument, returns the current date in ODF-compliant format.
+
 =head3  numeric_date(odf_date)
 
 Translates an ISO-8601 date, coming from an ODF document, into a Perl computable
 C<time> value.
+
+=head1  External file control
+
+=head3  file_parse(file_path)
+
+Returns the base name and the directory path extracted from the given file path.
+The following example will return C<("logo.png", "/usr/share/images/")>:
+
+        ($dir, $base) = file_parse("/usr/share/images/logo.png");
+
+=head3  file_type(file_path)
+
+Returns the MIME type of the resource corresponding to the given file path, or
+C<undef> (without error) if the resource is not available, if the C<File::Type>
+module is not installed, or if the resource is not supported by C<File::Type>.
+
+I<Beware: This function uses the C<File::Type> logic and don't determine the
+type according to the file name suffix.>
+
+=head3  image_size(file_path)
+
+Returns the size, expressed in I<points> (C<pt>), of the image corresponding to
+the given file path (if any), or C<undef> (without error) if the C<Image::Size>
+module is not installed, if the given file is not available, or if the image
+type is not supported by C<Image::Size>.
+
+The return value (if defined) is an array ref of 2 strings (the width and the
+height), each one containing a numeric value and terminated by "pt". This array
+ref may be directly used as the value of any size-related parameter of argument
+in the lpOD API.
 
 =head1  General configuration
 
@@ -101,8 +133,9 @@ Example:
 
 =head3  Warning information
 
-The C<debug> method, when called with C<TRUE> as argument, specifies that the
-lpOD-issued warnings must display the call stack.
+The "lpod->debug()" method, when called with C<TRUE> of C<FALSE> as argument,
+switches on or off the debug flag. If this flag is I<on>, the call stack is
+displayed with every error message of the lpOD API.
 
 =head1	COPYRIGHT & LICENSE
 

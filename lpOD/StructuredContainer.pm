@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::StructuredContainer;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-07-28T14:02:00';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Section;
@@ -269,25 +269,21 @@ sub     set_id
         }
 
 #=============================================================================
-package ODF::lpOD::Frame;
+package ODF::lpOD::Shape;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-07-21T19:24:13';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-07-28T09:07:17';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 sub     create
         {
         my %opt         = process_options(@_);
-        my $f = odf_element->new('draw:frame');
+        my $tag = $opt{tag}; $tag = 'draw:' . $tag unless $tag =~ /:/;
+        my $f = odf_element->new($tag);
         $f->set_attribute('name' => $opt{name});
         $f->set_style($opt{style});
-        $f->set_attribute('master page name' => $opt{master});
-        $f->set_attribute(
-                'presentation:presentation-page-layout-name',
-                $opt{layout}
-                );
-        $f->set_size($opt{size});
+        $f->set_text_style($opt{text_style});
         $f->set_position($opt{position});
         if (defined $opt{page})
                 {
@@ -297,34 +293,15 @@ sub     create
                 {
                 $f->set_attribute('text:anchor-type' => $opt{anchor_type});
                 }
+        $f->set_title($opt{title});
+        $f->set_description($opt{description});
         delete @opt
-                {qw(name style master layout size position page anchor_type)};
+           {qw(name style size position page anchor_type title description)};
         foreach my $a (keys %opt)
                 {
                 $f->set_attribute($a => $opt{$a});
                 }
         return $f;
-        }
-
-sub     create_text
-        {
-        my $text        = shift;
-        my $frame       = create(@_)    or return FALSE;
-        $frame->set_text_box($text);
-        return $frame;
-        }
-
-sub     create_image
-        {
-        my $link        = shift;
-        my %opt         = @_;
-        unless ($opt{size})
-                {
-                $opt{size} = image_size($link);
-                }
-        my $frame       = create(%opt)    or return FALSE;
-        $frame->set_image($link);
-        return $frame;
         }
 
 #-----------------------------------------------------------------------------
@@ -354,40 +331,6 @@ sub     input_2d
 	$x .= 'cm' unless $x =~ /[a-zA-Z]$/;
 	$y .= 'cm' unless $y =~ /[a-zA-Z]$/;
         return ($x, $y);
-        }
-
-sub     set_size
-        {
-        my $self        = shift;
-        my ($w, $h)     = odf_frame->input_2d(@_);
-        $self->set_attribute('svg:width' => $w);
-        $self->set_attribute('svg:height' => $h);
-        return wantarray ? ($w, $h) : [$w, $h];
-        }
-
-sub     get_size
-        {
-        my $self        = shift;
-        my $w = $self->get_attribute('svg:width');
-        my $h = $self->get_attribute('svg:height');
-        return wantarray ? ($w, $h) : [$w, $h];
-        }
-
-sub     set_position
-        {
-        my $self        = shift;
-        my ($x, $y)     = odf_frame->input_2d(@_);
-        $self->set_attribute('svg:x' => $x);
-        $self->set_attribute('svg:y' => $y);
-        return ($x, $y);
-        }
-
-sub     get_position
-        {
-        my $self        = shift;
-        my $x = $self->get_attribute('svg:x');
-        my $y = $self->get_attribute('svg:y');
-        return wantarray ? ($x, $y) : [$x, $y];
         }
 
 sub     set_anchor_page
@@ -439,16 +382,312 @@ sub     get_description
         return $t->get_text;        
         }
 
-sub     get_text
+sub     set_position
         {
         my $self        = shift;
-        return $self->get_description;
+        my ($x, $y)     = odf_frame->input_2d(@_);
+        $self->set_attribute('svg:x' => $x);
+        $self->set_attribute('svg:y' => $y);
+        return ($x, $y);
         }
 
-sub     set_text
+sub     get_position
         {
         my $self        = shift;
-        return $self->set_description(@_);
+        my $x = $self->get_attribute('svg:x');
+        my $y = $self->get_attribute('svg:y');
+        return wantarray ? ($x, $y) : [$x, $y];
+        }
+
+sub     set_text_style
+        {
+        my $self        = shift;
+        return $self->set_attribute('text style name' => shift);
+        }
+
+sub     get_text_style
+        {
+        my $self        = shift;
+        return $self->get_attribute('text style name');
+        }
+
+#=============================================================================
+package ODF::lpOD::Area;
+use base 'ODF::lpOD::Shape';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-07-28T08:52:02';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my %opt         = @_;
+        my $size        = $opt{size} // "1cm, 1cm";                     #/
+        delete @opt {qw(start end size)};
+        my $a = odf_create_shape(%opt);
+        $a->set_size($size)     if $a;
+        return $a;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     set_size
+        {
+        my $self        = shift;
+        my ($w, $h)     = odf_shape->input_2d(@_);
+        $self->set_attribute('svg:width' => $w);
+        $self->set_attribute('svg:height' => $h);
+        return wantarray ? ($w, $h) : [$w, $h];
+        }
+
+sub     get_size
+        {
+        my $self        = shift;
+        my $w = $self->get_attribute('svg:width');
+        my $h = $self->get_attribute('svg:height');
+        return wantarray ? ($w, $h) : [$w, $h];
+        }
+
+#=============================================================================
+package ODF::lpOD::Rectangle;
+use base 'ODF::lpOD::Area';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-07-27T16:46:12';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my $r = odf_create_area(tag => 'rect', @_);
+        }
+
+#=============================================================================
+package ODF::lpOD::Ellipse;
+use base 'ODF::lpOD::Area';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-07-27T16:46:29';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        return odf_create_area(tag => 'ellipse', @_);
+        }
+
+#=============================================================================
+package ODF::lpOD::Vector;
+use base 'ODF::lpOD::Shape';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-07-26T17:16:16';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my %opt         = @_;
+        my $start       = $opt{start};
+        my $end         = $opt{end};
+        delete @opt {qw(start end position size)};
+        my $v = odf_create_shape(%opt);
+        $v->set_start_position($start);
+        $v->set_end_position($end);
+        return $v;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     set_start_position
+        {
+        my $self        = shift;
+        my ($x, $y)     = odf_frame->input_2d(@_);
+        $self->set_attribute('svg:x1' => $x);
+        $self->set_attribute('svg:y1' => $y);
+        return ($x, $y);
+        }
+
+sub     set_end_position
+        {
+        my $self        = shift;
+        my ($x, $y)     = odf_frame->input_2d(@_);
+        $self->set_attribute('svg:x2' => $x);
+        $self->set_attribute('svg:y2' => $y);
+        return ($x, $y);
+        }
+
+sub     get_position
+        {
+        my $self        = shift;
+        my @p           =
+                (
+                $self->get_attribute('svg:x1'),
+                $self->get_attribute('svg:y1'),
+                $self->get_attribute('svg:x2'),
+                $self->get_attribute('svg:y2')
+                );
+        return wantarray ? @p : [ @p ];
+        }
+
+sub     set_position
+        {
+        my $self        = shift;
+        my $arg         = shift;
+        my ($x1, $y1, $x2, $y2);
+        if (ref $arg)
+                {
+                ($x1, $y1, $x2, $y2) = @{$arg};
+                }
+        else
+                {
+                ($x1, $y1, $x2, $y2) = ($arg, @_);
+                }
+        $self->set_attribute('svg:x1' => $x1);
+        $self->set_attribute('svg:y1' => $y1);
+        $self->set_attribute('svg:x2' => $x2);
+        $self->set_attribute('svg:y2' => $y2);
+        return wantarray ? ($x1, $y1, $x2, $y2) : [ ($x1, $y1, $x2, $y2) ];
+        }
+
+#=============================================================================
+package ODF::lpOD::Line;
+use base 'ODF::lpOD::Vector';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-07-27T17:17:10';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        return odf_create_vector(tag => 'line', @_);
+        }
+
+#=============================================================================
+package ODF::lpOD::Connector;
+use base 'ODF::lpOD::Vector';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-07-27T20:39:30';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my %opt         = process_options(@_);
+        my $cs = $opt{connected_shapes};
+        my $gp = $opt{glue_points};
+        my $type = $opt{type};
+        delete @opt{qw(connected_shapes glue_points type)};
+        my $connector = odf_create_vector(tag => 'connector', %opt);
+        $connector->set_connected_shapes($cs);
+        $connector->set_glue_points($gp);
+        $connector->set_type($type);
+        return $connector;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     set_connected_shapes
+        {
+        my $self        = shift;
+        my $arg         = shift;
+        my $ra = ref $arg       or return undef;
+        my ($start, $end);
+        if ($ra eq 'ARRAY')
+                {
+                ($start, $end) = @$arg;
+                }
+        else
+                {
+                ($start, $end) = ($arg, @_);
+                }
+        $self->set_attribute('start shape' => $start);
+        $self->set_attribute('end shape' => $end);
+        return wantarray ? ($start, $end) : [ ($start, $end) ];
+        }
+
+sub     get_connected_shapes
+        {
+        my $self        = shift;
+        my $start = $self->get_attribute('start shape');
+        my $end = $self->get_attribute('end shape');
+        return wantarray ? ($start, $end) : [ ($start, $end) ];
+        }
+
+sub     set_glue_points
+        {
+        my $self        = shift;
+        my $arg         = shift;
+        my ($sgp, $egp);
+        if (ref $arg)
+                {
+                ($sgp, $egp) = @$arg;
+                }
+        else
+                {
+                ($sgp, $egp) = ($arg, @_);
+                }
+        $self->set_attribute('start glue point' => $sgp);
+        $self->set_attribute('end glue point' => $egp);
+        return wantarray ? ($sgp, $egp) : [ ($sgp, $egp) ];
+        }
+
+sub     get_glue_points
+        {
+        my $self        = shift;
+        my $sgp = $self->get_attribute('start glue point');
+        my $egp = $self->get_attribute('end glue point');
+        return wantarray ? ($sgp, $egp) : [ ($sgp, $egp) ];
+        }
+
+sub     set_type
+        {
+        my $self        = shift;
+        my $type        = shift         or return undef;
+        unless ($type ~~ [ 'standard', 'lines', 'line', 'curve' ])
+                {
+                alert "Not allowed connector type $type";
+                return FALSE;
+                }
+        $self->set_attribute('type' => $type);
+        return $type;
+        }
+
+sub     get_type
+        {
+        my $self        = shift;
+        return $self->get_attribute('type');
+        }
+
+#=============================================================================
+package ODF::lpOD::Frame;
+use base 'ODF::lpOD::Area';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-07-27T17:25:45';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        return odf_create_area(tag => 'frame', @_);
+        }
+
+sub     create_text
+        {
+        my $text        = shift;
+        my $frame       = create(@_)    or return FALSE;
+        $frame->set_text_box($text);
+        return $frame;
+        }
+
+sub     create_image
+        {
+        my $link        = shift;
+        my %opt         = @_;
+        unless ($opt{size})
+                {
+                $opt{size} = image_size($link);
+                }
+        my $frame       = create(%opt)    or return FALSE;
+        $frame->set_image($link);
+        return $frame;
         }
 
 #-----------------------------------------------------------------------------

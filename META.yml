@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               ODF-lpOD
-version:            0.122
+version:            0.123
 abstract:           ~
 author:
     - Jean-Marie Gouarne <jean-marie.gouarne@arsaperta.com>
@@ -15,8 +15,6 @@ requires:
     File::Basename:  2.76
     File::Find:      1.01
     File::Temp:      0.12
-    File::Type:      0.22
-    Image::Size:     3.2
     IO::File:        1.14
     Time::Local:     1.07
     XML::Twig:       3.32

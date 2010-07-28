@@ -9,6 +9,7 @@ System requirements:
 - Archive::Zip 1.30 or later
 - XML::Twig 3.32 or later
 
+The File::Type and Image::Size Perl modules are recommended.
 
 Usage
 =====

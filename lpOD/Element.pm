@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.104';
-use constant PACKAGE_DATE => '2010-07-23T19:20:01';
+our     $VERSION        = '0.105';
+use constant PACKAGE_DATE => '2010-07-27T20:15:37';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -58,6 +58,10 @@ our %CLASS    =
         'table:table-cell'              => odf_cell,
         'table:covered-table-cell'      => odf_cell,
         'draw:page'                     => odf_draw_page,
+        'draw:rect'                     => odf_rectangle,
+        'draw:ellipse'                  => odf_ellipse,
+        'draw:line'                     => odf_line,
+        'draw:connector'                => odf_connector,
         'draw:frame'                    => odf_frame,
         'draw:image'                    => odf_image,
         'manifest:file-entry'           => odf_file_entry
@@ -80,6 +84,7 @@ BEGIN
         *_set_text                      = *XML::Twig::Elt::set_text;
         *_get_text                      = *XML::Twig::Elt::text;
         *_set_tag                       = *XML::Twig::Elt::set_tag;
+        *get_element_list               = *get_elements;
         *get_bookmark_list              = *get_bookmarks;
         *get_index_mark_list            = *get_index_marks;
         *get_bibliography_mark_list     = *get_bibliography_marks;
@@ -482,7 +487,14 @@ sub     get_element
         return $self->_get_elements($tag, %opt);
         }
 
-sub     get_element_list
+sub     get_element_by_id
+        {
+        my $self        = shift;
+        my $tag         = shift;
+        return $self->get_element($tag, attribute => 'id', value => shift);
+        }
+
+sub     get_elements
         {
         my $self        = shift;
         my $tag         = shift;
@@ -514,7 +526,7 @@ sub     get_paragraph
                 }
         }
 
-sub     get_paragraph_list
+sub     get_paragraphs
         {
         my $self        = shift;
         my %opt         = @_;
@@ -541,7 +553,7 @@ sub     get_heading
         return $self->get_element('text:h', %opt);
         }
 
-sub     get_heading_list
+sub     get_headings
         {
         my $self        = shift;
         my %opt         = @_;
@@ -554,7 +566,7 @@ sub     get_heading_list
         return $self->get_element_list('text:h', %opt);        
         }
 
-sub      get_list
+sub     get_list
         {
         my $self        = shift;
         return $self->get_element('text:list', @_);
@@ -566,7 +578,7 @@ sub     get_list_by_id
         return $self->get_list(attribute => 'xml:id', value => shift);
         }
 
-sub     get_list_list
+sub     get_lists
         {
         my $self        = shift;
         return $self->get_element_list('text:list', @_);
@@ -865,14 +877,14 @@ sub     get_bibliography_marks
         my $self        = shift;
         my $text        = shift;
         return defined $text ?
-                $self->get_element_list
+                $self->get_elements
                         (
                         'text:bibliography-mark',
                         attribute       => 'identifier',
                         value           => $text
                         )
                         :
-                $self->get_element_list('text:bibliography-mark');
+                $self->get_elements('text:bibliography-mark');
         }
 
 #--- section retrieval -------------------------------------------------------
@@ -884,26 +896,72 @@ sub     get_section
                 ('text:section', attribute => 'text:name', value => shift);
         }
 
-sub     get_section_list
+sub     get_sections
         {
         my $self        = shift;
-        return $self->get_element_list('text:section', @_);
+        return $self->get_elements('text:section', @_);
         }
 
 #--- frame & draw page retrieval ---------------------------------------------
 
-sub     get_frame
+sub     get_shape
         {
         my $self        = shift;
+        my $type        = shift;
+        $type = 'draw:' . $type         unless $type =~ /:/;
         return $self->get_element(
-                'draw:frame', attribute => 'draw:name', value => shift
+                $type, attribute => 'draw:name', value => shift
                 );
         }
 
-sub     get_frame_list
+sub     get_rectangle
         {
-        my $self        = shift;
-        return $self->get_element_list('draw:frame', @_);
+        my $self = shift; return $self->get_shape('rect', @_);
+        }
+
+sub     get_rectangles
+        {
+        my $self = shift; return $self->get_elements('draw:rect', @_);
+        }
+
+sub     get_ellipse
+        {
+        my $self = shift; return $self->get_shape('ellipse', @_);
+        }
+
+sub     get_ellipses
+        {
+        my $self = shift; return $self->get_elements('draw:ellipse', @_);
+        }
+
+sub     get_line
+        {
+        my $self = shift; return $self->get_shape('line', @_);
+        }
+
+sub     get_lines
+        {
+        my $self = shift; return $self->get_elements('draw:line', @_);
+        }
+
+sub     get_connector
+        {
+        my $self = shift; return $self->get_shape('connector', @_);
+        }
+
+sub     get_connectors
+        {
+        my $self = shift; return $self->get_elements('draw:connector', @_);
+        }
+
+sub     get_frame
+        {
+        my $self = shift; return $self->get_shape('frame', @_);
+        }
+
+sub     get_frames
+        {
+        my $self = shift; return $self->get_elements('draw:frame', @_);
         }
 
 sub     get_draw_page_by_position
@@ -930,10 +988,9 @@ sub     get_draw_page
                 $self->get_draw_page_by_name($arg);
         }
 
-sub     get_draw_page_list
+sub     get_draw_pages
         {
-        my $self        = shift;
-        return $self->get_element_list('draw:page', @_);
+        my $self = shift; return $self->get_elements('draw:page', @_);
         }
 
 #-----------------------------------------------------------------------------

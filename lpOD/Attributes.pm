@@ -24,7 +24,7 @@
 use     5.010_000;
 use	strict;
 package ODF::lpOD::Attributes;
-use constant PACKAGE_DATE => '2010-07-18T16:43:06';
+use constant PACKAGE_DATE => '2010-07-27T14:02:22';
 #==============================================================================
 # Generated from OpenDocument-schema-v1.1.rng
 #------------------------------------------------------------------------------
@@ -39,6 +39,109 @@ use constant PACKAGE_DATE => '2010-07-18T16:43:06';
 		{
 		attribute => "text:continue-numbering",
 		type      => "boolean"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Connector::ATTRIBUTE =
+	(
+	caption_id                      =>
+		{
+		attribute => "draw:caption-id",
+		type      => "IDREF"
+		},
+	z_index                         =>
+		{
+		attribute => "draw:z-index",
+		type      => "nonNegativeInteger"
+		},
+	type                            =>
+		{
+		attribute => "draw:type",
+		type      => "Inconnu"
+		},
+	x1                              =>
+		{
+		attribute => "svg:x1",
+		type      => "coordinate"
+		},
+	y1                              =>
+		{
+		attribute => "svg:y1",
+		type      => "coordinate"
+		},
+	start_shape                     =>
+		{
+		attribute => "draw:start-shape",
+		type      => "IDREF"
+		},
+	start_glue_point                =>
+		{
+		attribute => "draw:start-glue-point",
+		type      => "nonNegativeInteger"
+		},
+	x2                              =>
+		{
+		attribute => "svg:x2",
+		type      => "coordinate"
+		},
+	y2                              =>
+		{
+		attribute => "svg:y2",
+		type      => "coordinate"
+		},
+	end_shape                       =>
+		{
+		attribute => "draw:end-shape",
+		type      => "IDREF"
+		},
+	end_glue_point                  =>
+		{
+		attribute => "draw:end-glue-point",
+		type      => "nonNegativeInteger"
+		},
+	line_skew                       =>
+		{
+		attribute => "draw:line-skew",
+		type      => "length"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Rectangle::ATTRIBUTE =
+	(
+	caption_id                      =>
+		{
+		attribute => "draw:caption-id",
+		type      => "IDREF"
+		},
+	z_index                         =>
+		{
+		attribute => "draw:z-index",
+		type      => "nonNegativeInteger"
+		},
+	width                           =>
+		{
+		attribute => "svg:width",
+		type      => "length"
+		},
+	height                          =>
+		{
+		attribute => "svg:height",
+		type      => "length"
+		},
+	x                               =>
+		{
+		attribute => "svg:x",
+		type      => "coordinate"
+		},
+	y                               =>
+		{
+		attribute => "svg:y",
+		type      => "coordinate"
+		},
+	corner_radius                   =>
+		{
+		attribute => "draw:corner-radius",
+		type      => "nonNegativeLength"
 		},
 	);
 #------------------------------------------------------------------------------
@@ -58,6 +161,75 @@ use constant PACKAGE_DATE => '2010-07-18T16:43:06';
 		{
 		attribute => "text:cond-style-name",
 		type      => "styleNameRef"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Ellipse::ATTRIBUTE =
+	(
+	caption_id                      =>
+		{
+		attribute => "draw:caption-id",
+		type      => "IDREF"
+		},
+	z_index                         =>
+		{
+		attribute => "draw:z-index",
+		type      => "nonNegativeInteger"
+		},
+	width                           =>
+		{
+		attribute => "svg:width",
+		type      => "length"
+		},
+	height                          =>
+		{
+		attribute => "svg:height",
+		type      => "length"
+		},
+	x                               =>
+		{
+		attribute => "svg:x",
+		type      => "coordinate"
+		},
+	y                               =>
+		{
+		attribute => "svg:y",
+		type      => "coordinate"
+		},
+	rx                              =>
+		{
+		attribute => "svg:rx",
+		type      => "length"
+		},
+	ry                              =>
+		{
+		attribute => "svg:ry",
+		type      => "length"
+		},
+	cx                              =>
+		{
+		attribute => "svg:cx",
+		type      => "coordinate"
+		},
+	cy                              =>
+		{
+		attribute => "svg:cy",
+		type      => "coordinate"
+		},
+	kind                            =>
+		{
+		attribute => "draw:kind",
+		type      => "Inconnu"
+		},
+	start_angle                     =>
+		{
+		attribute => "draw:start-angle",
+		type      => "double"
+		},
+	end_angle                       =>
+		{
+		attribute => "draw:end-angle",
+		type      => "double"
 		},
 	);
 #------------------------------------------------------------------------------
@@ -435,6 +607,40 @@ use constant PACKAGE_DATE => '2010-07-18T16:43:06';
 		{
 		attribute => "draw:z-index",
 		type      => "nonNegativeInteger"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Line::ATTRIBUTE =
+	(
+	caption_id                      =>
+		{
+		attribute => "draw:caption-id",
+		type      => "IDREF"
+		},
+	z_index                         =>
+		{
+		attribute => "draw:z-index",
+		type      => "nonNegativeInteger"
+		},
+	x1                              =>
+		{
+		attribute => "svg:x1",
+		type      => "coordinate"
+		},
+	y1                              =>
+		{
+		attribute => "svg:y1",
+		type      => "coordinate"
+		},
+	x2                              =>
+		{
+		attribute => "svg:x2",
+		type      => "coordinate"
+		},
+	y2                              =>
+		{
+		attribute => "svg:y2",
+		type      => "coordinate"
 		},
 	);
 #------------------------------------------------------------------------------

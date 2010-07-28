@@ -4,12 +4,12 @@ ODF::lpOD::StructuredContainer - High-level structures other than tables
 
 =head1  DESCRIPTION
 
-This manual page is related to the I<sections>, I<item lists> and I<draw pages>.
-These element types are implemented through the C<odf_section>, C<odf_list>,
-and C<odf_draw_page> classes, respectively.
+This manual page is related to the I<sections>, I<item lists>, I<draw pages>,
+I<frames>, and I<drawing shapes>.
 
-I<Note: In the present development version, C<odf_section> is the only one
-already implemented.>
+These element types are implemented through the C<odf_section>, C<odf_list>,
+C<odf_draw_page>, C<odf_frame>, C<odf_rectangle>, C<odf_ellipse>, C<odf_line>,
+and C<odf_connector> classes.
 
 =head1  Sections
 
@@ -281,6 +281,168 @@ of the text box.
 
 For C<odf_create_image_frame()> the first argument is the link to the internal
 or external image resource.
+
+=head1  Drawing shapes
+
+=head2  Common Drawing Shape Attributes
+
+The currently covered shapes are C<line>, C<rectangle>, C<ellipse>, and
+C<connector>.
+
+A shape is created using an C<odf_create_xxx()> constructor, where C<xxx> is of
+course replaced by a shape name from the list above, that returns an
+C<odf_shape> object.
+
+The common properties that may be set through shape constructor named parameters are:
+
+=over
+
+=item
+
+C<name>: an optional name, that should be unique;
+
+=item
+
+C<id>: an optional identifier, that must be unique;
+
+=item
+
+C<style>: the name of the graphic style of the shape;
+
+=item
+
+C<text style>: the style that is used to format the text that can be added
+to this shape, if any (if defined, must be a paragraph style);
+
+=item
+
+C<layer>: the optional name of the layer in the layer set of the document, if
+the graphics are layered;
+
+=item
+
+C<transform>: a list of transformations that can be applied to a shape,
+provided as a string where the transform definitions are separated by commas
+or spaces (ex.: C<rotate(45), scale(10, 12)>); see ODF 1.1 §9.2.15 for the
+supported transformations;
+
+=item
+
+C<title> and C<description>: see below.
+
+=back
+
+Note that, while the C<name> property is not specified as unique in the
+standard, OpenOffice.org prevents the end-user from providing non-unique names
+to drawing shapes. On the other hand, OpenOffice.org currently neither uses nor
+preserves the C<id> property in text documents, but needs it to implement the
+connectors in presentation documents. So, we presently recommend the use of
+C<name>, with unique values, as soon as the applications need persistent shape
+identifiers.
+
+A shape may be provided with a I<title> and a I<description> (which are non-
+displayed but persistent metadata), through the C<set_title()> and
+C<set_description()> methods. These informative data may be retrieved using
+C<get_title()> and C<get_description()>.
+
+A shape may be attached to a text element using C<insert_element()> or
+C<append_element()>.
+When C<insert_element()> is called from a paragraph, an optional C<offset>
+parameter, specifying the position in the text where the shape will be inserted,
+may be provided (the default position is the beginning of the paragraph).
+
+For some shapes, the following properties must be provided:
+
+=over
+
+=item
+
+C<position>, the coordinates of the frame, as a list of 2 strings
+containing the X and Y positions (each string specifies the number
+and the unit, ex. "1cm", "2pt"), knowing that the default values are 0;
+
+=item
+
+C<size>: the size, provided using the same format and rules as the position,
+knowing that the default values are "1cm".
+
+=back
+
+However, the C<position> and C<size> properties don't apply to some particular
+shapes, such as I<lines> and I<connectors> (see below).
+
+A shape becomes visible when it's inserted somewhere using the generic
+C<insert_element()> method.
+
+In a text document, a frame may be attached at the document level, as long as
+it's anchored to a page; as an consequence, a C<page> parameter must be
+provided with the page number. Without this C<page> property, lpOD anchors the
+shape to the first page by default.
+
+Simply put, with the exception above, a shape is anchored to the calling
+context element.
+
+Optionally, regular text paragraphs may be embedded in a shape. Unlike the name,
+the title and the description, this paragraph will be visible. There is no
+shape-specific method for that; the generic C<append_element()> method, called
+from the C<odf_shape> object, allows the user to insert a paragraph in a shape.
+The given paragraph may have its own style, whose properties override those of
+the shape C<text style>.
+
+=head2  Rectangles and Ellipses
+
+Rectangles and ellipses are created with C<odf_create_rectangle()> and
+C<odf_create_ellipse()>, respectively, using the common properties described
+above, including C<size> and C<position>.
+
+The following example, supposed to work with a text document, creates a
+rectangle anchored to the first page with given position, size, title,
+description. Then a text paragraph is written in it:
+
+        $context = $document->get_part(CONTENT)->get_body;
+        $rectangle = odf_create_rectangle(
+                name => "Rectangle1", id => "R1", page => 1
+                );
+        $rectangle->set_title("The rectangle");
+        $rectangle->set_description("The description of the rectangle");
+        $context->insert_element($rectangle);
+        $paragraph = odf_create_paragraph(
+                text => 'The text in the shape', style => 'Standard'
+                );
+        $rectangle->append_element($paragraph);
+
+=head2  Lines and Connectors
+
+A line is created using C<odf_create_line()>, with the standard shape
+parameters with the exception of C<size> and C<position>.
+
+The size and the position are defined by line-specific C<start> and C<end>
+properties, each one representing the coordinates of an extremity, in the same
+format as the C<position> property of some other shapes.
+
+A connector is created using C<odf_create-connector()>. It may be defined with
+the same parameters as a line, but can support a more sophisticated
+configuration, through the following specific properties:
+
+=over
+
+=item
+
+C<connected shapes>: the name of the start and end shapes that are linked
+through the connector (as a pair of strings);
+
+=item
+
+C<glue points>: the numbers of the glue points in the start and end shapes,
+respectively (glue points are designated points on the area of a drawing object
+to which a connector shape can connect, see ODF 1.1 §9.2.19);
+
+=item
+
+C<type>: the connector type, knowing that allowed values are C<standard>,
+C<lines>, C<line>, and C<curve>.
+
+=back
 
 =head1	COPYRIGHT & LICENSE
 
