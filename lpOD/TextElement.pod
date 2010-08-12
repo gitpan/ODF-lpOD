@@ -10,10 +10,7 @@ others) introduced in other manual pages. Some particular paragraphs have a
 hierarchical level and are called I<headings>. A paragraph have a I<style>, but
 some text segments in a paragraph, so-called I<text spans>, may have particular
 styles. In addition, a paragraph may include special markup elements, namely
-I<bookmarks>, I<index marks>, and I<bibliography marks>.
-
-I<Other kinds of elements may be included too, but there are not introduced in
-the present developement release.>
+I<bookmarks>, I<index marks>, I<bibliography marks>, and I<notes>.
 
 Paragraphs and headings are represented by C<odf_paragraph> and C<odf_heading>
 objects in the lpOD library. C<odf_heading> is a subclass of C<odf_paragraph>,
@@ -127,7 +124,7 @@ This instruction returns the last level 1 heading:
                 position        => -1
                 );
 
-=head3  get_heading_list
+=head3  get_headings
 
 Takes the same arguments as C<get_heading>, without the C<position>, and returns
 the list of the heading elements that meet the conditions.
@@ -146,7 +143,7 @@ the search to paragraphs using a given style. The example below returns the
                 position        => 4
                 );
 
-=head3  get_paragraph_list
+=head3  get_paragraphs
 
 Without argument, returns all the paragraphs in the context. Restictions are
 possible using the same options as C<get_paragraph> without, of course, the
@@ -154,14 +151,14 @@ C<position> option.
 
 =head1  Paragraph & heading property accessors
 
-=head2  Styles
+=head2  Style
 
 The style of a paragraph or a header may be read or changed at any time using
 C<get_style> or C<set_style>. With C<set_style>, the argument is the name of
 a paragraph style that may exist or that will be created later.
 
-I<With the present development version, style creation is not supported (or more
-exactly requires low-level programming).>
+I<With the present version, style creation is not supported (or more exactly
+requires low-level programming).>
 
 =head2  Text content
 
@@ -184,7 +181,7 @@ element.
 
 Like the common C<get_text> method (see L<ODF::lpOD::Element>), the paragraph-
 based version of C<get_text> returns the text content of the paragraph. However,
-in a paragraph (or heading), C<get_text> processed the tabs, line breaks, and
+in a paragraph (or heading), C<get_text> processes the tabs, line breaks, and
 multiple space elements in a ODF-compliant way.
 
 The C<recursive> option (set to TRUE) is generally recommended (while not
@@ -198,18 +195,12 @@ All the properties that may be set through C<odf_create_heading> may be read or
 set later using corresponding C<get_xxx> or C<set_xxx> attributes.
 These properties are allowed for headings only.
 
-=head1  Internal text markup elements
+=head1  Text spans and hyperlinks
 
 A paragraph may contain special markup elements. A I<text span> is a particular
 substring whose style is not the paragraph style; it's a "sub-paragraph" with
 its own style. A I<hyperlink> is a variant of text span; it associates a text
-segment with a URL instead of a style. A I<bookmark> is either a place holder
-that specifies a particular offset in the text of a paragraph, or a named
-text segment that may spread over more than one paragraph. An I<index mark> is
-a particular bookmark that may be used in order to create a document index. 
-A I<bibliography mark> is an element that specifies a relationship between a
-particular place in a paragraph and a bibliographic data structure. The lpOD
-API provides methods allowing to handle such objects.
+segment with a URL instead of a style.
 
 =head2  Text spans
 
@@ -235,6 +226,8 @@ at a given offset, C<$p> being the target paragraph:
 
         $p->set_span(filter => 'The lpOD Project', style => 'HighLight');
         $p->set_span(offset => 3, length => 5, style => 'HighLight');
+
+=head2  Text hyperlinks
 
 A hyperlink span is created through C<set_hyperlink>, which waits for the
 same positioning parameters (by regex or by offset and length). However,
@@ -267,6 +260,13 @@ context to create a hyperlink span that spreads over its whole content:
                 offset  => 0,
                 url     => 'http://www.lpod-project.org'
                 );
+
+=head1  Bookmarks and index marks
+
+A I<bookmark> is either a place holder that specifies a particular offset in
+the text of a paragraph, or a named text segment that may spread over more than
+one paragraph. An I<index mark> is a particular bookmark that may be used in
+order to create a document index.
 
 =head2  Bookmarks
 
@@ -670,7 +670,11 @@ to an arbitrary user-defined index::
                 index_name => "foo"
                 );
 
-=head2  Bibliography marks
+=head1  Bibliography marks
+
+A I<bibliography mark> is an element that specifies a relationship between a
+particular place in a paragraph and a bibliographic data structure. The lpOD
+API provides methods allowing to handle such objects.
 
 A bibliography mark is a particular index mark. It may be used in order to
 store anywhere in a text a data structure which contains multiple attributes but
@@ -743,6 +747,393 @@ C<identifier> property is defined and matches this argument. Each element of
 the returned list (if any) may be then checked or updated using the generic
 C<get_attribute()>, C<get_attributes()>, C<set_attribute()>, and
 C<set_attributes()> methods.
+
+=head1  Notes
+
+=head2  Footnote and endnote creation
+
+These notes are created in place using the element-based C<set_note()> method,
+that requires a note identifier (unique for the document) as its first argument,
+and the following note-specific parameters:
+
+=over
+
+=item
+
+C<class> or C<note_class>: the class option, whose default is C<footnote>;
+
+=item
+
+C<citation>: the citation mark (i.e. a formatted string representing the
+sequence number, see "Note citation" in ODF 1.1 §5.3.1);
+
+=item
+
+C<label>: the optional text label that should be displayed at the insertion
+point of the note; if this parameter is omitted, the displayed note label will
+be an automatic sequence number;
+
+=item
+
+C<body>: the content of the note, provided either as a list of one or more
+previously created ODF content elements (preferently paragraphs), or as an
+already available note body element (produced, for example, by cloning the
+body of another note);
+
+=item
+
+C<text>: the content of the note, provided as a flat character string;
+
+=item
+
+C<style>: the name of the paragraph style for the content of the note.
+
+=back
+
+The C<text> and C<style> parameters are ignored if C<body> is provided,
+because C<body> is supposed to be a list of one or more paragraphs, each one
+with its own style and content. The C<body> option allows the applications to
+reuse an existing content for one or more notes in one or more documents.
+Without the C<body> parameter, a paragraph is automatically created and filled
+with the value of C<text>. If neither C<body> nor C<text> is provided, the
+note is created with an empty paragraph.
+
+The list of ODF elements provided through the C<body> parameter may contain
+almost any content object; neither the OpenDocument schema nor the lpOD level 1
+API prevents the user from including notes into a note body; however the lpOD
+team doesn't recommend such a practice.
+
+It's possible to create a note as a free element with C<odf_create_note>, so it
+can be later inserted in place (and replicated for reuse in several locations
+in one or more documents), using general purpose insertion methods such as
+C<insert_element()>.
+
+By default, C<set_note()> inserts the new note at the beginning (i.e. as the
+first child element) of the calling element. However, it's possible to specify
+another position within the text content of the element, using the same
+positioning options as the C<set_bookmark()> method, namely C<position>,
+C<before>, C<after>, and so on (see C<set_bookmark()>).
+
+As an example, the following instruction inserts a footnote whose citation mark
+is an asterisk, with a given text content, immediately after the "xyz" substring
+in a paragraph:
+
+        $paragraph->set_note(
+                "note0004",
+                class   => 'footnote',
+                after   => 'xyz',
+                label   => '*',
+                text    => 'The footnote content',
+                style   => 'Note body'
+                );
+
+C<set_note()> returns the newly created object, that is available for later
+use.
+
+=head2  Footnote and endnote retrieval
+
+Once set somewhere in a document, a note may be retrieved the context-based
+C<get_note()> method, with the note identifier as argument.
+
+It's possible to extract a list of notes using the context-based C<get_notes()>.
+Without argument, this method returns all the notes of the context. However,
+it's possible to provide the C<class>, C<citation>, and/or C<label> parameters
+in order to select the notes that match them. The following example extract
+the endnotes whose citation mark is "5" in a given section:
+
+        @end_notes = $section->get_notes(
+                class           => "endnote",
+                citation        => "1"
+                );
+
+This method may allow the users to retrieve a note without knowledge of its
+identifier.
+
+=head2  Footnote and endnote methods
+
+=head3  Read accessors
+
+=over
+
+=iteù
+
+C<get_id()> the note identifier (generic element method);
+
+=item
+
+C<get_class()> the note class;
+
+=item
+
+C<get_citation()> the note citation;
+
+=item
+
+C<get_label()> the note label;
+
+=item
+
+C<get_body()> the root of the note body, as a single container; this object may
+be used as a context element for appending or removing any object in the note
+body; the real content is made of the children elements of the body; it may be
+cloned in order to be reused as the body of another note in the same document
+or elsewhere.
+
+=back
+
+=head3  Write accessors
+
+=over
+
+=item
+
+C<set_id(new_id)> changes the identifier (generic element method); be careful,
+C<set_id()> with a null value erases the identifier (but, with a defined value,
+allows to restore it at any time).
+
+=item
+
+C<set_class(footnote|endnote)> allows to turn a footnote into a endnote or
+vice versa.
+
+=item
+
+C<set_citation()> changes the note citation mark;
+
+=item
+
+C<set_label(new_label)> changes the note label;
+
+=item
+
+C<set_body()> takes the same kinds of content as the C<body> parameter of
+C<set_note()>; provides the note with a new body; any previous content is
+deleted and replaced; if C<set_body()> is used without argument or with a null
+value, the previous content is replaced by a single empty paragraph.
+
+=back
+
+=head2  Annotation creation
+
+An annotation is particular note that has neither identifier nor citation
+mark, but which may be put like a footnote or a endnote at a given offset in a
+given text container. On the other hand, it stores a date and an author's name.
+
+Annotations are created using C<set_annotation()>, that takes the same
+positioning parameters as C<set_note()> and C<set_bookmark()>, and the
+following other parameters:
+
+=over
+
+=item
+
+C<date>: the date/time of the annotation (ISO-8601 format); if this
+parameter is omitted, the current system date applies by default;
+
+=item
+
+C<author>: the name of the author of the annotation (which may be an
+arbitrary application-provided string); if this parameter is omitted, lpOD
+tries to set it to the user name of the process owner and, if such an
+information is not available in the runtime environment, the annotation
+is created with an empty string as the author name (not recommended);
+
+=item
+
+C<content>: a list of one or more regular text paragraphs that will become
+the content of the annotation (beware, unlike C<set_note()>,
+C<set_annotation()> requires a list of paragraphs and doesn't accept a
+previously existing note body or other non-paragraphs ODF objects);
+
+=item
+
+C<text>: like with C<set_note()> (ignored if C<body> is provided);
+
+=item
+
+C<style>: like with C<set_note()> (ignored if C<body> is provided).
+
+=back
+
+C<set_annotation()> returns the newly created object, that is available for
+later use.
+
+=head2  Annotation retrieval
+
+Annotations may be selected is through the context-based C<get_annotations()>
+method that takes C<date> and C<author> as optional parameters.
+
+Without parameter, this method returns the full list of the annotations that
+appear in the context. The use of one or two of the optional parameters allows
+to restrict the list according to the given C<date> and/or C<author>.
+
+While a typical human writer using an interactive editing application should
+never be able to put two annotations in the same time in the same document,
+an automatic document processing application can do that. So the date/author
+combination should not be regarded as an absolute identifier; as a
+consequence, C<get_annotations()> always returns a list (possibly containing
+a single paragraph or nothing).
+
+=head2  Annotation methods
+
+=head3  Read accessors
+
+=over
+
+=item
+
+C<get_date()> returns the stored date.
+
+=item
+
+C<get_author()> returns the stored author's name.
+
+=item
+
+C<get_content()> returns the content as a list of paragraph(s).
+
+=back
+
+=head3  Write accessors
+
+=over
+
+=item
+
+C<set_date(new_date)> changes the stored date; without arguments, the current
+date applies.
+
+=item
+
+C<set_author()> changes the stored author's name; without argument, the process
+owner applies.
+
+=item
+
+C<set_content()> replaces the current content using the argument, that is a
+list of one or more paragraphs.
+
+=back
+
+An annotation object may be used as a regular context element in order to
+change its content through generic context-based element insertion, deletion of
+updating methods. No particular check is done, so the user should ensure that
+inserted elements are always paragraphs.
+
+=head1  Tracked changes
+
+=head2  Tracked change retrieval
+
+lpOD applications can retrieve all the change tracking data which may have been
+stored in text documents by ODF-compliant editors. On the other hand, lpOD
+doesn't provide any automatic tracking of the changes made by lpOD-based
+applications.
+
+A tracked change may be retrieved in a document using the C<get_change()> and
+C<get_changes()> document-based methods.
+
+Every tracked change is stored as a ODF change object that owns the following
+attributes:
+
+=over
+
+=item
+
+C<id>: the identifier of the tracked change (unique for the document);
+
+=item
+
+C<date>: the date/time of the change (ISO-8601 format);
+
+=item
+
+C<author>: the name of the user who made the change.
+
+=back
+
+An change may be individually retrieved using C<get_change()> with a change
+identifier as argument.
+
+The C<get_changes()> method, without argument, returns the full list of
+tracked changes. The list may be filtered according to C<date> and/or C<author>
+optional parameters.
+
+If a single date is provided as the C<date> parameter, then the result set
+contains only tracked change elements that exactly match it, if any. However
+the user may specify a time interval by providing a list of two dates as the
+C<date> parameter; so any tracked change whose date belongs to the given
+interval is candidate. An empty string, or a 0 value, is allowed as start or
+end date, meaning that there is no inferior or superior limit.
+
+C<get_changes()> returns only the tracked changes whose author exactly matches
+the given C<author> parameter, if this parameter is set.
+
+The document-based C<get_change()> and C<get_changes()> methods look for
+tracked changes in the document C<CONTENT> part only, and works with text
+documents only.
+
+In addition, lpOD provides C<get_change()> and C<get_changes()> as context
+methods, allowing the applications to call them from any arbitrary element, so
+the search is directed and restricted to a particular context. If the calling
+element is not able to track the changes, these methods always return nothing
+but they are neutral. If the calling element contains tracked changes, they
+work like their document-based versions in the given context. This feature
+allows the users to retrieve tracked changes in page headers and footers,
+knowing that these changes are registered in the contexts of the corresponding
+page style definitions, and not in the document content. 
+
+=head2  Tracked change methods
+
+Each individual tracked change object, previously selected, own the following
+methods:
+
+=over
+
+=item
+
+C<delete()>: deletes the tracked change, i.e. removes any persistent information
+about the tracked change object from the document.
+
+=item
+
+C<get_id()>: returns the identifier.
+
+=item
+
+C<get_date()>: returns the date.
+
+=item
+
+C<get_author()>: returns the author's name.
+
+=item
+
+C<get_type()>: returns the type of change, that is C<insertion>, C<deletion>,
+or C<format-change>.
+
+=item
+
+C<get_deleted_content()>: returns the content of the deleted content as a list
+of ODF elements, if the change type is C<deletion> (and returns a null value
+otherwise).
+
+=item
+
+C<get_change_mark()>: returns the position mark of the change; if the change
+type is C<deletion>, this object is located at the place of the deleted content;
+if the change type is C<insertion> or C<format-change>, it's located at the
+beginning of the affected content.
+
+=item
+
+C<get_insertion_marks()>: if the change type is C<insertion> or
+C<format-change>, returns a pair of position mark elements, respectively located
+at the beginning and at the end of the affected content (this pair of elements
+may be used in a similar way as the start and end elements of a range bookmark,
+in order to determine the limits of the affected content); it returns nothing
+if the change type is C<deletion>.
+
+=back
 
 =head1	COPYRIGHT & LICENSE
 

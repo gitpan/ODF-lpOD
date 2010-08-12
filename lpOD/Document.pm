@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-07-28T11:21:46';
+our     $VERSION    = '0.104';
+use constant PACKAGE_DATE => '2010-08-06T19:16:46';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -292,6 +292,22 @@ sub     save
                 $part->store(pretty => $pretty) if is_true($part->{update});
                 }
         return $container->save(%opt);
+        }
+
+#--- direct element retrieval ------------------------------------------------
+
+sub     get_changes
+        {
+        my $self        = shift;
+        my $part = $self->get_part(CONTENT)     or return undef;
+        return $part->get_changes(@_);
+        }
+
+sub     get_change
+        {
+        my $self        = shift;
+        my $part = $self->get_part(CONTENT)     or return undef;
+        return $part->get_change(@_);
         }
 
 #=============================================================================
@@ -687,8 +703,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-07-22T19:46:13';
+our     $VERSION    = '0.104';
+use constant PACKAGE_DATE => '2010-08-12T10:25:44';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Element;
@@ -698,11 +714,13 @@ BEGIN   {
         *get_container  = *container;
         *get_document   = *document;
         *root           = *get_root;
+        *get_elements   = *get_element_list;
         }
 
 sub     class_of
         {
         my $part        = shift;
+        return ref $part if ref $part;
         given($part)
                 {
                 when (CONTENT)          { return odf_content   }
@@ -852,6 +870,12 @@ sub     find_node
 #=== public part =============================================================
 #--- general document management ---------------------------------------------
 
+sub     get_class
+        {
+        my $self        = shift;
+        return ref $self;
+        }
+
 sub     get_root
         {
         my $self        = shift;
@@ -965,11 +989,48 @@ sub     delete_element
         return $element->delete;      
         }
 
+#-----------------------------------------------------------------------------
+
+sub     get_tracked_changes_root
+        {
+        my $self        = shift;
+        unless ($self->{tracked_changes})
+                {
+                $self->{tracked_changes} =
+                        $self->find_node('text:tracked-changes');
+                }
+        return $self->{tracked_changes};
+        }
+
+sub     get_changes
+        {
+        my $self        = shift;
+        my $context     = $self->get_tracked_changes_root;
+        unless ($context)
+                {
+                alert "Not valid tracked change retrieval context";
+                return FALSE;
+                }        
+        return $context->get_changes(@_);
+        }
+
+sub     get_change
+        {
+        my $self        = shift;
+        my $context     = $self->get_tracked_changes_root;
+        unless ($context)
+                {
+                alert "Not valid tracked change retrieval context";
+                return FALSE;
+                }        
+        return $context->get_change(shift);
+        }
+
 #=============================================================================
 package ODF::lpOD::Content;
 use base 'ODF::lpOD::XMLPart';
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+use constant PACKAGE_DATE => '2010-08-11T10:28:27';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Styles;
@@ -980,9 +1041,15 @@ use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Meta;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-07-23T12:47:08';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-08-02T11:15:06';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN   {
+        *get_element_list       = *get_elements;
+        }
+
 #-----------------------------------------------------------------------------
 
 our %META =
@@ -1020,7 +1087,7 @@ sub     get_element
         return $self->get_body->get_element(@_);
         }
 
-sub     get_element_list
+sub     get_elements
         {
         my $self        = shift;
         return $self->get_body->get_element_list(@_);        

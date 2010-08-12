@@ -170,7 +170,7 @@ elements that may become in turn working contexts).
 
 For those who know the ODF XML schema, two part-based methods allow the
 selection of elements according to XPath expressions, namely C<get_element()>
-and C<get_element_list()>. The first one requires an I<XPath> expression and a
+and C<get_elements()>. The first one requires an I<XPath> expression and a
 positional number; it returns the element corresponding to the given position
 in the result set of the XPath expression (if any). The second one returns
 the full result set (i.e. a list of C<odf_element> instances). For example,
@@ -178,7 +178,7 @@ the instructions below return respectively the first paragraph and all the
 paragraphs of a part (assuming C<$part> is a previously selected document part):
 
         my $paragraph = $part->get_element('text:p', 0);
-        my @paragraphs = $part->get_element_list('text:p');
+        my @paragraphs = $part->get_elements('text:p');
 
 Note that the position argument of C<get_element> is zero-based, and that it
 may be a negative value (if so, it specifies a position counted backward from

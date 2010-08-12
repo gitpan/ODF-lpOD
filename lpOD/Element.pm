@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.105';
-use constant PACKAGE_DATE => '2010-07-27T20:15:37';
+our     $VERSION        = '0.106';
+use constant PACKAGE_DATE => '2010-08-12T10:21:04';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -46,6 +46,9 @@ our %CLASS    =
         'text:h'                        => odf_heading,
         'text:span'                     => odf_text_element,
         'text:bibliography-mark'        => odf_bibliography_mark,
+        'text:note'                     => odf_note,
+        'office:annotation'             => odf_annotation,
+        'text:changed-region'           => odf_changed_region,
         'text:section'                  => odf_section,
         'text:list'                     => odf_list,
         'table:table'                   => odf_table,
@@ -90,6 +93,8 @@ BEGIN
         *get_bibliography_mark_list     = *get_bibliography_marks;
         *get_table_list                 = *get_tables;
         *get_table                      = *get_table_by_name;
+        *get_part                       = *lpod_part;
+        *get_document                   = *document;
         }
 
 #=== exported constructor ====================================================
@@ -175,6 +180,20 @@ sub     is_child
         my $ref_elt     = shift;
         my $parent = $self->parent;
         return ($parent && $parent == $ref_elt) ? TRUE : FALSE;
+        }
+
+sub     set_child
+        {
+        my $self        = shift;
+        my $tag         = shift;
+        my $text        = shift;
+        my %attr        = @_;
+        my $child =     $self->first_child($tag)
+                                //
+                        $self->insert_element($tag);
+        $child->set_text($text);
+        $child->set_attributes(%attr);
+        return $child;
         }
 
 sub     next
@@ -715,7 +734,7 @@ sub     remove_position_mark
         return TRUE;
         }
 
-#--- "public" bookmark & index mark retrieval stuff --------------------------
+#--- text mark retrieval stuff -----------------------------------------------
 
 sub     get_bookmark
         {
@@ -726,7 +745,7 @@ sub     get_bookmark
 sub     get_bookmarks
         {
         my $self        = shift;
-        return $self->get_element_list(qr'bookmark$|bookmark-start$');
+        return $self->get_elements(qr'bookmark$|bookmark-start$');
         }
 
 sub     get_index_marks
@@ -887,6 +906,118 @@ sub     get_bibliography_marks
                 $self->get_elements('text:bibliography-mark');
         }
 
+#--- note retrieval ----------------------------------------------------------
+
+sub     get_note
+        {
+        my $self        = shift;
+        my $id          = shift;
+        unless ($id)
+                {
+                alert "Missing note identifier"; return FALSE;
+                }
+        return $self->get_element(
+                'text:note',
+                attribute       => 'id',
+                value           => $id
+                );
+        }
+
+sub     get_notes
+        {
+        my $self        = shift;
+        my %opt         = process_options(@_);
+        my $class       = $opt{class} || $opt{note_class};
+        my $label       = $opt{label};
+        my $citation    = $opt{citation};
+
+        my $xp =        './/text:note';
+        $xp .= '[@text:note-class="' . $class . '"]'    if defined $class;
+        if (defined $label || defined $citation)
+                {
+                $xp .= '/text:note-citation';
+                $xp .= '[@text:label="' . $label . '"]'
+                                                        if defined $label;
+                $xp .= '[string()="' . $citation . '"]'
+                                                        if defined $citation;
+                my @result = ();
+                foreach my $n ($self->get_xpath($xp))
+                        {
+                        push @result, $n->parent;
+                        }
+                return @result;
+                }
+        return $self->get_xpath($xp);
+        }
+
+sub     get_annotations
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        my $date        = $opt{date};
+        my $author      = $opt{author};
+
+        my $xp = './/office:annotation';
+        $xp .= '[@dc:date="' . $date . '"]'             if $date;
+        $xp .= '[@dc:creator="' . $author . '"]'        if $author;
+        
+        return $self->get_xpath($xp);
+        }
+
+#--- tracked change retrieval ------------------------------------------------
+
+sub     get_changes
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        my $context     = $self;
+        
+        unless ($opt{date} || $opt{author})
+                {
+                return $context->get_elements('text:changed-region');
+                }
+
+        my @r = ();
+        foreach my $ci ($context->descendants('text:changed-region'))
+                {
+                my ($elt, $text);
+                if ($opt{date})
+                        {
+                        $elt = $ci->first_descendant('dc:date') or next;
+                        $text = $elt->get_text or next;
+                        if (ref $opt{date})
+                                {
+                                my $start       = ${opt{date}}[0];
+                                my $end         = ${opt{date}}[1];
+                                next if $start  && ($text lt $start);
+                                next if $end    && ($text gt $end);
+                                }
+                        else
+                                {
+                                next unless $text eq $opt{date};
+                                }
+                        }
+                if ($opt{author})
+                        {
+                        $elt = $ci->first_descendant('dc:creator') or next;
+                        $text = $elt->get_text;
+                        next unless $text eq $opt{author};                        
+                        }
+                push @r, $ci;
+                }
+        return @r;
+        }
+
+sub     get_change
+        {
+        my $self        = shift;
+        return $self->get_element(
+                'text:changed-region',
+                attribute       => 'id',
+                value           => shift
+                );
+        }
+
 #--- section retrieval -------------------------------------------------------
 
 sub     get_section
@@ -1006,7 +1137,8 @@ sub     get_attributes
         {
         my $self        = shift;
         return undef unless $self->is_element;
-        my %attr = %{$self->atts};
+        my $atts = $self->atts          or return undef;   
+        my %attr = %{$atts};
         my %result = ();
         $result{$_} = output_conversion($attr{$_}) for keys %attr;
 
@@ -1104,9 +1236,23 @@ sub     clear
 sub     get_text
         {
         my $self        = shift;
-        my %opt         = (recursive => FALSE, @_);        
-        my $text = ($self->is_text || is_true($opt{recursive})) ?
-                        $self->text() : $self->text_only();
+        my %opt         = (recursive => FALSE, @_);
+        my $text        = undef;
+        if ($self->is_text)
+                {
+                $text = $self->text;
+                }
+        elsif (is_true($opt{recursive}))
+                {
+                foreach my $t ($self->descendants(TEXT_SEGMENT))
+                        {
+                        $text .= $t->text;
+                        }
+                }
+        else
+                {
+                $text = $self->text_only;
+                }
         return output_conversion($text);
         }
 
@@ -1233,13 +1379,6 @@ sub     insert_element
                         }
                 }
         return $new_elt;
-        }
-
-sub     delete_element
-        {
-        my $self        = shift;
-        my $child       = shift;
-        return (defined $child) ? $child->delete() : FALSE;
         }
 
 sub     append_element
@@ -1563,6 +1702,349 @@ package ODF::lpOD::BibliographyMark;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '0.100';
 use constant PACKAGE_DATE => '2010-06-11T23:40:55';
+#=============================================================================
+package ODF::lpOD::Note;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-08-03T12:14:00';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN   {
+        *set_text               = *set_body;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my $id          = shift;
+        unless ($id)
+                {
+                alert "Missing mandatory note identifier";
+                return FALSE;
+                }
+        my %opt = process_options
+                (
+                class           => 'footnote',
+                @_
+                );
+        my $note = odf_create_element('text:note');
+        $note->set_id($id);
+        $note->set_citation($opt{citation}, $opt{label});
+        $note->{style}  = $opt{style};
+        if ($opt{body})
+                {
+                $note->set_body(@{$opt{body}});
+                }
+        else
+                {
+                $note->set_body($opt{text});
+                }
+        
+        return $note;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     get_citation
+        {
+        my $self        = shift;
+        my $c   = $self->first_child('text:note-citation')
+                                or return undef;
+        return $c->get_text;
+        }
+
+sub     set_citation
+        {
+        my $self        = shift;
+        my $text        = shift;
+        my $label       = shift;
+        my $c = $self->set_child('text:note-citation');
+        $c->set_attribute('label' => $label) if defined $label;
+        $c->set_text($text);
+        return $c;
+        }
+
+sub     set_label
+        {
+        my $self        = shift;
+        my $label       = shift;
+        my $c = $self->set_child('text:note-citation');
+        $c->set_attribute('label' => $label) if defined $label;
+        return $c;        
+        }
+
+sub     get_label
+        {
+        my $self        = shift;
+        my $c   = $self->first_child('text:note-citation')
+                                or return undef;
+        return $c->get_attribute('label');
+        }
+
+sub     get_body
+        {
+        my $self        = shift;
+        return $self->first_child('text:note-body');
+        }
+
+sub     set_body
+        {
+        my $self        = shift;
+        my $body =      $self->get_body();
+        if ($body)
+                {
+                $body->cut_children;
+                }
+        else
+                {
+                $body = $self->append_element('text:note-body');
+                }
+        foreach my $arg (@_)
+                {
+                if (ref $arg)
+                        {
+                        $arg->paste_last_child($body);
+                        }
+                else
+                        {
+                        my $p = odf_create_paragraph(
+                                text => $arg, style => $self->{style}
+                                );
+                        $p->paste_last_child($body);
+                        }
+                }
+        return $body;
+        }
+
+#=============================================================================
+package ODF::lpOD::Annotation;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-08-03T12:22:19';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN   {
+        *set_creator            = *set_author;
+        *get_creator            = *get_author;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my %opt = @_;
+        my $a   = odf_create_element('office:annotation');
+        $a->set_date($opt{date});
+        $a->set_author($opt{author});
+        $a->set_style($opt{style});
+        $a->set_content(@{$opt{content}})        if $opt{content};
+        return $a;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     set_date
+        {
+        my $self        = shift;
+        my $date        = shift;
+        my $elt = $self->set_child('dc:date');
+        unless ($date)
+                {
+                return $elt->set_text(iso_date);
+                }
+        else
+                {
+                my $d = check_odf_value($date, 'date');
+                unless ($d)
+                        {
+                        alert "Wrong date"; return undef;
+                        }
+                return $elt->set_text($d);
+                }
+        }
+
+sub     get_date
+        {
+        my $self        = shift;
+        my $elt = $self->first_child('dc:date')         or return undef;
+        return $elt->get_text;
+        }
+
+sub     set_author
+        {
+        my $self        = shift;
+        my $elt = $self->set_child('dc:creator');
+        return $elt->set_text
+                (
+                shift
+                        //
+                (scalar getlogin())
+                        //
+                (scalar getpwuid($<))
+                        //
+                $<
+                );
+        }
+
+sub     get_author
+        {
+        my $self        = shift;
+        my $elt = $self->first_child('dc:creator')      or return undef;
+        return $elt->get_text;
+        }
+
+sub     get_content
+        {
+        my $self        = shift;
+        return $self->children;
+        }
+
+sub     set_content
+        {
+        my $self        = shift;
+        $self->cut_children;
+        foreach my $arg (@_)
+                {
+                if (ref $arg)
+                        {
+                        $arg->paste_last_child($self);
+                        }
+                else
+                        {
+                        my $p = odf_create_paragraph(
+                                text => $arg, style => $self->{style}
+                                );
+                        $p->paste_last_child($self);
+                        }
+                }
+        return $self->get_content;
+        }
+
+sub     set_style
+        {
+        my $self        = shift;
+        return $self->{style} = shift;
+        }
+
+sub     get_style
+        {
+        my $self        = shift;
+        return $self->{style};
+        }
+
+sub     set_text
+        {
+        my $self        = shift;
+        return $self->set_content(@_);
+        }
+
+sub     get_text
+        {
+        my $self        = shift;
+        return $self->get_text_content(@_);
+        }
+
+#=============================================================================
+package ODF::lpOD::ChangedRegion;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '0.100';
+use constant PACKAGE_DATE => '2010-08-12T11:59:34';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     get_changed_context
+        {
+        my $self        = shift;
+        my $tcr = $self->parent('text:tracked-changes');
+        my $context = $tcr ? $tcr->parent() : undef;
+        unless ($context)
+                {
+                alert "Unknown tracked change context";
+                }
+        return $context;
+        }
+
+sub     get_info
+        {
+        my $self        = shift;
+        my $tag         = shift;
+        $tag = 'dc:' . $tag unless $tag =~ /:/;
+        my $info = $self->first_descendant($tag)        or return undef;
+        return $info->get_text;
+        }
+
+sub     get_date
+        {
+        my $self        = shift;
+        return $self->get_info('date');
+        }
+
+sub     get_author
+        {
+        my $self        = shift;
+        return $self->get_info('creator');
+        }
+  
+sub     get_type
+        {
+        my $self        = shift;
+        my $t = $self->first_child      or return undef;
+        my $type = $t->get_tag; $type =~ s/^text://;
+        return $type;
+        }
+
+sub     get_deleted_content
+        {
+        my $self        = shift;
+        my $deleted = $self->first_child('text:deletion') or return undef;
+        my @content = ();
+        foreach my $e ($deleted->children)
+                {
+                my $tag = $e->get_tag;
+                push @content, $e unless $tag eq 'office:change-info';
+                }
+        return wantarray ? @content : [ @content ];
+        }
+
+sub     get_change_mark
+        {
+        my $self        = shift;
+        my $id = $self->get_id;
+        my $context = $self->get_changed_context        or return undef;
+        my $type = $self->get_type();
+        unless ($type)
+                {
+                alert "Unknown change type"; return undef;
+                }
+        my $tag = ($type eq 'deletion') ? 'text:change' : 'text:change-start';
+        return $context->get_element(
+                        $tag,
+                        attribute       => 'change id',
+                        value           => $id
+                        );
+        }
+
+sub     get_insertion_marks
+        {
+        my $self        = shift;
+        my $id = $self->get_id;
+        my $context = $self->get_changed_context        or return undef;
+        my $start = $context->get_element(
+                        'text:change-start',
+                        attribute       => 'change id',
+                        value           => $id
+                        );
+        my $end   = $context->get_element(
+                        'text:change-end',
+                        attribute       => 'change id',
+                        value           => $id
+                        );
+        return wantarray ? ($start, $end) : [ $start, $end ];
+        }
+
 #=============================================================================
 package ODF::lpOD::FileEntry;
 use base 'ODF::lpOD::Element';

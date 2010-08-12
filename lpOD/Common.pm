@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.104';
-use constant PACKAGE_DATE => '2010-07-28T12:42:15';
+our	$VERSION	        = '0.105';
+use constant PACKAGE_DATE => '2010-08-08T21:37:18';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -56,11 +56,14 @@ our @EXPORT     = qw
         odf_create_table odf_create_column odf_create_row odf_create_cell
         odf_create_column_group odf_create_row_group
         odf_create_field
+        odf_create_note odf_create_annotation
 
         odf_document odf_container
         odf_xmlpart odf_content odf_styles odf_meta odf_settings odf_manifest
         
-        odf_element odf_text_element odf_bibliography_mark
+        odf_element
+        odf_text_element
+        odf_bibliography_mark odf_note odf_annotation odf_changed_region
         odf_paragraph odf_heading odf_draw_page odf_image
         odf_shape odf_frame
         odf_area odf_rectangle odf_ellipse
@@ -133,6 +136,9 @@ use constant
         odf_image               => 'ODF::lpOD::Image',
         odf_section             => 'ODF::lpOD::Section',
         odf_bibliography_mark   => 'ODF::lpOD::BibliographyMark',
+        odf_note                => 'ODF::lpOD::Note',
+        odf_annotation          => 'ODF::lpOD::Annotation',
+        odf_changed_region      => 'ODF::lpOD::ChangedRegion',
         odf_file_entry          => 'ODF::lpOD::FileEntry'
         };
         
@@ -255,6 +261,8 @@ BEGIN   {
         *odf_create_image       = *ODF::lpOD::Image::create;
         *odf_create_text_frame  = *ODF::lpOD::Frame::create_text;
         *odf_create_image_frame = *ODF::lpOD::Frame::create_image;
+        *odf_create_note        = *ODF::lpOD::Note::create;
+        *odf_create_annotation  = *ODF::lpOD::Annotation::create;
 
         *is_numeric             = *Scalar::Util::looks_like_number;
         *odf_value              = *check_odf_value;

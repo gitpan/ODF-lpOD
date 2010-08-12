@@ -100,7 +100,7 @@ heading before the end of the current context:
 I<Caution: the C<get_element> method of C<odf_part> is not the same as the
 C<get_element> method of C<odf_element>.>
 
-=head3  get_element_list(tag)
+=head3  get_elements(tag)
 
 Returns the full list of elements matching the given tag, whose tags match
 the given regex.
@@ -110,7 +110,7 @@ search.
 
 The next example returns the list of paragraphs whose style is "Standard":
 
-        my @std_paragraphs = $context->get_element_list(
+        my @std_paragraphs = $context->get_elements(
                 'text:p',
                 attribute       => 'style name',
                 value           => 'Standard'
@@ -126,6 +126,11 @@ not included yet in a document.
 
 Returns the top level element of the document part that contains the calling
 element.
+
+=head3  get_document
+
+Returns the C<odf_document> instance to which the element belongs.
+Returns C<undef> if the element is not attached to a C<odf_document>.
 
 =head1  Top level contexts
 

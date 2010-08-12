@@ -66,10 +66,7 @@ functional structure and the user's point of view. As a consequence, it may be u
 
 The lpOD API is object oriented.
 
-I<The present distribution is a early developer version. It implements only
-a small part of the lpOD functional specification. However it's reasonably
-usable. The documented features will be extended and improved, but should not
-be removed in the stable version.> 
+I<The present distribution is a partial, but operational implementation of thelpOD functional specifications. The documented features will be extended, but should not be removed.> 
 
 =head1  Basic document access principles
 

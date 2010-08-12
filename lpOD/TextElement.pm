@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-07-23T19:16:39';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-08-03T13:35:42';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -415,19 +415,10 @@ sub     get_text
                 }
         
         my $text        = undef;
-        foreach my $node ($self->descendants)
+        foreach my $node ($self->children)
                 {
                 given ($node->get_tag)
                         {
-                        when (TEXT_SEGMENT)
-                                {
-                                $text .= $node->get_text;
-                                }
-                        when ('text:span')
-                                {
-                                $text .= $node->get_text(%opt)
-                                        if is_true($opt{recursive});
-                                }
                         when ('text:tab')
                                 {
                                 $text .= $ODF::lpOD::Common::TAB_STOP;
@@ -441,13 +432,17 @@ sub     get_text
                                 my $c = $node->get_attribute('c') // 1; #/
                                 $text .= " " while $c-- > 0;
                                 }
+                        default
+                                {
+                                $text .= $node->get_text(%opt);
+                                }
                         }
                 }
-        
+
         return $text;
         }
 
-#=============================================================================
+#=== text internal markup ===================================================
 
 sub     set_span
         {
@@ -577,8 +572,6 @@ sub     set_index_mark
         return $self->set_text_mark(tag => $tag, %opt);
         }
 
-#--- bibliography marks ------------------------------------------------------
-
 sub     set_bibliography_mark
         {
         my $self        = shift;
@@ -612,6 +605,62 @@ sub     set_bibliography_mark
         alert "Missing type parameter" unless $type_ok;
         
         return $self->set_position_mark('bibliography mark', %opt);
+        }
+
+#=== text notes ==============================================================
+
+sub     set_note
+        {
+        my $self        = shift;
+        my $id          = shift;
+        unless ($id)
+                {
+                alert "Missing note identifier"; return FALSE;
+                }
+        my %opt         = process_options(@_);
+        $opt{attributes} =
+                {
+                'id'            => $id,
+                'note class'    => $opt{class}  || $opt{note_class}
+                                                || 'footnote'
+                };
+        my $style       = $opt{style};
+        my $text        = $opt{text};
+        my $body        = $opt{body};
+        my $citation    = $opt{citation};
+        my $label       = $opt{label};
+        delete @opt{qw(note_class style text body citation label)};
+
+        my $note        = $self->set_position_mark('note', %opt);
+        $note->set_citation($citation, $label);
+        $note->{style}  = $opt{style};
+        if ($body)
+                {
+                $note->set_body(@{$body});
+                }
+        else
+                {
+                $note->set_body($text);
+                }
+
+        return $note;
+        }
+
+sub     set_annotation
+        {
+        my $self        = shift;
+        my %opt         = process_options(@_);
+        my $date        = $opt{date};
+        my $author      = $opt{author};
+        my $style       = $opt{style};
+        my $content     = $opt{content};
+        delete @opt{qw(date author style content)};
+        my $a = $self->set_position_mark('office:annotation', %opt);
+        $a->set_date($date);
+        $a->set_author($author);
+        $a->set_style($style);
+        $a->set_content(@{$content})    if $content;
+        return $a;
         }
 
 #=============================================================================

@@ -24,7 +24,7 @@
 use     5.010_000;
 use	strict;
 package ODF::lpOD::Attributes;
-use constant PACKAGE_DATE => '2010-07-27T14:02:22';
+use constant PACKAGE_DATE => '2010-08-03T19:21:26';
 #==============================================================================
 # Generated from OpenDocument-schema-v1.1.rng
 #------------------------------------------------------------------------------
@@ -39,6 +39,15 @@ use constant PACKAGE_DATE => '2010-07-27T14:02:22';
 		{
 		attribute => "text:continue-numbering",
 		type      => "boolean"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Note::ATTRIBUTE =
+	(
+	note_class                      =>
+		{
+		attribute => "text:note-class",
+		type      => "Unknown"
 		},
 	);
 #------------------------------------------------------------------------------
@@ -57,7 +66,7 @@ use constant PACKAGE_DATE => '2010-07-27T14:02:22';
 	type                            =>
 		{
 		attribute => "draw:type",
-		type      => "Inconnu"
+		type      => "Unknown"
 		},
 	x1                              =>
 		{
@@ -219,7 +228,7 @@ use constant PACKAGE_DATE => '2010-07-27T14:02:22';
 	kind                            =>
 		{
 		attribute => "draw:kind",
-		type      => "Inconnu"
+		type      => "Unknown"
 		},
 	start_angle                     =>
 		{
@@ -234,6 +243,15 @@ use constant PACKAGE_DATE => '2010-07-27T14:02:22';
 	);
 #------------------------------------------------------------------------------
 %ODF::lpOD::RowGroup::ATTRIBUTE =
+	(
+	display                         =>
+		{
+		attribute => "table:display",
+		type      => "boolean"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::ColumnGroup::ATTRIBUTE =
 	(
 	display                         =>
 		{
@@ -403,15 +421,6 @@ use constant PACKAGE_DATE => '2010-07-27T14:02:22';
 		{
 		attribute => "text:issn",
 		type      => "string"
-		},
-	);
-#------------------------------------------------------------------------------
-%ODF::lpOD::ColumnGroup::ATTRIBUTE =
-	(
-	display                         =>
-		{
-		attribute => "table:display",
-		type      => "boolean"
 		},
 	);
 #------------------------------------------------------------------------------
@@ -644,6 +653,55 @@ use constant PACKAGE_DATE => '2010-07-27T14:02:22';
 		},
 	);
 #------------------------------------------------------------------------------
+%ODF::lpOD::Annotation::ATTRIBUTE =
+	(
+	z_index                         =>
+		{
+		attribute => "draw:z-index",
+		type      => "nonNegativeInteger"
+		},
+	width                           =>
+		{
+		attribute => "svg:width",
+		type      => "length"
+		},
+	height                          =>
+		{
+		attribute => "svg:height",
+		type      => "length"
+		},
+	x                               =>
+		{
+		attribute => "svg:x",
+		type      => "coordinate"
+		},
+	y                               =>
+		{
+		attribute => "svg:y",
+		type      => "coordinate"
+		},
+	caption_point_x                 =>
+		{
+		attribute => "draw:caption-point-x",
+		type      => "coordinate"
+		},
+	caption_point_y                 =>
+		{
+		attribute => "draw:caption-point-y",
+		type      => "coordinate"
+		},
+	corner_radius                   =>
+		{
+		attribute => "draw:corner-radius",
+		type      => "nonNegativeLength"
+		},
+	display                         =>
+		{
+		attribute => "office:display",
+		type      => "boolean"
+		},
+	);
+#------------------------------------------------------------------------------
 %ODF::lpOD::Row::ATTRIBUTE =
 	(
 	number_rows_repeated            =>
@@ -697,7 +755,7 @@ use constant PACKAGE_DATE => '2010-07-27T14:02:22';
 	protection_key                  =>
 		{
 		attribute => "table:protection-key",
-		type      => "Inconnu"
+		type      => "Unknown"
 		},
 	print                           =>
 		{
