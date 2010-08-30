@@ -28,7 +28,7 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
 our	$VERSION	        = '0.105';
-use constant PACKAGE_DATE => '2010-08-08T21:37:18';
+use constant PACKAGE_DATE => '2010-08-14T20:32:00';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -57,6 +57,7 @@ our @EXPORT     = qw
         odf_create_column_group odf_create_row_group
         odf_create_field
         odf_create_note odf_create_annotation
+        odf_create_style
 
         odf_document odf_container
         odf_xmlpart odf_content odf_styles odf_meta odf_settings odf_manifest
@@ -64,14 +65,15 @@ our @EXPORT     = qw
         odf_element
         odf_text_element
         odf_bibliography_mark odf_note odf_annotation odf_changed_region
-        odf_paragraph odf_heading odf_draw_page odf_image
-        odf_shape odf_frame
-        odf_area odf_rectangle odf_ellipse
-        odf_vector odf_line odf_connector
+        odf_paragraph odf_heading odf_draw_page odf_image odf_shape odf_frame
+        odf_area odf_rectangle odf_ellipse odf_vector odf_line odf_connector
         odf_list odf_table odf_column odf_row odf_cell odf_field
         odf_matrix odf_column_group odf_row_group odf_table_element
         odf_section
         odf_file_entry
+
+        odf_style
+        odf_text_style odf_paragraph_style
 
         TRUE FALSE PRETTY
         is_true is_false is_odf_datatype odf_boolean process_options
@@ -139,6 +141,9 @@ use constant
         odf_note                => 'ODF::lpOD::Note',
         odf_annotation          => 'ODF::lpOD::Annotation',
         odf_changed_region      => 'ODF::lpOD::ChangedRegion',
+        odf_style               => 'ODF::lpOD::Style',
+        odf_text_style          => 'ODF::lpOD::TextStyle',
+        odf_paragraph_style     => 'ODF::lpOD::ParagraphStyle',
         odf_file_entry          => 'ODF::lpOD::FileEntry'
         };
         
@@ -263,6 +268,7 @@ BEGIN   {
         *odf_create_image_frame = *ODF::lpOD::Frame::create_image;
         *odf_create_note        = *ODF::lpOD::Note::create;
         *odf_create_annotation  = *ODF::lpOD::Annotation::create;
+        *odf_create_style       = *ODF::lpOD::Style::create;
 
         *is_numeric             = *Scalar::Util::looks_like_number;
         *odf_value              = *check_odf_value;

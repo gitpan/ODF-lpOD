@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-08-06T19:16:46';
+our     $VERSION    = '0.105';
+use constant PACKAGE_DATE => '2010-08-30T22:41:00';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ sub     create_from_template
         my $container = odf_new_container_from_template($resource);
         return $container ?
                 odf_document->new(container => $container)       :
-                FALSE;        
+                FALSE;
         }
 
 sub     create
@@ -139,7 +139,7 @@ sub     get_xmlpart
         {
         my $self        = shift;
         my $container   = $self->get_container(warning => TRUE)
-                or return FALSE; 
+                or return FALSE;
 
         my $part_name   = shift         or return FALSE;
 
@@ -199,7 +199,7 @@ sub     set_part
         unless ($self->{container})
                 {
                 alert "No available container";
-                return FALSE;                
+                return FALSE;
                 }
         return $self->{container}->set_part(@_);
         }
@@ -210,7 +210,7 @@ sub     del_part
         unless ($self->{container})
                 {
                 alert "No available container";
-                return FALSE;                
+                return FALSE;
                 }
         return $self->{container}->del_part(@_);
         }
@@ -221,7 +221,7 @@ sub     add_file
         unless ($self->{container})
                 {
                 alert "No available container";
-                return FALSE;                
+                return FALSE;
                 }
         my $source      = shift;
         my %opt         = @_;
@@ -262,7 +262,7 @@ sub     set_mimetype
         unless ($self->{container})
                 {
                 alert "No available container";
-                return FALSE;                
+                return FALSE;
                 }
         return $self->{container}->set_mimetype(shift);
         }
@@ -296,6 +296,19 @@ sub     save
 
 #--- direct element retrieval ------------------------------------------------
 
+sub     get_element
+        {
+        my $self        = shift;
+        my $part_name   = shift;
+        my $part = $self->get_part($part_name);
+        unless ($part)
+                {
+                alert "Unknown or not available document part";
+                return undef;
+                }
+        return $part->get_element(@_);
+        }
+
 sub     get_changes
         {
         my $self        = shift;
@@ -308,6 +321,147 @@ sub     get_change
         my $self        = shift;
         my $part = $self->get_part(CONTENT)     or return undef;
         return $part->get_change(@_);
+        }
+
+#--- style handling ----------------------------------------------------------
+
+sub     get_default_style
+        {
+        my $self        = shift;
+        my $family      = shift;
+        my $xp =        '//style:default-style[@style:family="' .
+                        $family . '"]';
+        return $self->get_element(STYLES, $xp);
+        }
+
+sub     get_style
+        {
+        my $self        = shift;
+        my $family      = shift;
+        unless ($family)
+                {
+                alert "Missing style family"; return undef;
+                }
+        my $name        = shift;
+        return $self->get_default_style($family) unless $name;
+
+        my $style;
+        given ($family)
+                {
+                default
+                        {
+                        my $xp =        '//style:style[@style:name="'   .
+                                        $name                           .
+                                        '"][@style:family="'            .
+                                        $family                         .
+                                        '"]';
+                        $style =
+                                $self->get_element(STYLES, $xp)
+                                                //
+                                $self->get_element(CONTENT, $xp);
+                        }
+                }
+        return $style;
+        }
+
+sub     check_stylename
+        {
+        my $self        = shift;
+        my $style       = shift;
+        my $name        = shift || $style->get_name;
+        my $family      = $style->get_family;
+        unless ($name && $family)
+                {
+                alert "Missing style name and/or family";
+                return FALSE;
+                }
+        if ($self->get_style($name, $family))
+                {
+                alert "Non unique style";
+                return FALSE;
+                }
+        return TRUE;
+        }
+
+sub     insert_text_style
+        {
+        my $self        = shift;
+        my $style       = shift;
+        my %opt         = @_;
+        my $part_name;
+        if  (
+                is_false($opt{automatic})
+                        or
+                is_true($opt{default})
+                        or
+                ($opt{part} && ($opt{part} eq STYLES))
+            )
+                {
+                $part_name = STYLES;
+                }
+        else
+                {
+                $part_name = CONTENT;
+                }
+        my $xp = is_true($opt{automatic}) ?
+                '//office:automatic-styles' : '//office:styles';
+        my $context = $self->get_element($part_name, $xp);
+        unless ($context)
+                {
+                alert "Wrong document structure; style insertion failure";
+                return undef;
+                }
+        if (is_true($opt{default}))
+                {
+                $style->check_tag('style:default-style');
+                $style->set_name(undef);
+                }
+        else
+                {
+                my $name = $opt{name} || $style->get_name;
+                return undef unless $self->check_stylename($style, $name);
+                $style->check_tag('style:style');
+                $style->set_name($opt{name}) if $opt{name};
+                }
+        return $context->insert_element($style);
+        }
+
+sub     insert_style
+        {
+        my $self        = shift;
+        my $style       = shift;
+        my $class       = ref $style;
+        unless ($class && $style->isa(odf_style))
+                {
+                alert "Missing or wrong style element";
+                return FALSE;
+                }
+        my %opt         = @_;
+        my $family      = $style->get_family;
+        if (is_true($opt{default}))
+                {
+                my $context = $self->get_element(STYLES, '//office:styles');
+                unless ($context)
+                        {
+                        alert "Default style context not available";
+                        return undef;
+                        }
+                $style->set_name(undef);
+                my $old = $self->get_style($family);
+                $old->delete() if $old;
+                return $context->insert_element($style);
+                }
+        given ($family)
+                {
+                when (['text', 'paragraph'])
+                        {
+                        return $self->insert_text_style($style, %opt);
+                        }
+                default
+                        {
+                        alert "Not supported"; return undef;
+                        }
+                }
         }
 
 #=============================================================================
@@ -435,7 +589,7 @@ sub     new
 		        return FALSE;
 		        }
                 }
-                
+
         $self->{zip} = $zip;
         bless $self, $class;
         $COUNT++;
@@ -549,7 +703,7 @@ sub     raw_del_part
 sub     clone
         {
         my $self        = shift;
-        return not_implemented($self, 'clone');      
+        return not_implemented($self, 'clone');
         }
 
 #-----------------------------------------------------------------------------
@@ -569,9 +723,9 @@ sub     set_part
         $self->{stored}{$part_name}{data}       = $data;
         $self->{stored}{$part_name}{string}     = $opt{string};
         $self->{stored}{$part_name}{compress}   = $opt{compress};
-        
+
         $self->del_part($part_name);
-        
+
         return $part_name;
         }
 
@@ -703,8 +857,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-08-12T10:25:44';
+our     $VERSION    = '0.105';
+use constant PACKAGE_DATE => '2010-08-30T19:55:00';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Element;
@@ -740,6 +894,9 @@ our %CLASS      =
         manifest        => odf_manifest,
         settings        => odf_settings
         );
+
+sub     pre_load        {}
+sub     post_load       {}
 
 #=== exported part ===========================================================
 
@@ -826,6 +983,7 @@ sub     load
                 return FALSE;
                 }
 
+        $self->pre_load;
         my $r = UNIVERSAL::isa($xml, 'IO::File') ?
                 $self->{twig}->safe_parsefile($xml)     :
                 $self->{twig}->safe_parse($xml);
@@ -834,9 +992,9 @@ sub     load
                 alert "No valid XML content";
                 return FALSE;
                 }
-        
         $self->{context} = $self->{twig}->root;
         $self->{context}->lpod_part($self);
+        $self->post_load;
         return TRUE;
         }
 
@@ -863,7 +1021,7 @@ sub     find_node
         my $self        = shift;
         my $tag         = shift;
         my $context     = shift || $self->{context};
-        
+
         return $context->first_descendant($tag);
         }
 
@@ -986,7 +1144,7 @@ sub     insert_element
 sub     delete_element
         {
         my ($self, $element) = @_;
-        return $element->delete;      
+        return $element->delete;
         }
 
 #-----------------------------------------------------------------------------
@@ -1010,7 +1168,7 @@ sub     get_changes
                 {
                 alert "Not valid tracked change retrieval context";
                 return FALSE;
-                }        
+                }
         return $context->get_changes(@_);
         }
 
@@ -1022,22 +1180,46 @@ sub     get_change
                 {
                 alert "Not valid tracked change retrieval context";
                 return FALSE;
-                }        
+                }
         return $context->get_change(shift);
         }
 
 #=============================================================================
 package ODF::lpOD::Content;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-08-11T10:28:27';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-08-30T19:25:00';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     post_load
+        {
+        my $self        = shift;
+        my $context     = $self->get_root;
+        foreach my $style ($context->descendants('style:style'))
+                {
+                $style->set_class;
+                }
+        }
+
 #=============================================================================
 package ODF::lpOD::Styles;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-08-30T19:35:00';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     post_load
+        {
+        my $self        = shift;
+        my $context     = $self->get_root;
+        foreach my $style ($context->descendants('style:style'))
+                {
+                $style->set_class;
+                }
+        }
+
 #=============================================================================
 package ODF::lpOD::Meta;
 use base 'ODF::lpOD::XMLPart';
@@ -1090,7 +1272,7 @@ sub     get_element
 sub     get_elements
         {
         my $self        = shift;
-        return $self->get_body->get_element_list(@_);        
+        return $self->get_body->get_element_list(@_);
         }
 
 sub     append_element
@@ -1327,7 +1509,7 @@ sub     AUTOLOAD
                         return $e->set_text($v);
                         }
                 }
-        return undef; 
+        return undef;
         }
 
 #-----------------------------------------------------------------------------
@@ -1422,5 +1604,3 @@ sub     del_entry
 
 #=============================================================================
 1;
-
-

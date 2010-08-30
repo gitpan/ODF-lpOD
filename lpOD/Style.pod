@@ -1,0 +1,429 @@
+=head1	NAME
+
+ODF::lpOD::Styles - Styles management
+
+=head1  DESCRIPTION
+
+A style controls the formatting and/or layout properties of a family of
+content objects. It's identified by its own name and its family.
+In the lpOD API, the family has a larger acception than in the OpenDocument
+specification. In the underlying XML, the family is indicated sometimes
+by the value of an explicit C<style:family> attribute, and sometimes by the
+XML tag of the style element itself.
+
+In order to hide the complexity of the ODF data structure, the level 1 API
+allows the user to handle any style as a high level I<odf_style> object.
+
+=head1 Common style features
+
+Any style is created through a common C<odf_create_style()> function with the
+family as its mandatory first argument. A name, that is the identifier of
+the style in the given family, is generally required. So, a typical style
+creation instruction looks like:
+
+   $s = odf_create_style('text', name => 'MyTextStyleName');
+
+The example above creates a named text style without any property. The
+properties are optionally passed as named parameters.
+
+Additional named parameters can be required according to the family. An optional
+C<parent> argument, whose value is the name of another common style of
+the same family (existing or to be created), can be provided, knowing that a
+style inherits (but can override) all the properties of its parent. A
+C<display name> additional parameter may be provided; if set, this parameter
+designates a visible name that may differ from the internal name. It's
+possible to copy (instead of inherit) all the properties of an existing style
+of the same family, through a C<clone> option, knowing that C<clone> and
+C<parent> are mutually exclusive options. The code example below produces two
+text styles whose properties are the same as "MyTextStyleName", but the first
+one will be affected by later changes of the base style while the second one
+is independant:
+
+   odf_create_style('text', name => 'NewStyle1', parent => 'MyTextStyleName');
+   $proto = doc->get_style('text', 'MyTextStyleName');
+   odf_create_style('text', name => 'NewStyle2', clone => $proto);
+
+An effective style name, unique for the family, is required as soon as the
+style is attached to a document, unless it's inserted as a I<default style>.
+This name may be set or changed with C<set_name()> after the style creation.
+When a style is used as a default style, its name and display name are
+meaningless and ignored. The family and the name constitute the absolute
+identifier of a style in a document.
+
+The C<odf_create_style()> function creates a free element, not included in a
+document. This element (or a clone of it) is available to be attached later
+to a document through a generic, document-based C<insert_style()> method.
+
+The C<insert_style()> method requires a style object as its only one mandatory
+argument. An optional boolean parameter whose name is C<default> is allowed;
+if provided and set to C<TRUE>, this parameter means that the style is inserted
+as a I<default style>. A default style is a style that automatically apply to
+elements whose style is not explicitly specified. A document can contain
+at most one default style for a style family, so any attachment of a default
+style replaces any existing default style of the same family.
+
+All styles can't be used as default styles. Default styles are allowed
+for the following families: C<paragraph>, C<text>, C<section>, C<table>,
+C<table column>, C<table row>, C<table cell>, C<table page>, C<chart>,
+C<drawing page>, C<graphic>, C<presentation>, C<control> and C<ruby>.
+
+Some styles may have a I<class> property, that is an informative attribute, and
+that should not be confused with the I<family>. A family is an application-
+defined property, used in order to identify a set of styles belonging to various
+families, for retrieval needs.
+
+An existing style may be retrieved in a document using the C<get_style()>
+document-based method. This method requires a family as its first argument and
+allows a style name as a second, optional argument. If the name is missing,
+this method tries to retrieve the default style for the given family, if any.
+
+The following example extracts a paragraph style, so-called "MyParagraph", from
+a document and attaches a clone of this style as a default style of another
+document; the old default paragraph style of the target document (if any) is
+automatically replaced::
+
+   $ps = $doc1->get_style('paragraph', 'MyParagraphStyle')->clone();
+   $doc2->insert_style($ps, default => TRUE);
+
+While a style is identified by name and family, it owns one or more sets of
+properties. A style property is a particular layout or formatting behaviour.
+The API provides a generic C<set_properties()> method which allows the user to
+set these properties, while C<get_properties()> returns the existing properties
+as an associative array.
+
+However, some styles have more than one property set.
+
+As an example, a paragraph style owns so-called "paragraph properties"
+and/or "text properties" (see below). In such a situation, an additional
+C<area> parameter, whose value identifies the particular property set, with
+C<set_properties()>. Of course, the same C<area> parameter applies to
+C<get_properties()>.
+
+Some styles allow the applications to specify a I<background>. Such a background
+is sometimes characterized by the RGB, 3-bytes hexadecimal code of an arbitrary
+color, with a leading "#". However some styles allow the use of backround image
+instead of or in combination with a color. In order to deal with these
+possibilities, a C<set_background()> is provided; this method (which works
+with some style objects only) is used with a C<color> and/or a C<url> named
+parameters. The C<color> value range is #000000-#ffffff, while C<url> should
+be set to the URL of the graphic resource. If C<url> is set, some additional
+optional parameters may be provided, in order to control the way the image is
+displayed in the background, namely:
+
+=over
+
+=item
+
+C<position>: a string that specifies the horizontal and vertical positions
+of the image, through one or two space-separated words (in any order) among
+C<center>, C<left>, C<right>, C<top>, C<bottom> (default: C<center>);
+
+=item
+
+C<repeat>: specifies whether a background image is repeated or stretched,
+whose possible values are ``no-repeat`` meaning that the image should be
+displayed once, ``repeat`` to repeat the image in order to fill the whole
+background, and ``stretch`` to extend the image in order to fill the
+whole background;
+
+=item
+
+C<opacity>: the percentage of opacity;
+
+=item
+
+C<filter>: an application-specific filter to that is used to load and process
+the graphic file, according to the image format.
+
+=back
+
+To remove the background color or image (i.e. to set the background to the
+default, that is transparent), the user just have to call C<set_background()>
+with C<color> and C<url> set to C<undef>.
+
+A style that apply in some way to a rectangular area (ex: shape, frame,
+paragraph) other than a page may have visible borders and a shadow. Borders are
+specified using C<border xxx> attributes where C<xxx> is either C<left>,
+C<right>, C<top> or C<bottom>; if all the borders are the same, a single
+C<border> property is convenient. The value of a border property is a 3-part
+string that describes the thickness, the line style and the line color
+(according to the XSL/FO grammar), like C<"0.1cm solid #000000"> for a one
+millimeter solid black line. The shadow is specified through a C<shadow>
+property whose value is a 3-part string describing the color and the size, like
+C<"#808080 0.18cm 0.18cm">.
+
+A style can be inserted as either I<common> (or named and visible for the
+user of a typical office application) or I<automatic>, according to a boolean
+C<automatic> option, whose default value is C<FALSE>. A common style may have
+a secondary unique name which is its C<display name>, which can be set through
+an additional option. With the exception of this optional property, and a
+few other ones, there is no difference between automatic and common styles.
+
+Defaults styles and common styles are automatically inserted in the C<STYLES>
+document part. But automatic styles may be inserted, at the user's choice, in
+C<CONTENT> or C<STYLES>. The default is C<CONTENT> but C<STYLES> may be
+specified through a C<part> optional parameter of C<insert_style()>. The user
+must check that any automatic style is inserted in the same document part as
+the element that uses it (so, an automatic style must be inserted in C<STYLES>
+if it's used by another style defined in this part).
+
+Of course, a style is really in use when one or more content objects
+explicitly reference it through its style property.
+
+The API allows the user to retrieve and select an existing style by name and
+family. The display name, if set, may be used as a replacement of the name
+for retrieval.
+
+Once selected, a style could be removed from the document through a standard
+level 0 element deletion method.
+
+=head1  Text styles
+
+A text style can be defined either to control the layout of a text container,
+i.e. a paragraph, or to control a text range inside a paragraph. So the API
+allows the user to handle two families of text styles, so called I<text>
+and I<paragraph>. For any style in the text or paragraph families, the I<text>
+class is recommended.
+
+=head2  Text family
+
+A text style (i.e. a style whose family is C<text>, whatever its optional
+class) is a style which directly applies to characters (whatever the layout
+of the containing paragraph). So, it can bear any property directly
+related to the font and its representation. The most used properties are
+the font name, the font size, the font style (ex: normal, oblique, etc),
+the text color, the text background color (which may differ from the
+common background color of the paragraph).
+
+A text style may apply to any text span in any text paragraph. However some ODF
+editing or viewing applications don't fully support them in some situations. For
+example, OpenOffice.org doesn't currently allow the use of I<common> text styles
+with spreadsheets, while it allows I<common> and I<automatic> text styles in text
+documents.
+
+A text style can apply to one or more text spans; see the "Text spans"
+section. It can be used as the default text style of a document. In addition,
+an existing text style may be reused to set the text properties of a paragraph
+style (see below).
+
+The example hereafter creates a text style, so called "My Colored Text",
+using Times New Roman, 14-sized navy blue bold italic characters with
+a yellow background::
+
+   $s = odf_create_style('text',
+                        name            => 'MyColoredText',
+                        'display name'  => 'My Colored Text',
+                        font            => 'Times New Roman',
+                        size            => '14pt',
+                        weight          => 'bold',
+                        style           => 'italic',
+                        color           => '#000080'
+                        );
+   $s->set_background(color => '#ffff00')
+
+This new style could be inserted using C<insert_style()> then retrieved and
+changed later using C<get_style()> then the C<set_properties()> method of the
+style object. For example, the following code modifies an existing text style
+definition so the font size is increased to 16pt and the color turns green:
+
+   $s = $document->get_style('text', 'MyColoredText');
+   $s->set_properties(size => '16pt', color => '#00ff00');
+
+The C<set_properties()> method may be used in order to delete a property,
+without replacement; to do so, the target property must be set to C<undef>.
+
+Note that C<set_properties()> can't change any identifying attribute such
+as name, family or display name.
+
+The lpOD level 1 API allows the applications to set any property without
+ODF compliance checking. The compliant property set for text styles is
+described in the section §15.4 of the OASIS ODF specification. Beware,
+some of them are not supported by any ODF text processor or viewer.
+
+The API allows the user to set any attribute using its official name
+according to the ODF specification (§15.4). For example, the properties
+which control the character name and size are respectively
+C<fo:font-name> and C<fo:font-size>. However, the API allows the use of
+mnemonic shortcuts for a few, frequently required properties, namely:
+
+=over
+
+=item
+
+C<font>: font name;
+
+=item
+
+C<size>: font size (absolute with unit or percentage with '%');
+
+=item
+
+C<weight>: font weight, which may be C<normal>, C<bold>, or one of the
+official nine numeric values from C<100> to C<900> (§15.4.32);
+
+=item
+
+C<style>: to specify whether to use normal or italic font face; the
+legal values are C<normal>, C<italic> and C<oblique>;
+
+=item
+
+C<color>: the color of the characters (i.e. foreground color), provided
+as a RGB, 6-digit hexadecimal string with a leading '#';
+
+=item
+
+C<underline>: to specify if and how text is underlined; possible values
+are C<solid> (for a continuous line), C<dotted>, C<dash>, C<long dash>,
+C<dot dash>, C<dot dot dash>, C<wave>, and C<none>;
+
+=item
+
+C<display>: to specify if the text should by displayed or hidden;
+possible values are C<true> (meaning visible) C<none> (meaning hidden)
+or C<condition> (meaning that the text is to be visible or hidden
+according to a condition defined elsewhere).
+
+=back
+
+A text style may have a background color, but not a background image.
+
+=head2  Paragraph family
+
+A paragraph style apply to paragraphs at large, i.e. to ODF paragraphs and
+headings, which are the common text containers. It controls the layout of both
+the text content and the container, so its definition is made of two distinct
+parts, the I<text> part and the I<paragraph> part.
+
+The text part of a paragraph style definition may have exactly the same
+properties as a regular text style. The rules are defined by the §15.4 of the
+OASIS 1.1 ODF specification, and the API provides the same property shortcuts as
+for a text style creation. Practically, this text part defines the default text
+style that apply to the text content of the paragraph; any property in this part
+may be overriden as soon as one or more text spans with explicit styles are
+defined inside the paragraphs.
+
+The creation of a full-featured paragraph style takes two steps. The first one
+is a regular C<odf_create_style()> instruction, with C<paragraph> as the value
+of the family mandatory argument, a name parameter (unless the user just wants
+to create a default style) and any number of named paragraph properties. The
+second (optional) step consists of appending a I<text> part to the new paragraph
+style; it can be accomplished, at the user's choice, either by specifying a
+previously defined text style element, or by explicitly defining new text
+properties, through the C<set_properties()> method with the C<area> option set
+to C<text>. In the second case, the prototype text style is provided through
+the C<clone> parameter.
+
+Assuming that a "MyColoredText" text style has been defined according to the
+text style creation example above, the following sequence creates a new
+paragraph style whose text part is a clone of "MyColoredText", and whose
+paragraph part features are the text justification, a first line 5mm indent,
+a black, continuous, half-millimiter border line with a bottom-right, one
+millimeter grey shadow, with other possible properties inherited from a
+"Standard" style:
+
+   $ps = odf_create_style(
+                        'paragraph',
+                        name            => 'BorderedShadowed',
+                        'display name'  => 'Strange Boxed Paragraph',
+                        parent          => 'Standard',
+                        align           => 'justify',
+                        indent          => '5mm',
+                        border          => '0.5mm solid #000000',
+                        shadow          => '#808080 1mm 1mm'
+                        );
+   $ts = $document->get_style('text', 'MyColoredText');
+   $ps->set_properties(area => 'text', clone => $ts);
+
+Note that "MyColoredText" is reused by copy, not by reference; so the new
+paragraph style will not be affected if "MyColoredText" is changed or deleted
+later.
+
+The value of the C<clone> parameter, if any, may be a I<paragraph> style
+element instead of a I<text> style element, provided that the given paragraph
+style contains a I<text> part; so the text part of the given paragraph style (and
+this part only) is used as the prototype.
+
+The API allows the user to set any attribute using its official name according
+to the ODF specification related to the paragraph formatting properties (§15.5).
+However, the API allows the use of mnemonic shortcuts for a few, frequently
+required properties, namely:
+
+=over
+
+=item
+
+C<align>: text alignment, whose legal values are C<start>, C<end>, C<left>,
+C<right>, C<center>, or C<justify>;
+
+=item
+
+C<align-last>: to specify how to align the last line of a justified paragraph,
+legal values are C<start>, C<end>, C<center>;
+
+=item
+
+C<indent>: to specify the size of the first line indent, if any;
+
+=item
+
+C<widows>: to specify the minimum number of lines allowed at the top of a page
+to avoid paragraph widows;
+
+=item
+
+C<orphans>: to specify the minimum number of lines required at the bottom of a
+page to avoid paragraph orphans;
+
+=item
+
+C<together>: to control whether the lines of a paragraph should be kept together
+on the same page or column, possible values being C<always> or C<auto>;
+
+=item
+
+C<margin>: to control all the margins of the paragraph;
+
+=item
+
+C<margin xxx> (where C<xxx> is C<left>, C<right>, C<top> or C<bottom>): to
+control the margins of the paragraph separately;
+
+=item
+
+C<border>: a 3-part string to specify the thickness, the line style and the line
+color (according to the XSL/FO grammar);
+
+=item
+
+C<border xxx> (where C<xxx> is C<left>, C<right>, C<top> or C<bottom>): the same
+as C<border> but to specify a particular border for one side;
+
+=item
+
+C<shadow>: a 3-part string to specify the color and the size of the shadow;
+
+=item
+
+C<padding>: the space around the paragraph;
+
+=item
+
+C<padding xxx> (where C<xxx> is C<left>, C<right>, C<top> or C<bottom>): to
+specify the space around the paragraph side by side;
+
+=item
+
+C<keep with next>: to specify whether or not to keep the paragraph and the next
+paragraph together on a page or in a column, possible values are C<always> or
+C<auto>;
+
+=item
+
+C<break xxx> (where C<xxx> is C<before> or C<after>): to specify if a page or
+column break must be inserted before or after any paragraph using the style,
+legal values are C<page>, C<column>, C<auto>.
+
+=back
+
+A pararaph style may have a background color or image.

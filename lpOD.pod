@@ -5,12 +5,12 @@ ODF::lpOD - Languages & platform for OpenDocument
 =head1	SYNOPSIS
 
         use ODF::lpOD:
-        
+
         my $document = odf_get_document("report.odt");
 
         my $meta = $document->get_part(META);
         $meta->set_title("The best document format");
-        
+
         my $content = $document->get_part(CONTENT);
         my $context = $content->get_body;
         my $paragraph = $context->get_paragraph(content => "I look for it");
@@ -30,7 +30,7 @@ ODF::lpOD - Languages & platform for OpenDocument
 
         $document->save;
         exit;
-        
+
 The code example shows above loads a document from an existing "report.odt" file,
 updates various data in the document, then saves the changes. The following
 actions are done in the document:
@@ -66,7 +66,7 @@ functional structure and the user's point of view. As a consequence, it may be u
 
 The lpOD API is object oriented.
 
-I<The present distribution is a partial, but operational implementation of thelpOD functional specifications. The documented features will be extended, but should not be removed.> 
+I<The present distribution is a partial, but operational implementation of the lpOD functional specifications. The documented features will be extended, but should not be removed.>
 
 =head1  Basic document access principles
 
@@ -88,7 +88,7 @@ interesting context than the root.
 lpOD is a read-write API. However, the changes made by the applications aren't
 automatically persistent. The API provides methods that insert, delete, or
 update elements in memory. In order to make the change persistent, explicit
-C<odf_part> and C<odf_document> methods must be used. 
+C<odf_part> and C<odf_document> methods must be used.
 
 =head2  Global document initialization
 
@@ -287,7 +287,7 @@ check an attribute for existence and create it before setting a value.
 It's possible to get or set more than one attributes in a single call using
 C<get_attributes> or C<set_attributes>. The first one returns the attributes
 as a hash reference (with the real ODF names), while the second one requires
-a hash reference as argument. 
+a hash reference as argument.
 
 An element may be removed (with all its descendants) using its C<delete> method.
 (Beware: the deletion of a high level element may destroy a lot of content !).
@@ -331,7 +331,7 @@ Unsuprisingly, we propose you to test your lpOD installation and your knowledge
 of the big picture through this simple program:
 
         use ODF::lpOD;
-        
+
         my $doc = odf_new_document('text');
         my $content = $doc->get_part(CONTENT);
         my $context = $content->get_body;
@@ -397,6 +397,10 @@ L<ODF::lpOD::Table>: Access to tables and their content
 
 L<ODF::lpOD::StructuredContainer>: High-level structures such as sections,
 lists, and draw pages
+
+=item *
+
+L<ODF::lpOD::Style>: Text style retrieval, update, or creation
 
 =item *
 

@@ -10,6 +10,7 @@ lpOD/Element.pm
 lpOD/TextElement.pm
 lpOD/Table.pm
 lpOD/StructuredContainer.pm
+lpOD/Style.pm
 lpOD/Attributes.pm
 lpOD/templates/drawing.odg
 lpOD/templates/presentation.odp
@@ -21,6 +22,7 @@ lpOD/Element.pod
 lpOD/TextElement.pod
 lpOD/Table.pod
 lpOD/StructuredContainer.pod
+lpOD/Style.pod
 lpOD/Common.pod
 t/01w.t
 t/02r.t

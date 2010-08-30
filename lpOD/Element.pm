@@ -28,13 +28,14 @@ use strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
 our     $VERSION        = '0.106';
-use constant PACKAGE_DATE => '2010-08-12T10:21:04';
+use constant PACKAGE_DATE => '2010-08-30T21:44:00';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
 use ODF::lpOD::TextElement;
 use ODF::lpOD::StructuredContainer;
 use ODF::lpOD::Table;
+use ODF::lpOD::Style;
 use ODF::lpOD::Attributes;
 
 use base 'XML::Twig::Elt';
@@ -67,7 +68,9 @@ our %CLASS    =
         'draw:connector'                => odf_connector,
         'draw:frame'                    => odf_frame,
         'draw:image'                    => odf_image,
-        'manifest:file-entry'           => odf_file_entry
+        'manifest:file-entry'           => odf_file_entry,
+        'style:style'                   => odf_style,
+        'style:default-style'           => odf_style
         );
 
 #=== aliases and initialization ==============================================
@@ -77,6 +80,7 @@ BEGIN
         *get_tag                        = *XML::Twig::Elt::tag;
         *get_tagname                    = *XML::Twig::Elt::tag;
         *get_children                   = *XML::Twig::Elt::children;
+        *get_descendants                = *XML::Twig::Elt::descendants;
         *get_parent                     = *XML::Twig::Elt::parent;
         *previous_sibling               = *XML::Twig::Elt::prev_sibling;
         *clone                          = *XML::Twig::Elt::copy;
@@ -108,7 +112,16 @@ sub     create
 	$data	=~ s/\s+$//;
 	if ($data =~ /^<.*>$/)	# create element from XML string
 	        {
-	        $element = odf_element->parse($data, @_);
+	        $element = odf_element->parse($data, @_) or return undef;
+                foreach my $e ($element->descendants_or_self)
+                        {
+                        my $tag = $e->tag;
+                        bless $e, ($CLASS{$tag} || odf_element);
+                        if ($e->isa(odf_style))
+                                {
+                                $e->set_class;
+                                }
+                        }
 	        }
 	else
 	        {
@@ -119,15 +132,22 @@ sub     create
 
 #=== common element methods ===============================================
 
+our $INIT_CALLBACK   = undef;
+
 sub     new
         {
 	my $caller	= shift;
 	my $class	= ref($caller) || $caller;
+                # odf_element creation
         my $element     = $class->SUPER::new(@_);
-
+                # possible subclassing according to the tag
         my $tag = $element->tag;
         bless $element, $CLASS{$tag} if $CLASS{$tag};
-
+                # optional user-defined post-constructor function
+        if ($INIT_CALLBACK && (caller() eq 'XML::Twig'))
+                {
+                &$INIT_CALLBACK($element);
+                }
         return $element;
         }
 
@@ -138,6 +158,21 @@ sub     set_tag
         $self->_set_tag($tag);
         bless $self, $CLASS{$tag} || odf_element;
         return $tag;
+        }
+
+sub     set_class       {}
+
+sub     check_tag
+        {
+        my $self        = shift;
+        my $new_tag     = shift;
+        my $old_tag     = $self->get_tag;
+        return $old_tag unless $new_tag;
+        unless ($new_tag eq $old_tag)
+                {
+                $self->set_tag($new_tag);
+                }
+        return $self->get_tag;
         }
 
 sub     is
@@ -444,7 +479,7 @@ sub     replace_in_text_segment
         my $self        = shift;
         my $expr        = shift;
         my $repl        = shift;
-        
+
         my ($content, $change_count) = search_string
                         ($self->get_text, $expr, replace => $repl, @_);
         $self->set_text($content) if $change_count;
@@ -549,7 +584,7 @@ sub     get_paragraphs
         {
         my $self        = shift;
         my %opt         = @_;
- 
+
         if ($opt{style})
                 {
                 $opt{attribute} = 'style name';
@@ -582,7 +617,7 @@ sub     get_headings
                 $opt{value} = $opt{level};
                 delete $opt{level};
                 }
-        return $self->get_element_list('text:h', %opt);        
+        return $self->get_element_list('text:h', %opt);
         }
 
 sub     get_list
@@ -698,7 +733,7 @@ sub     check_position_mark
         my $self        = shift;
         my $tag         = shift;
         my $name        = shift;
-        
+
         my %opt = (attribute => 'text:name', value => $name);
 
         return TRUE if $self->get_element($tag, %opt);
@@ -752,7 +787,7 @@ sub     get_index_marks
         {
         my $self        = shift;
         my $type        = shift;
-        
+
         my $filter;
         given ($type)
                 {
@@ -853,7 +888,7 @@ sub     get_element_by_bookmark
         my $self        = shift;
         my $name        = shift;
         my %opt         = @_;
-        
+
         my $bookmark = $self->get_position_mark
                 ('text:bookmark', $name, $opt{role});
         unless ($bookmark)
@@ -867,7 +902,7 @@ sub     get_paragraph_by_bookmark
         {
         my $self        = shift;
         my $elt         = $self->get_element_by_bookmark(@_)
-                        or return FALSE;        
+                        or return FALSE;
         return $elt->isa(odf_paragraph) ?
                 $elt : $elt->get_ancestor(qr'text:(p|h)');
         }
@@ -960,7 +995,7 @@ sub     get_annotations
         my $xp = './/office:annotation';
         $xp .= '[@dc:date="' . $date . '"]'             if $date;
         $xp .= '[@dc:creator="' . $author . '"]'        if $author;
-        
+
         return $self->get_xpath($xp);
         }
 
@@ -971,7 +1006,7 @@ sub     get_changes
         my $self        = shift;
         my %opt         = @_;
         my $context     = $self;
-        
+
         unless ($opt{date} || $opt{author})
                 {
                 return $context->get_elements('text:changed-region');
@@ -1001,7 +1036,7 @@ sub     get_changes
                         {
                         $elt = $ci->first_descendant('dc:creator') or next;
                         $text = $elt->get_text;
-                        next unless $text eq $opt{author};                        
+                        next unless $text eq $opt{author};
                         }
                 push @r, $ci;
                 }
@@ -1137,7 +1172,7 @@ sub     get_attributes
         {
         my $self        = shift;
         return undef unless $self->is_element;
-        my $atts = $self->atts          or return undef;   
+        my $atts = $self->atts          or return undef;
         my %attr = %{$atts};
         my %result = ();
         $result{$_} = output_conversion($attr{$_}) for keys %attr;
@@ -1212,7 +1247,7 @@ sub     set_attributes
         my $self        = shift;
         my $attr        = shift         or return undef;
         my %attr        = ref $attr ? %{$attr} : ($attr, @_);
-        
+
         foreach my $k (keys %attr)
                 {
                 $self->set_attribute($k, $attr{$k});
@@ -1269,7 +1304,7 @@ sub     set_text
 sub     get_text_content
         {
         my $self        = shift;
-        my $t           = undef;
+        my $t           = "";
         foreach my $p ($self->descendants('text:p'))
                 {
                 $t .= ($p->get_text(@_) // "");                   #/
@@ -1304,6 +1339,12 @@ sub     get_name
         return $self->get_attribute('name');
         }
 
+sub     get_family
+        {
+        my $self        = shift;
+        return undef;
+        }
+
 sub     set_name
         {
         my $self        = shift;
@@ -1335,9 +1376,9 @@ sub     insert_element
                         position        => 'FIRST_CHILD',
                         @_
                         );
-        
+
         my $new_elt = ref $tag ? $tag : odf_create_element($tag);
-        
+
         if (defined $opt{after})
                 {
                 return $new_elt->paste_after($opt{after});
@@ -1394,7 +1435,7 @@ sub     serialize
                 (
                 pretty          => FALSE,
                 empty_tags      => EMPTY_TAGS,
-                @_                
+                @_
                 );
 
         $self->set_pretty_print(PRETTY_PRINT) if is_true($opt{pretty});
@@ -1482,7 +1523,7 @@ sub     _search_forward
                         {
                         $n = $n->next_elt($self, TEXT_SEGMENT);
                         %info = $n->node_info() if $n;
-                        $offset = 0;      
+                        $offset = 0;
                         }
                 }
         return wantarray ?
@@ -1502,7 +1543,7 @@ sub     _search_backward
                 $offset = -abs($offset);
                 }
         my ($target_node, $n, $start_pos, $end_pos, $match);
-        
+
         if ($self->is_text)
                 {
                 $n = $self;
@@ -1569,12 +1610,12 @@ sub     _search_backward
                         {
                         $n = $n->next_elt($self, TEXT_SEGMENT);
                         %info = $n->node_info() if $n;
-                        $offset = 0;       
+                        $offset = 0;
                         }
                 }
         return wantarray ?
                 ($target_node, $start_pos, $match, $end_pos)    :
-                $start_pos;      
+                $start_pos;
         }
 
 sub     search
@@ -1651,7 +1692,7 @@ sub     AUTOLOAD
 
         $method =~ /^([gs]et)_(.*)/;
         my $action      = $1;
-        
+
         no strict;
         my $target = ${$package . "ATTRIBUTE"}{$2};
         use strict;
@@ -1686,7 +1727,7 @@ sub     AUTOLOAD
                         }
                 }
 
-        return undef; 
+        return undef;
         }
 
 sub     not_allowed
@@ -1741,7 +1782,7 @@ sub     create
                 {
                 $note->set_body($opt{text});
                 }
-        
+
         return $note;
         }
 
@@ -1772,7 +1813,7 @@ sub     set_label
         my $label       = shift;
         my $c = $self->set_child('text:note-citation');
         $c->set_attribute('label' => $label) if defined $label;
-        return $c;        
+        return $c;
         }
 
 sub     get_label
@@ -1987,7 +2028,7 @@ sub     get_author
         my $self        = shift;
         return $self->get_info('creator');
         }
-  
+
 sub     get_type
         {
         my $self        = shift;
@@ -2127,4 +2168,3 @@ sub     set_type
 
 #=============================================================================
 1;
-
