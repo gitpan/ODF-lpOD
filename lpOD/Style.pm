@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Style;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-08-30T19:48:00';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-10-20T17:19:05';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -46,10 +46,53 @@ our %STYLE_DEF  =
                 tag             => 'style:style',
                 name            => 'name',
                 class           => odf_paragraph_style
+                },
+        list            =>
+                {
+                tag             => 'text:list-style',
+                name            => 'style:name',
+                class           => odf_list_style
+                },
+        outline         =>
+                {
+                tag             => 'text:outline-style',
+                name            => undef,
+                class           => odf_outline_style
                 }
         );
 
 #-----------------------------------------------------------------------------
+
+sub     required_tag
+        {
+        my $self	= shift;
+        my $family      = $self->get_family()   or return undef;
+        return $STYLE_DEF{$family}->{tag};
+        }
+
+sub     set_name
+        {
+        my $self        = shift;
+        my $name        = shift;
+        return undef unless defined $name;
+        return $self->set_tag($name) if (caller() eq 'XML::Twig::Elt');
+        my $family = $self->get_family;
+        my $attr;
+        if ($family)
+            {
+            my $desc = $STYLE_DEF{$family};
+            $attr = $desc->{'name'} if $desc;
+            }
+        return $attr ?
+            $self->set_attribute($attr => $name)    :
+            $self->SUPER::set_name($name);
+        }
+
+sub     get_name
+        {
+        my $self	= shift;
+        return $self->get_attribute('style:name');
+        }
 
 sub     set_class
         {
@@ -88,7 +131,7 @@ sub	create
                         alert "Style cloning error"; return undef;
                         }
                 my $f = $style->get_family;
-                unless ($f eq $family)
+                unless (($f eq $family) || ($style->convert($family)))
                         {
                         alert "Family mismatch";
                         $style->delete;
@@ -100,6 +143,7 @@ sub	create
                 {
                 $style = odf_create_element($desc->{tag});
                 }
+        $style->set_name($opt{name}) if $opt{name};
 	bless $style, $desc->{class};
         $style->initialize(%opt);
         return $style;
@@ -220,8 +264,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::ParagraphStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-08-27T21:33:00';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-10-19T14:17:41';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -231,7 +275,8 @@ our %ATTR =
     line_height_at_least            => 'style:line-height-at-least',
     font_independent_line_spacing   => 'style:font-independent-line-spacing',
     together                        => 'fo:keep-together',
-    auto_text_indent                => 'style:auto-text-indent'
+    auto_text_indent                => 'style:auto-text-indent',
+    shadow                          => 'style:shadow'
     );
 
 sub     attribute_name
@@ -352,6 +397,158 @@ sub     set_background
                         $im->set_attribute('filter name' => $opt{filter});
                         }
                 }
+        }
+
+#=============================================================================
+package ODF::lpOD::ListStyle;
+use base 'ODF::lpOD::Style';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-10-20T17:55:47';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub get_family  { 'list' }
+
+#-----------------------------------------------------------------------------
+
+sub     initialize
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        $self->set_attribute('style:display-name' => $opt{display_name});
+        return $self;
+        }
+
+sub     level_style_tag
+        {
+        my $self	= shift;
+        my $type        = shift;
+        unless ($type)
+                {
+                alert "Missing item mark type"; return FALSE;
+                }
+        return ('text:list-level-style-' . $type);
+        }
+
+sub     convert
+        {
+        my $self	= shift;
+        my $family      = shift;
+        return FALSE unless ($family && ($family eq 'outline'));
+        $self->set_name(undef);
+        $self->set_tag($STYLE_DEF{outline}->{tag});
+        foreach my $ls ($self->get_children(qr'level-style'))
+                {
+                $ls->set_tag($self->level_style_tag);
+                }
+        return $self;        
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     get_level_style
+        {
+        my $self	= shift;
+        my $level       = shift;
+        return $self->get_xpath('.//*[@text:level="' . $level . '"]', 0);
+        }
+
+sub	set_level_style
+        {
+        my $self	= shift;
+        my $level       = shift;
+        unless (defined $level && $level > 0)
+                {
+                alert "Missing or wrong level"; return FALSE;
+                }
+        my %opt = process_options(@_);
+        my $e;
+        if (defined $opt{clone})
+                {
+                $e = $opt{clone}->copy;
+                my $old = $self->get_level_style($level);
+                $old && $old->delete;
+                $e->set_attribute(level => $level);
+                return $self->append_element($e);
+                }
+        my $type = $opt{type} || 'number';
+        my $tag = $self->level_style_tag($type) or return FALSE;
+        $e = odf_create_element($self->level_style_tag($type));
+        given ($type)
+                {
+                when ('number')
+                        {
+                        $e->set_attributes
+                                (
+                                'style:num-format'      => $opt{format},
+                                'style:num-prefix'      => $opt{prefix},
+                                'style:num-suffix'      => $opt{suffix},
+                                'start value'           => $opt{start_value},
+                                'display levels'        => $opt{display_levels}
+                                );
+                        }
+                when ('bullet')
+                        {
+                        $e->set_attribute('bullet char' => $opt{character});
+                        }
+                when ('image')
+                        {
+                        $e->set_url($opt{url} // $opt{uri});
+                        }
+                default
+                        {
+                        $e->delete; undef $e;
+                        alert "Unknown item mark type"; return FALSE;
+                        }
+                }
+        $e->set_attribute(level => $level);
+        $e->set_style($opt{style});
+        my $old = $self->get_level_style($level); $old && $old->delete;
+        return $self->append_element($e);
+        }
+
+#=============================================================================
+package ODF::lpOD::OutlineStyle;
+use base 'ODF::lpOD::ListStyle';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-10-20T17:54:51';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub get_family          { 'outline' }
+
+#-----------------------------------------------------------------------------
+
+sub     initialize
+        {
+        my $self        = shift;
+        return $self;
+        }
+
+sub     level_style_tag { 'text:outline-level-style' }
+
+sub     convert
+        {
+        my $self	= shift;
+        my $family      = shift;
+        return FALSE unless ($family && ($family eq 'list'));
+        $self->set_tag($STYLE_DEF{list}->{tag});
+        foreach my $ls ($self->get_children(qr'level-style'))
+                {
+                $ls->set_tag($self->level_style_tag('number'));
+                }
+        return $self;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     set_level_style
+        {
+        my $self	= shift;
+        my $level       = shift;
+        my %opt         = @_;
+        $opt{type}      = 'number';
+        return $self->SUPER::set_level_style($level, %opt);
         }
 
 #=============================================================================

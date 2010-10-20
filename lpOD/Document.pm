@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.105';
-use constant PACKAGE_DATE => '2010-08-30T22:41:00';
+our     $VERSION    = '0.106';
+use constant PACKAGE_DATE => '2010-10-20T16:56:23';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -160,6 +160,7 @@ sub     get_xmlpart
 sub     loaded_xmlparts
         {
         my $self        = shift;
+        return undef unless $self->{xmlparts};
         return wantarray ? @{$self->{xmlparts}} : $self->{xmlparts};
         }
 
@@ -288,6 +289,7 @@ sub     save
                 }
         foreach my $part_name ($self->loaded_xmlparts)
                 {
+                next unless $part_name;
                 my $part = $self->{$part_name}  or next;
                 $part->store(pretty => $pretty) if is_true($part->{update});
                 }
@@ -307,6 +309,19 @@ sub     get_element
                 return undef;
                 }
         return $part->get_element(@_);
+        }
+
+sub     get_elements
+        {
+        my $self	= shift;
+        my $part_name   = shift;
+        my $part = $self->get_part($part_name);
+        unless ($part)
+                {
+                alert "Unknown or not available document part";
+                return undef;
+                }
+        return $part->get_elements(@_);      
         }
 
 sub     get_changes
@@ -334,6 +349,13 @@ sub     get_default_style
         return $self->get_element(STYLES, $xp);
         }
 
+sub     get_outline_style
+        {
+        my $self	= shift;
+        my $xp          = '//text:outline-style';
+        return $self->get_element(STYLES, $xp);
+        }
+
 sub     get_style
         {
         my $self        = shift;
@@ -343,25 +365,70 @@ sub     get_style
                 alert "Missing style family"; return undef;
                 }
         my $name        = shift;
-        return $self->get_default_style($family) unless $name;
-
-        my $style;
-        given ($family)
+        unless ($name)
                 {
-                default
+                given ($family)
                         {
-                        my $xp =        '//style:style[@style:name="'   .
-                                        $name                           .
-                                        '"][@style:family="'            .
-                                        $family                         .
-                                        '"]';
-                        $style =
-                                $self->get_element(STYLES, $xp)
-                                                //
-                                $self->get_element(CONTENT, $xp);
+                        when ('outline')
+                                {
+                                return $self->get_outline_style;
+                                }
+                        default
+                                {
+                                return $self->get_default_style($family);
+                                }
                         }
                 }
-        return $style;
+
+        my $style; my $xp;
+        given ($family)
+                {
+                when ('list')
+                        {
+                        $xp =   '//text:list-style[@style:name="' .
+                                $name . '"]';
+                        }
+                default
+                        {
+                        $xp =   '//style:style[@style:name="'   .
+                                $name                           .
+                                '"][@style:family="'            .
+                                $family                         .
+                                '"]';
+                        }
+                }
+
+        return
+                $self->get_element(STYLES, $xp)
+                                //
+                $self->get_element(CONTENT, $xp);
+        }
+
+sub     get_styles
+        {
+        my $self	= shift;
+        my $family      = shift;
+        unless ($family)
+                {
+                alert "Missing style family"; return undef;
+                }
+        my $xp;
+        given ($family)
+                {
+                when('list')
+                        {
+                        $xp =   '//text:list-style';
+                        }
+                default
+                        {
+                        $xp =   '//style:style';
+                        }
+                }
+
+        return  (
+                $self->get_elements(STYLES, $xp),
+                $self->get_elements(CONTENT, $xp)
+                );        
         }
 
 sub     check_stylename
@@ -383,9 +450,9 @@ sub     check_stylename
         return TRUE;
         }
 
-sub     insert_text_style
+sub     select_style_context
         {
-        my $self        = shift;
+        my $self	= shift;
         my $style       = shift;
         my %opt         = @_;
         my $part_name;
@@ -393,6 +460,8 @@ sub     insert_text_style
                 is_false($opt{automatic})
                         or
                 is_true($opt{default})
+                        or
+                $style->isa(odf_outline_style)
                         or
                 ($opt{part} && ($opt{part} eq STYLES))
             )
@@ -411,6 +480,16 @@ sub     insert_text_style
                 alert "Wrong document structure; style insertion failure";
                 return undef;
                 }
+        return $context;
+        }
+
+sub     insert_text_style
+        {
+        my $self        = shift;
+        my $style       = shift;
+        my %opt         = @_;
+        my $context     = $self->select_style_context($style, %opt)
+                or return undef;
         if (is_true($opt{default}))
                 {
                 $style->check_tag('style:default-style');
@@ -420,9 +499,34 @@ sub     insert_text_style
                 {
                 my $name = $opt{name} || $style->get_name;
                 return undef unless $self->check_stylename($style, $name);
-                $style->check_tag('style:style');
-                $style->set_name($opt{name}) if $opt{name};
+                $style->check_tag($style->required_tag);
+                $style->set_name($name);
                 }
+        return $context->insert_element($style);
+        }
+
+sub     insert_list_style
+        {
+        my $self        = shift;
+        my $style       = shift;
+        my %opt         = @_;
+        my $context     = $self->select_style_context($style, %opt)
+                or return undef;
+        my $name = $opt{name} || $style->get_name;
+        return undef unless $self->check_stylename($style, $name);
+        $style->check_tag($style->required_tag);
+        $style->set_name($name);
+        return $context->insert_element($style);
+        }
+
+sub     insert_outline_style
+        {
+        my $self	= shift;
+        my $style       = shift;
+        my $context = $self->select_style_context($style) or return undef;
+        my $old = $self->get_style('outline'); $old && $old->delete;
+        $style->set_name(undef);
+        $style->check_tag($style->required_tag);
         return $context->insert_element($style);
         }
 
@@ -456,6 +560,14 @@ sub     insert_style
                 when (['text', 'paragraph'])
                         {
                         return $self->insert_text_style($style, %opt);
+                        }
+                when ('list')
+                        {
+                        return $self->insert_list_style($style, %opt);
+                        }
+                when ('outline')
+                        {
+                        return $self->insert_outline_style($style);
                         }
                 default
                         {
@@ -712,7 +824,7 @@ sub     set_part
         {
         my $self        = shift;
         my $part_name   = translate_part_name(shift)    or return FALSE;
-        my $data        = shift // "";                                  #/
+        my $data        = shift // "";
         my %opt         =
                 (
                 string          => FALSE,
@@ -858,7 +970,7 @@ sub     save
 #=============================================================================
 package ODF::lpOD::XMLPart;
 our     $VERSION    = '0.105';
-use constant PACKAGE_DATE => '2010-08-30T19:55:00';
+use constant PACKAGE_DATE => '2010-10-20T16:09:51';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Element;
@@ -949,10 +1061,11 @@ sub     new
                 alert "Unknown ODF XML part"; return FALSE;
                 }
 
-        $self->{twig} //= XML::Twig->new        # twig init /
+        $self->{twig} //= XML::Twig->new        # twig init
                                 (
                                 elt_class       => $self->{elt_class},
                                 pretty_print    => $self->{pretty_print},
+                                output_encoding => TRUE,
                                 id              => $ODF::lpOD::Common::LPOD_ID
                                 );
         $self->{twig}->set_output_encoding('UTF-8');
@@ -1322,7 +1435,7 @@ sub     get_keywords
 sub     set_keyword
         {
         my $self        = shift;
-        my $kw          = shift // return undef;                #/
+        my $kw          = shift // return undef;
         for ($self->get_keyword_list)
                 {
                 return FALSE if $_->get_text() eq $kw;
@@ -1393,7 +1506,7 @@ sub     set_user_field
         {
         my $self        = shift;
         my $name        = shift;
-        my $value       = shift;                          #/
+        my $value       = shift;
         my $type        = shift || 'string';
         unless (is_odf_datatype($type))
                 {

@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.105';
-use constant PACKAGE_DATE => '2010-08-14T20:32:00';
+our	$VERSION	        = '0.106';
+use constant PACKAGE_DATE => '2010-10-19T20:30:29';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -73,7 +73,7 @@ our @EXPORT     = qw
         odf_file_entry
 
         odf_style
-        odf_text_style odf_paragraph_style
+        odf_text_style odf_paragraph_style odf_list_style odf_outline_style
 
         TRUE FALSE PRETTY
         is_true is_false is_odf_datatype odf_boolean process_options
@@ -144,6 +144,8 @@ use constant
         odf_style               => 'ODF::lpOD::Style',
         odf_text_style          => 'ODF::lpOD::TextStyle',
         odf_paragraph_style     => 'ODF::lpOD::ParagraphStyle',
+        odf_list_style          => 'ODF::lpOD::ListStyle',
+        odf_outline_style       => 'ODF::lpOD::OutlineStyle',
         odf_file_entry          => 'ODF::lpOD::FileEntry'
         };
         
@@ -475,7 +477,7 @@ sub     output_conversion
 
 sub	iso_date
 	{
-	my $time = shift // time();                             #/
+	my $time = shift // time();
 	my @t = localtime($time);
 	return sprintf
 			(

@@ -29,7 +29,7 @@ use     strict;
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-08-03T13:35:42';
+use constant PACKAGE_DATE => '2010-10-18T10:53:39';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -434,7 +434,8 @@ sub     get_text
                                 }
                         default
                                 {
-                                $text .= $node->get_text(%opt);
+                                my $t = $node->get_text(%opt);
+                                $text .= $t if defined $t;
                                 }
                         }
                 }

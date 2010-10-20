@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.106';
-use constant PACKAGE_DATE => '2010-08-30T21:44:00';
+our     $VERSION        = '0.107';
+use constant PACKAGE_DATE => '2010-10-20T17:28:01';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -70,7 +70,9 @@ our %CLASS    =
         'draw:image'                    => odf_image,
         'manifest:file-entry'           => odf_file_entry,
         'style:style'                   => odf_style,
-        'style:default-style'           => odf_style
+        'style:default-style'           => odf_style,
+        'text:list-style'               => odf_list_style,
+        'text:outline-style'            => odf_outline_style
         );
 
 #=== aliases and initialization ==============================================
@@ -150,6 +152,8 @@ sub     new
                 }
         return $element;
         }
+
+sub     convert         { FALSE }
 
 sub     set_tag
         {
@@ -504,7 +508,7 @@ sub     _get_elements
                 @_
                 );
         $tag = $self->normalize_name($tag);
-        my $xpath = './/' . ($tag // "");                       #/
+        my $xpath = './/' . ($tag // "");
 
         if (defined $opt{content})
                 {
@@ -1165,7 +1169,8 @@ sub     get_attribute
         {
         my $self        = shift;
         my $name        = $self->normalize_name(shift);
-        return output_conversion($self->att($name));
+        my $value       = $self->att($name);
+        return output_conversion($value);
         }
 
 sub     get_attributes
@@ -1353,6 +1358,18 @@ sub     set_name
         return caller() eq 'XML::Twig::Elt' ?
                 $self->set_tag($name)           :
                 $self->set_attribute('name' => $name);
+        }
+
+sub     get_url
+        {
+        my $self	= shift;
+        return $self->get_attribute('xlink:href');
+        }
+
+sub     set_url
+        {
+        my $self	= shift;
+        return $self->set_attribute('xlink:href' => shift);
         }
 
 sub     get_style

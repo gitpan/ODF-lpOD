@@ -1,6 +1,6 @@
 =head1	NAME
 
-ODF::lpOD::Styles - Styles management
+ODF::lpOD::Style - Styles management
 
 =head1  DESCRIPTION
 
@@ -427,3 +427,204 @@ legal values are C<page>, C<column>, C<auto>.
 =back
 
 A pararaph style may have a background color or image.
+
+=head2  List family
+
+A list style is a set of styles that control the formatting properties of
+the list items at every hierachical level. As a consequence, a list style
+is a named container including a particular style definition for each level;
+in other words a list style is a set of list level styles.
+
+The API allows the user to create a list style (if not previously existing
+in the document), and to create, retrieve and update it for any level.
+
+A new list style, available for later insertion in a document, is created
+through the C<odf_create_style()> function. The only mandatory argument is
+the style family, which is C<list>. However, a name is generally required as
+the second argument, knowing that a style list can't presently be used as a
+default style; an error is raised at any attempt to attach a nameless list
+style using C<insert_style()>. An optional display name argument is allowed
+(if the style list is about to be used as a common style); if  provided, the
+display name should be unique as well.
+
+An existing list style object provides a C<set_level_style()> method,
+allowing the applications to set or change the list style properties for a
+given level. This method requires the level number as its first argument,
+then a C<type> named parameter may be provided. The level is a positive (non
+zero) integer value that identifies the hierarchical position. The type
+specifies what kind of item mark is should be selected for the level; the
+possible types are C<number>, C<bullet> or C<image>. The default is C<number>.
+
+If the C<bullet> type is selected, the affected items will be displayed after
+a special character (the "bullet"), which must be provided as a C<character>
+named argument, whose value is an UTF-8 character.
+
+If the C<image> type is selected, the URL of an image resource must be
+provided; the affected items will be displayed after a graphical mark whose
+content is an external image.
+
+A C<number> list level type means that any affected list item will be marked
+with a leading computed number such as "1", "i", "(a)", or any auto-
+incremented value, whose formatting will be controlled according to other
+list level style properties (or to the default behaviour of the viewer for
+ordered lists). With the C<number> type, its possible to provide C<prefix>
+and/or C<suffix> options, which provide strings to be displayed before and
+after the number. Other optional parameters are:
+
+=over
+
+=item
+
+C<style>: the text style to use to format the number;
+
+=item
+
+C<display levels>: the number of levels whose numbers are displayed at the
+current level (ex: if display-levels is 3, so the displayed number could
+be something like "1.1.1");
+
+=item
+
+C<format>: the number format (typically "1" for a simple number display),
+knowing that if this parameter is null the number is not visible;
+
+=item
+
+C<start value>: the first number of a list item of the current level.
+
+=back
+
+The following example shows the way to create a new list style then
+to set some properties for levels 1 to 3, each one with a different type:
+
+   $ls = odf_create_style('list', name => 'ListStyle1');
+   $ls->set_level_style(1, type => 'number', prefix => ' ', suffix => '. ');
+   $ls->set_level_style(2, type => 'bullet', character => '-');
+   $ls->set_level_style(3, type => 'image', url => 'bullet.jpg');
+
+The C<set_level_style()> method returns an ODF element, representing the list
+level style definition, and which could be processed later through any element-
+or style-oriented function.
+
+An individual list level style may be reloaded through C<get_level_style()>,
+with the level number as its only one argument; it returns a regular ODF element
+(or C<undef> if the given level is not defined for the calling list style).
+
+It's possible to reuse an existing list level style definition at another level
+in the same list style, or at any level in another list style, or in another
+document. To do so, the existing level style (previously extracted by any mean,
+including the C<get_level_style()> method) must be provided as a special
+C<clone> parameter to C<set_level_style()>. The following example reuses the
+level 3 style of "ListStyle1" to define or change the level 5 style of
+"ListStyle2":
+
+   $ls1 = $document->get_style('list', 'ListStyle1');
+   $source = $ls1->get_level_style(3);
+   $ls2 = $document->get_style('list', 'ListStyle2');
+   $ls2->set_level_style(5, clone => $source);
+
+The object returned by C<set_level_style()> or C<get_level_style()> is
+similar to an ODF style object, without the name and the family. So the generic
+C<set_properties()> method may be used later in order to set any particular
+property for any list level style. Possible properties are described in section
+§14.10 of the ODF specification.
+
+Every list level style definition in a list style is optional; so it's not
+necessary to define styles for levels that will not be used in the target
+document. The C<set_level_style()> method may be used with an already defined
+level; in such a situation, the old level style is replaced by the new one. So
+it's easy to clone an existing list style then modify it for one or more levels.
+
+=head2  Outline style
+
+According to the ODF specification, "the outline style is a list style that
+is applied to all headings within a text document where the heading's paragraph
+style does not define a list style to use itself".
+
+Practically, the outline style is a particular list style which controls the
+layout of a particular hierarchical list. In other words, it's a list
+of default styles for headings according to their respective hierarchical
+levels.
+
+The outline style, like any list style, should define a style for each level
+in use in the document.
+
+The API allows the user to initialize the outline style (if not previously
+existing in the document), and to create, retrieve and update it for any level.
+
+The C<get_style()> method allows the user to get access to the outline
+style structure; to do so, C<outline> must be provided in place of the family
+argument. The returned object is a nameless list style; it may be
+cloned in order to be reused as the outline style for another document, or as
+an ordinary list style (provided that it's later named). If the outline style
+is not initialized yet, C<get_style()> returns a null value for the C<outline>
+family.
+
+If needed, the outline style can be created through C<odf_create_style()>
+with C<outline> as the style family and without name, then attached using
+C<insert_style()>. The style for each individual level may be set, retrieved
+and changed at any time using the object-based C<set_level_style()> and
+C<get_level_style()> methods.
+
+Unlike with regular list styles, the C<type> option of C<set_level_style()>
+is ignored with the outline style; the type is automatically C<number> (i.e.
+the outline style is always a numbered list style).
+
+The API allows the user to set style attributes for any level, knowing that a
+level is identified by a positive integer starting from 1. With the current
+version of the lpOD level 1 API, a few outline level style attributes are
+supported, namely:
+
+=over
+
+=item
+
+C<prefix>: a string that should be displayed before the heading number;
+
+=item
+
+C<suffix>: a string that should be displayed before the heading number;
+
+=item
+
+C<format>: the number display format (ex: 1, "A");
+
+=item
+
+C<display levels>: the number of levels whose numbers are displayed at
+the current level;
+
+=item
+
+C<start value>: the first number of a heading at this level;
+
+=item
+
+C<style>: the name of the style to use to format the number (that is a
+regular text style).
+
+=back
+
+As an example, the following code retrieves the default style for the level 4
+headings:
+
+   $os = $document->get_style('outline');
+   $head4 = $os->get_level_style(4);
+
+The next example sets some properties for any level 1 heading, namely a
+numbering starting from 5 and the use of capital letters between parentheses
+as numbers:
+
+   $os = $document->get_style('outline');
+   $os->set_level_style(
+        1,
+        start_value => 5, prefix => '(', suffix => ')', format => 'A'
+        ):
+
+According to the example above, the default numbering scheme for level 1
+headings will be "(E)", "(F)", "(G)", and so on.
+
+Attributes and properties which are not explicitly supported through predefined
+parameter names in the present version of the API could always be set hrough
+the element-oriented methods of the level 0 API, knowing that
+C<get_level_style()> returns a regular element.
