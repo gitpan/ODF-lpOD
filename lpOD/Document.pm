@@ -27,9 +27,9 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.106';
-use constant PACKAGE_DATE => '2010-10-20T16:56:23';
-use ODF::lpOD::Common;
+our     $VERSION    = '0.107';
+use     constant PACKAGE_DATE => '2010-11-07T21:56:47';
+use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN   {
@@ -296,6 +296,21 @@ sub     save
         return $container->save(%opt);
         }
 
+#--- required insertion context retrieval ------------------------------------
+
+sub     get_required_context
+        {
+        my $self        = shift;
+        my $elt         = shift;
+        my ($part_name, $path) = $elt->context_path;
+        if ($part_name)
+                {
+                $path ||= '/';
+                return $self->get_element($part_name, $path);
+                }
+        return undef;
+        }
+
 #--- direct element retrieval ------------------------------------------------
 
 sub     get_element
@@ -385,15 +400,26 @@ sub     get_style
                 {
                 when ('list')
                         {
-                        $xp =   '//text:list-style[@style:name="' .
+                        $xp =   '//text:list-style[@style:name="'       .
+                                $name . '"]';
+                        }
+                when ('master page')
+                        {
+                        $xp =   '//style:master-page[@style:name="'     .
+                                $name . '"]';
+                        }
+                when ('page layout')
+                        {
+                        $xp =   '//style:page-layout[@style:name="'     .
                                 $name . '"]';
                         }
                 default
                         {
+                        my $f = $family; $f =~ s/[ _]/-/g;
                         $xp =   '//style:style[@style:name="'   .
                                 $name                           .
                                 '"][@style:family="'            .
-                                $family                         .
+                                $f                              .
                                 '"]';
                         }
                 }
@@ -413,15 +439,20 @@ sub     get_styles
                 alert "Missing style family"; return undef;
                 }
         my $xp;
+        my $f = $family; $f =~ s/[ _]/-/g;
         given ($family)
                 {
                 when('list')
                         {
                         $xp =   '//text:list-style';
                         }
+                when(/page/)
+                        {
+                        $xp = '//style:' . $f;
+                        }
                 default
                         {
-                        $xp =   '//style:style';
+                        $xp = '//style:style[@style:family="' . $f . '"]';
                         }
                 }
 
@@ -454,14 +485,14 @@ sub     select_style_context
         {
         my $self	= shift;
         my $style       = shift;
+        my $context     = $self->get_required_context($style);
+        return $context if $context;
+        my ($part_name, $xp);
         my %opt         = @_;
-        my $part_name;
         if  (
                 is_false($opt{automatic})
                         or
                 is_true($opt{default})
-                        or
-                $style->isa(odf_outline_style)
                         or
                 ($opt{part} && ($opt{part} eq STYLES))
             )
@@ -472,9 +503,9 @@ sub     select_style_context
                 {
                 $part_name = CONTENT;
                 }
-        my $xp = is_true($opt{automatic}) ?
+        $xp = is_true($opt{automatic}) ?
                 '//office:automatic-styles' : '//office:styles';
-        my $context = $self->get_element($part_name, $xp);
+        $context = $self->get_element($part_name, $xp);
         unless ($context)
                 {
                 alert "Wrong document structure; style insertion failure";
@@ -505,7 +536,7 @@ sub     insert_text_style
         return $context->insert_element($style);
         }
 
-sub     insert_list_style
+sub     insert_regular_style
         {
         my $self        = shift;
         my $style       = shift;
@@ -561,13 +592,19 @@ sub     insert_style
                         {
                         return $self->insert_text_style($style, %opt);
                         }
-                when ('list')
+                when (['list', 'master page', 'page layout'])
                         {
-                        return $self->insert_list_style($style, %opt);
+                        return $self->insert_regular_style($style, %opt);
                         }
                 when ('outline')
                         {
                         return $self->insert_outline_style($style);
+                        }
+                when (/^table/)
+                        {
+                        $opt{automatic} = TRUE unless exists $opt{automatic};
+                        $opt{part} = CONTENT unless $opt{part};
+                        return $self->insert_regular_style($style, %opt);
                         }
                 default
                         {

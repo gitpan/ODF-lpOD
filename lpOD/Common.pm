@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.106';
-use constant PACKAGE_DATE => '2010-10-19T20:30:29';
+our	$VERSION	        = '0.107';
+use constant PACKAGE_DATE       => '2010-11-07T23:32:14';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -74,6 +74,8 @@ our @EXPORT     = qw
 
         odf_style
         odf_text_style odf_paragraph_style odf_list_style odf_outline_style
+        odf_table_style odf_column_style odf_row_style odf_cell_style
+        odf_master_page odf_page_layout odf_page_end_style
 
         TRUE FALSE PRETTY
         is_true is_false is_odf_datatype odf_boolean process_options
@@ -146,9 +148,16 @@ use constant
         odf_paragraph_style     => 'ODF::lpOD::ParagraphStyle',
         odf_list_style          => 'ODF::lpOD::ListStyle',
         odf_outline_style       => 'ODF::lpOD::OutlineStyle',
+        odf_table_style         => 'ODF::lpOD::TableStyle',
+        odf_column_style        => 'ODF::lpOD::ColumnStyle',
+        odf_row_style           => 'ODF::lpOD::RowStyle',
+        odf_cell_style          => 'ODF::lpOD::CellStyle',
+        odf_master_page         => 'ODF::lpOD::MasterPage',
+        odf_page_layout         => 'ODF::lpOD::PageLayout',
+        odf_page_end_style      => 'ODF::lpOD::PageEndStyle',
         odf_file_entry          => 'ODF::lpOD::FileEntry'
         };
-        
+
 #--- lpOD common tools and parameters ----------------------------------------
 
 use constant
@@ -307,7 +316,7 @@ sub     info
 
 sub     debug
         {
-        my $param       = shift // "";                          #/
+        my $param       = shift // "";
         $param          = shift if $param eq lpod;
         given ($param)
                 {
@@ -365,15 +374,15 @@ sub     check_odf_value
                 {
                 when (undef)
                         {
-                        $type = 'string'; $value //= "";        #/
+                        $type = 'string'; $value //= "";
                         }
                 when ('string')
                         {
-                        $value //= "";                          #/
+                        $value //= "";
                         }
                 when (['float', 'currency', 'percentage'])
                         {
-                        $value //= 0;                           #/
+                        $value //= 0;
                         $value = undef unless is_numeric($value);
                         }
                 when ('boolean')
@@ -436,7 +445,7 @@ sub     get_local_encoding
 
 sub     set_local_encoding
         {
-        my $new_encoding = shift // "";                                 #/
+        my $new_encoding = shift // "";
         $new_encoding = shift if ($new_encoding eq lpod);
         my $enc = Encode::find_encoding($new_encoding);
         unless ($enc)
@@ -595,7 +604,7 @@ sub     installation_path
 
 sub     template
         {
-        my $type        = shift // "";                          #/
+        my $type        = shift // "";
         $type = shift if $type eq lpod;
         
         my $filename = $ODF_TEMPLATE{$type};

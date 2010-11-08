@@ -628,3 +628,354 @@ Attributes and properties which are not explicitly supported through predefined
 parameter names in the present version of the API could always be set hrough
 the element-oriented methods of the level 0 API, knowing that
 C<get_level_style()> returns a regular element.
+
+=head1  Table-related styles
+
+The API supports 4 kinds of styles that control various table formatting
+properties. While a table style specifies the global formatting properties of
+a table, row, column and cell styles allow a specific layout control for each
+table component.
+
+=head2  Table styles
+
+A table style specifies the external size, borders and background of a table.
+It may be created through C<odf_create_style()> with C<table> as style family,
+the usual C<name> parameter, and the following parameters:
+
+=over
+
+=item
+
+C<width>: the table width (in length, not in columns), provided either in
+absolute values or as a percentage of the page width; both absolute and
+relative values may be provided as a string, separated by a space, if needed;
+
+=item
+
+C<margin>: to control all the margins of the table;
+
+=item
+
+C<margin xxx> (where C<xxx> is C<left>, C<right>, C<top> or C<bottom>): to
+control the margins of the table separately;
+
+=item
+
+C<align>: to specifiy the table alignment scheme, with C<left>, C<right>,
+C<center>, C<margins> as possible values;
+
+=item
+
+C<together>: to control whether the rows of the table should be kept together
+on the same page or column, possible values being ``always`` or ``auto``;
+
+=item
+
+C<keep with next>: to specify whether or not to keep the paragraph and the
+next paragraph together on a page or in a column, possible values are
+C<always> or C<auto>; default is C<auto>;
+
+=item
+
+C<break xxx> (where C<xxx> is C<before> or C<after>): to specify if a page
+or column break must be inserted before or after any paragraph using the
+style, legal values are C<page>, C<column>, C<auto>; default is C<auto>;
+
+=item
+
+C<display>: boolean property that specifies if a table is visible or not;
+default is C<true>.
+
+=back
+
+The table styles support the C<set_background()> method and may have a
+C<shadow> property. However, while a table covers a rectangular area, the
+C<border xxx> properties are not defined at the table style level; the borders
+are cell properties.
+
+=head2   Cell styles
+
+A cell style is created using C<odf_create_style()> with C<table cell> as the
+family. A C<data style> may be provided as an optional parameter, which is
+recommended as soon as the style is about to be used for numeric cells.
+
+Once created, a cell style may be customized using C<set_properties()>. See
+§15.11 in the ODF specification for the full list of possible properties.
+However, C<set_properties()>, when used from a cell style object, allows the
+following shortcuts for the most used attributes:
+
+=over
+
+=item
+
+C<border>, C<border top>, C<border left>, C<border right>,
+C<border bottom>, in the same way as other rectangular area styles;
+
+=item
+
+C<shadow>: idem.
+
+=back
+
+The C<set_background()> method is allowed (with C<color> or C<uri>).
+
+=head2  Column styles
+
+A column style is created using C<odf_create_style()> with C<table column> as
+the family. It may be customized using C<set_properties()>.
+
+The most necessary property is C<width>, wich may be an absolute width (i.e.
+a string containing the number and the length unit), a relative length (i.e.
+a string containing a number followed by a star), or both (space-separated).
+See §15.9.1 in the ODF specification for details about the relative widths.
+
+The C<break xxx> parameters (where C<xxx> is C<before> or C<after>), are
+allowed to specify if a page or column break must be inserted before or after
+any column using the style, legal values are C<page>, C<column>, C<auto>;
+default is C<auto>.
+
+=head2  Row styles
+
+A row style is created using C<odf_create_style()> with C<table row> as
+the family. It may be customized using C<set_properties()>.
+
+The most necessary property is C<height>, knowing that, according to the standard,
+the default height is the height of the tallest item in the row. The content of
+this property must be an absolute height, provided as a string containing the
+number and the length unit. If the length unit is omitted, it's automatically
+set to "cm" by the lpOD API.
+
+The C<break xxx> parameters (where C<xxx> is C<before> or C<after>), are
+allowed to specify if a page or column break must be inserted before or after
+any row using the style, legal values are C<page>, C<column>, C<auto>;
+default is C<auto>.
+
+The row style supports the common C<set_background()> method.
+
+=head1  Page styles
+
+A page style definition, so-called I<master page>, is I<a template for pages in
+a document>. It directly defines the static content I<that is displayed on all
+pages> that use it (such as headers and footers). In addition, a
+I<master page> is associated to a I<page layout>, defined as a separate object
+that describes I<the physical properties or geometry of a page, for example,
+page size, margins, header height, and footer height>. The same I<page layout>
+may be used through several I<page masters>.
+
+In I<text documents>, the pages are not statically defined; they are dynamically
+generated by the viewing/printing applications according to their content
+(which changes each time a piece of content is inserted, deleted or moved. As a
+consequence, a master page is not used in the same way as, say, a paragraph
+style or a list style, because there is no persistent text page object which
+could directly contain a reference to a page style. A master page is essentially
+referred to through page breaks. For example, each time a forced page break is
+inserted, it's possible to specify the master page of the following page. In
+addition, any master page may own a property that tells what should be the
+master page to use after the current page (for example, a "Right page" style
+may de defined in order to ensure that any page using it will be followed by
+a page that will use a "Left page" style and vice-versa).
+
+Master page objects (and the corresponding I<page layouts>) apply to
+presentation and drawing documents, too. However, the page style model is very
+different (and much more complicated) for these documents than for text
+documents. This model uses master pages, page layouts, and two additional
+style-related objects, namely *presentation page layouts* and
+*presentation page styles*.
+
+Drawing and presentation documents use statically defined draw pages. As a
+consequence, the link between every draw page and its master page and other
+style-related objects is static and specified through explicit properties of
+the draw page.
+
+=head2  Master pages
+
+A master page is created and retrieved the same way as other styles.
+
+To create a master page through the generic C<odf_create_style()> function,
+the family argument is C<master page> and it's followed by an arbitrary
+optional C<name> parameter, that may be provided later, but that is mandatory
+when the style is attached to a document using the odf_document based
+C<insert_style()> method.
+
+A master page may, like other styles, have a display name distinct from its
+name. In addition, a full master page definition allows the following named
+parameters:
+
+=over
+
+=item
+
+C<layout>: the unique name of a *page layout*, existing or to be defined
+in the same document (see later the lpOD specifications about the page layout
+objects);
+
+=item
+
+C<next>: the master page to apply to the following page, as soon as the
+current page is entirely filled, knowing that the current master page is used
+for the next page by default.
+
+=back
+
+As any other ODF element, a master page object inherits the generic
+C<insert_element()> and C<append_element()> methods that allow the user to
+attach any other ODF element to it. Beware that such attachments are unchecked,
+and that the user should not integrate any kind of element in a master page.
+
+A unique name is required at insert time; C<insert_style()> raises an error at
+any attempt to attach a nameless master page to a document. On the other hand,
+C<insert_style()> can attach a master page without layout name, but the
+visible result is not predictable and depends on the default page layout of
+the printing application.
+
+The C<parent> parameter is not allowed in master page creation, as long as
+there is no explicit inheritance mechanism in the ODF specification for this
+kind of styles. However an existing master page definition is always reusable
+using the C<clone> option.
+
+=head2  Page headers and footers
+
+Page headers and footers are optional components of master pages; they are just
+containers for almost any kind of document content elements (such as regular
+paragraphs, tables, images and so on). They are created "in place" using special
+master page methods, namely C<set_header()> and C<set_footer()>. Each of
+these methods returns an ODF element that can be used later as a context to
+append content elements. The following example creates a page style with a
+header and a footer, each one containing a single paragraph:
+
+        $mp = odf_create_style('master page', name => 'MyNewPageStyle');
+        $h = $mp->set_header;
+        $h->append_element(
+                odf_create_paragraph(
+                        text    => 'Header text',
+                        style   => 'Standard'
+                        )
+                );
+        $f = $mp->set_footer;
+        $f->append_element(
+                odf_create_paragraph(
+                        text    => 'Footer text',
+                        style   => 'Standard'
+                        )
+                );
+
+It's possible to call C<set_header()> and C<set_footer()> with one or more
+existing ODF elements as arguments, so the given elements are directly
+put in the header or footer.
+
+Every C<set_header()> or C<set_footer()> removes and replaces any previously
+existing header/footer. It's always possible to retrieve the header or the
+footer using C<get_header()> or C<get_footer()>, and to remove them using
+C<delete_header()> and C<delete_footer()>.
+
+Note that the header and footer extensions of a master page don't include any
+layout information; the style of the header and footer of a master page is
+specified through the header and footer extensions of the corresponding page
+layout.
+
+=head2  Background objects
+
+A page master doesn't include any direct page background specification, knowing
+that the background color and/or the background image are defined by the
+I<page layout> that is used by the page master (see below).
+
+However, it's possible to attach I<frames> to a master page (through
+C<insert_element()> and C<append_element()>). Frames are containers for
+various kinds of content elements, including graphical ones, so they provide a
+practical way to compose backgrounds. However, the user should check the
+compatibility with the target displaying/printing applications according to
+the document type. Simply put, frames attached to master pages are common in
+presentation documents, not in text document.
+
+=head2  Page layouts
+
+Page layouts are generally invisible for the end users, knowing that a typical
+ODF-compliant text processor regards them as extensions of the main page styles,
+namely I<master pages>. However, a page layout is defined through the lpOD API
+using the same logic as other style objects. It may be created using
+C<odf_create_style()> with C<"page layout"> as the family argument and a
+unique I<name> parameter (mandatory when the object is attached to a document).
+The C<display name> optional parameter is ignored for this kind of style. On the
+other hand, a specific C<page usage> parameter, whose legal values are
+C<all>, C<left>, C<right>, C<mirrored> (default: C<all>) allows the
+user to specify the type of pages that the page layout should generate.
+
+The list of other possible properties that may be set with page layouts through
+C<odf_create_style()> is described in section §15.2 of the ODF specification;
+some of these properties may be set using the following lpOD mnemonics:
+
+=over
+
+=item
+
+C<height> and C<width>: the page size values, in regular ODF-compliant
+notation (ex: '21cm');
+
+=item
+
+C<number format>, C<number prefix>, and C<number suffix>: the format,
+prefix and suffix which define the default number representation for page
+styles, which is used to display page numbers within headers and footers;
+
+=item
+
+C<paper tray>: to specify the paper tray to use when printing the document;
+it's a proprietary information knowing that the paper tray names depend on
+the printer model; however, this property, if defined, may be safely set to
+C<default>, so the default tray specified in the printer configuration
+settings will be used;
+
+=item
+
+C<orientation>: specifies the orientation of the printed page, may be
+C<portrait> or C<landscape> (default: C<portrait>);
+
+=item
+
+C<margin xxx> (where C<xxx> is C<left>, C<right>, C<top> or C<bottom>):
+to control the margins of the page;
+
+=item
+
+C<border xxx> (where C<xxx> is C<left>, C<right>, C<top>, or C<bottom>):
+a 3-part string to specify the thickness, the line style and the line color
+(according to the XSL/FO grammar);
+
+=item
+
+C<border>: a 3-part string to specify the thickness, the line style and the
+line color (according to the XSL/FO grammar), for all the four borders;
+
+=item
+
+C<footnote height>: defines the maximum amount of space on the page that a
+footnote can occupy.
+
+=back
+
+Page layout objects support the C<set_background()> method, allowing to set
+a background color or a background image.
+
+A page layout object may have a header and/or a footer extension, respectively
+set using C<set_header()> and/or C<set_footer()>. These methods, when used
+with a page layout object, allow the applications to extend the page layout in
+order to specify layout informations that control the header and the footer of
+the master page(s) that use the page layout. Of course, the layout properties
+are not the same as the content properties. Knowing that headers and footers
+may have different margins and borders than the page body, C<set_header()> and
+C<set_footer()> accept the same margin- and border-related named parameters
+as C<odf_create_style()> when used to create a page layout. On the other hand,
+C<set_header()> and C<set_footer()> return ODF elements that support the
+generic C<set_background()> method; so it's possible to use this method
+separately from the page layout main object and from both its header and
+footer extensions, allowing the user to set specific backgrounds in the 3 parts
+of the affected page.
+
+A page layout style may specify a columned page. A C<set_columns()> method,
+called from a page layout object, does the job with the number of columns as
+a first argument and a C<gap> optional name parameter that specifies the gap
+between columns. By default, all columns have the same width. If the first
+argument is missing or less than 2, then the page layout is no longer columned.
+It's possible to set extra properties in order to specify each column
+individually and to define a separator line between columns, through the
+low-level (lpOD 1) API.

@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.107';
-use constant PACKAGE_DATE => '2010-10-20T17:28:01';
+our     $VERSION        = '0.108';
+use constant PACKAGE_DATE => '2010-11-08T09:21:45';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -72,7 +72,11 @@ our %CLASS    =
         'style:style'                   => odf_style,
         'style:default-style'           => odf_style,
         'text:list-style'               => odf_list_style,
-        'text:outline-style'            => odf_outline_style
+        'text:outline-style'            => odf_outline_style,
+        'style:master-page'             => odf_master_page,
+        'style:page-layout'             => odf_page_layout,
+        'style:header-style'            => odf_page_end_style,
+        'style:footer-style'            => odf_page_end_style
         );
 
 #=== aliases and initialization ==============================================
@@ -85,7 +89,6 @@ BEGIN
         *get_descendants                = *XML::Twig::Elt::descendants;
         *get_parent                     = *XML::Twig::Elt::parent;
         *previous_sibling               = *XML::Twig::Elt::prev_sibling;
-        *clone                          = *XML::Twig::Elt::copy;
         *ungroup                        = *XML::Twig::Elt::erase;
         *get_root                       = *XML::Twig::Elt::root;
         *is_element                     = *XML::Twig::Elt::is_elt;
@@ -132,6 +135,16 @@ sub     create
 	return $element;
         }
 
+#--------------------------------------------------------------------------
+
+sub     clone
+        {
+        my $self	= shift;
+        my $class       = ref $self;
+        my $elt         = $self->copy;
+        return bless $elt, $class;
+        }
+
 #=== common element methods ===============================================
 
 our $INIT_CALLBACK   = undef;
@@ -154,6 +167,8 @@ sub     new
         }
 
 sub     convert         { FALSE }
+
+sub     context_path    {}
 
 sub     set_tag
         {
@@ -221,17 +236,41 @@ sub     is_child
         return ($parent && $parent == $ref_elt) ? TRUE : FALSE;
         }
 
+sub     get_child
+        {
+        my $self        = shift;
+        my $tag         = $self->normalize_name(shift) or return undef;
+        return $self->first_child($tag);
+        }
+
 sub     set_child
         {
         my $self        = shift;
-        my $tag         = shift;
-        my $text        = shift;
-        my %attr        = @_;
+        my $tag         = $self->normalize_name(shift);
         my $child =     $self->first_child($tag)
                                 //
                         $self->insert_element($tag);
-        $child->set_text($text);
-        $child->set_attributes(%attr);
+        $child->set_text(shift);
+        $child->set_attributes(@_);
+        return $child;
+        }
+
+sub	delete_child
+	{
+	my $self	= shift;
+	my $child       = $self->get_child(shift) or return FALSE;
+        $child->delete;
+        return TRUE;
+	}
+
+sub     replace_child
+        {
+        my $self        = shift;
+        my $tag         = $self->normalize_name(shift) or return undef;
+        $self->delete_child($tag);
+        my $child = $self->insert_element($tag);
+        $child->set_text(shift);
+        $child->set_attributes(@_);
         return $child;
         }
 
@@ -353,7 +392,7 @@ sub     repeat
         my $count = 0;
         while ($r > 1)
                 {
-                my $elt = $self->copy;
+                my $elt = $self->clone;
                 $elt->paste_after($self);
                 $count++; $r--;
                 }
