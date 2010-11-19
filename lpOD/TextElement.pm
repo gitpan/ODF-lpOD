@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-10-18T10:53:39';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-11-19T08:20:05';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -53,7 +53,7 @@ sub     create
         my $e = odf_element->new($tag) or return undef;
         if ($tag eq 'text:h')
                 {
-                $e->set_attribute('outline level', $opt{level} // 1); #/
+                $e->set_attribute('outline level', $opt{level} // 1);
                 $e->set_attribute('restart numbering', 'true')
                                 if is_true($opt{'restart_numbering'});
                 $e->set_attribute('start value', $opt{start_value})
@@ -137,24 +137,22 @@ sub     split_content
         my $search      = $opt{search};
         if (defined $opt{start_mark} || defined $opt{end_mark})
                 {
-                $opt{offset} //= 0; #/
+                $opt{offset} //= 0;
                 }
         if (defined $search && ! defined $opt{offset})
                 {
+                my $t = defined $opt{text} ?
+                        input_conversion($opt{text}) : undef;
                 my $attr =
                         $self->input_convert_attributes($opt{attributes});
                 my $expr = input_conversion($search);
-                unless (defined $opt{text})
+                my @elts = $self->mark ("($expr)", $tag, $attr);
+                for (@elts)
                         {
-                        return $self->mark ("($expr)", $tag, $attr);
+                        $_->_set_text($t) if defined $t;
+                        $_->set_class;
                         }
-                else
-                        {
-                        my @elts = $self->mark ("($expr)", $tag, $attr);
-                        my $t = input_conversion($opt{text});
-                        $_->_set_text($t) for @elts;
-                        return @elts;
-                        }
+                return @elts;
                 }
         else
                 {
@@ -164,6 +162,7 @@ sub     split_content
                         my $e = $self->append_element($tag);
                         $e->set_attributes($opt{attributes});
                         $e->set_text($opt{text});
+                        $e->set_class;
                         return $e;
                         }
                 my $range = $opt{length};
@@ -193,7 +192,7 @@ sub     split_content
                                         $t = substr($t, 0, $r{offset});
                                         }
                                 $r{segment}->_set_text($t);
-                                $e->set_text($opt{text} // $r{match}); #/
+                                $e->set_text($opt{text} // $r{match});
                                 if      (
                                                 (
                                                 defined $opt{offset}
@@ -230,6 +229,7 @@ sub     split_content
                                 }
 
                         $e->set_attributes($opt{attributes});
+                        $e->set_class;
                         return $e;
                         }
                 }
@@ -278,8 +278,8 @@ sub     set_position_mark
                 return FALSE;
                 }
         
-        $opt{offset}  //= 0;                            #/
-        $opt{search}    = $opt{before} // $opt{after};  #/
+        $opt{offset}  //= 0;
+        $opt{search}    = $opt{before} // $opt{after};
         if      (defined $opt{after})   { $opt{insert} = 'after'  }
         else                            { $opt{insert} = 'before' }
         $opt{length}    = defined $opt{search} ? undef : 0;
@@ -540,7 +540,7 @@ sub     set_index_mark
                 when ('toc')
                         {
                         $tag = 'toc mark';
-                        $attr{'outline level'} = $opt{level} // 1;      #/
+                        $attr{'outline level'} = $opt{level} // 1;
                         }
                 when ('user')
                         {
@@ -550,7 +550,7 @@ sub     set_index_mark
                                 return FALSE;
                                 }
                         $tag = 'user index mark';
-                        $attr{'outline level'} = $opt{level} // 1;      #/
+                        $attr{'outline level'} = $opt{level} // 1;
                         }
                 default
                         {
@@ -663,6 +663,66 @@ sub     set_annotation
         $a->set_content(@{$content})    if $content;
         return $a;
         }
+
+#=== text fields =============================================================
+
+sub	set_field
+	{
+	my $self	= shift;
+        my $type        = shift;
+        unless ($type)
+                {
+                alert "Missing field type"; return undef;
+                }
+	my %opt         = process_options(@_);
+        $type = 'user field get' if $type eq 'variable';
+        if ($type =~ /^user field/)
+                {
+                unless ($opt{name})
+                        {
+                        alert "Missing associated variable name";
+                        return undef;
+                        }
+                }
+        else
+                {
+                unless (ODF::lpOD::TextField::check_type($type))
+                        {
+                        alert "Unsupported field type"; return undef;
+                        }
+                }
+        foreach my $k (keys %opt)
+                {
+                if (ref $opt{$k} || ($k eq 'role'))
+                        {
+                        delete $opt{$k};
+                        next;
+                        }
+                unless  (
+                        $k ~~   [
+                                'before', 'after', 'offset', 'length',
+                                'start_mark', 'end_mark', 'search'
+                                ]
+                        )
+                        {
+                        $opt{$k} = odf_boolean($opt{$k}) if ($k eq 'fixed');
+                        $opt{attributes}{$k} = $opt{$k};
+                        delete $opt{$k};
+                        }
+                }
+        my $tag = 'text:' . $type;
+        my $field;
+        if (defined $opt{search} || defined $opt{length})
+                {
+                $opt{text} = '';
+                $field = $self->split_content(tag => $tag, %opt);
+                }
+        else
+                {
+                $field = $self->set_position_mark($tag , %opt);
+                }
+        return $field;
+	}
 
 #=============================================================================
 package ODF::lpOD::Paragraph;

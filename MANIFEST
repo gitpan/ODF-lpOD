@@ -8,6 +8,7 @@ lpOD/Common.pm
 lpOD/Document.pm
 lpOD/Element.pm
 lpOD/TextElement.pm
+lpOD/Field.pm
 lpOD/Table.pm
 lpOD/StructuredContainer.pm
 lpOD/Style.pm

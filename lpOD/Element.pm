@@ -27,17 +27,11 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.108';
-use constant PACKAGE_DATE => '2010-11-08T09:21:45';
+our     $VERSION        = '0.109';
+use constant PACKAGE_DATE => '2010-11-18T23:21:37';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
-use ODF::lpOD::TextElement;
-use ODF::lpOD::StructuredContainer;
-use ODF::lpOD::Table;
-use ODF::lpOD::Style;
-use ODF::lpOD::Attributes;
-
 use base 'XML::Twig::Elt';
 #=== element classes =========================================================
 
@@ -61,6 +55,8 @@ our %CLASS    =
         'table:table-row'               => odf_row,
         'table:table-cell'              => odf_cell,
         'table:covered-table-cell'      => odf_cell,
+        'text:variable-decl'            => odf_simple_variable,
+        'text:user-field-decl'          => odf_user_variable,
         'draw:page'                     => odf_draw_page,
         'draw:rect'                     => odf_rectangle,
         'draw:ellipse'                  => odf_ellipse,
@@ -75,6 +71,8 @@ our %CLASS    =
         'text:outline-style'            => odf_outline_style,
         'style:master-page'             => odf_master_page,
         'style:page-layout'             => odf_page_layout,
+        'style:presentation-page-layout'
+                                        => odf_presentation_page_layout,
         'style:header-style'            => odf_page_end_style,
         'style:footer-style'            => odf_page_end_style
         );
@@ -85,6 +83,7 @@ BEGIN
         {
         *get_tag                        = *XML::Twig::Elt::tag;
         *get_tagname                    = *XML::Twig::Elt::tag;
+        *del_attributes                 = *XML::Twig::Elt::del_atts;
         *get_children                   = *XML::Twig::Elt::children;
         *get_descendants                = *XML::Twig::Elt::descendants;
         *get_parent                     = *XML::Twig::Elt::parent;
@@ -118,15 +117,8 @@ sub     create
 	if ($data =~ /^<.*>$/)	# create element from XML string
 	        {
 	        $element = odf_element->parse($data, @_) or return undef;
-                foreach my $e ($element->descendants_or_self)
-                        {
-                        my $tag = $e->tag;
-                        bless $e, ($CLASS{$tag} || odf_element);
-                        if ($e->isa(odf_style))
-                                {
-                                $e->set_class;
-                                }
-                        }
+                bless $element, odf_element;
+                $element->set_classes;
 	        }
 	else
 	        {
@@ -167,7 +159,6 @@ sub     new
         }
 
 sub     convert         { FALSE }
-
 sub     context_path    {}
 
 sub     set_tag
@@ -176,10 +167,35 @@ sub     set_tag
         my $tag         = shift;
         $self->_set_tag($tag);
         bless $self, $CLASS{$tag} || odf_element;
+        $self->set_class;
         return $tag;
         }
 
-sub     set_class       {}
+sub     set_class
+        {
+        my $self        = shift;
+        my $prefix = $self->ns_prefix;
+        if ($prefix eq 'text')
+                {
+                odf_classify_text_field($self);
+                }
+        return $self;
+        }
+
+sub     set_classes
+        {
+        my $self        = shift;
+        foreach my $e ($self->descendants_or_self)
+                {
+                my $tag = $e->get_tag;
+                my $class = $CLASS{tag};
+                if ($class)
+                        {
+                        bless $e, $class;
+                        }
+                $e->set_class;
+                }
+        }
 
 sub     check_tag
         {
@@ -357,7 +373,7 @@ sub     is_text_container
 sub     normalize_name
         {
         my $self        = shift;
-        my $name        = shift // return undef;                        #/
+        my $name        = shift // return undef;
         $name .= ' name' if $name eq 'style';
         if ($name && ! ref $name)
                 {
@@ -680,6 +696,22 @@ sub     get_lists
         my $self        = shift;
         return $self->get_element_list('text:list', @_);
         }
+
+sub	get_fields
+	{
+	my $self	= shift;
+	my $type        = shift;
+        unless ($type)
+                {
+                my @elts;
+                for (odf_text_field->types)
+                        {
+                        push @elts, $self->get_fields($_);
+                        }
+                return @elts;
+                }
+        return $self->get_elements('text:' . $type);
+	}
 
 #--- table retrieval ---------------------------------------------------------
 
@@ -1351,7 +1383,7 @@ sub     get_text_content
         my $t           = "";
         foreach my $p ($self->descendants('text:p'))
                 {
-                $t .= ($p->get_text(@_) // "");                   #/
+                $t .= ($p->get_text(@_) // "");
                 }
         return $t;
         }
@@ -1377,16 +1409,12 @@ sub     set_text_content
         return $p->set_text($text);
         }
 
+sub     get_family              {}
+
 sub     get_name
         {
         my $self        = shift;
         return $self->get_attribute('name');
-        }
-
-sub     get_family
-        {
-        my $self        = shift;
-        return undef;
         }
 
 sub     set_name
@@ -1397,6 +1425,50 @@ sub     set_name
         return caller() eq 'XML::Twig::Elt' ?
                 $self->set_tag($name)           :
                 $self->set_attribute('name' => $name);
+        }
+
+sub     get_size
+        {
+        my $self        = shift;
+        my $sep         = shift // ', ';
+        my $w = $self->get_attribute('svg:width');
+        my $h = $self->get_attribute('svg:height');
+        return wantarray ? ($w, $h) : join $sep, $w, $h;
+        }
+
+sub     set_size
+        {
+        my $self        = shift;
+        my ($w, $h)     = input_2d_value(@_);
+        $self->set_attribute('svg:width' => $w);
+        $self->set_attribute('svg:height' => $h);
+        return $self->get_size;
+        }
+
+sub     get_position
+        {
+        my $self        = shift;
+        my $sep         = shift // ', ';
+        my $x = $self->get_attribute('svg:x');
+        my $y = $self->get_attribute('svg:y');
+        if (wantarray)
+                {
+                return ($x, $y);
+                }
+        else    {
+                my $r;
+                $r = join $sep, $x, $y if (defined $x && defined $y);
+                return $r;
+                }
+        }
+
+sub     set_position
+        {
+        my $self        = shift;
+        my ($x, $y)     = input_2d_value(@_);
+        $self->set_attribute('svg:x' => $x);
+        $self->set_attribute('svg:y' => $y);
+        return $self->get_position;
         }
 
 sub     get_url
@@ -1790,7 +1862,8 @@ sub     not_allowed
         {
         my $self        = shift;
         my $tag         = $self->get_tag;
-        alert "Not allowed for this $tag elements";
+        my $class       = ref $self;
+        alert "Not allowed for this $tag ($class) element";
         return undef;
         }
 
@@ -2145,8 +2218,8 @@ sub     get_insertion_marks
 #=============================================================================
 package ODF::lpOD::FileEntry;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-07-21T09:35:55';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-15T08:32:48';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2218,7 +2291,7 @@ sub     get_type
 sub     set_type
         {
         my $self        = shift;
-        my $type        = shift // "";                                  #/
+        my $type        = shift;
         return $self->set_attribute('media type' => $type);
         }
 

@@ -28,38 +28,38 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Style;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-11-07T23:34:05';
+our $VERSION    = '0.104';
+use constant PACKAGE_DATE => '2010-11-18T15:43:50';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 our %STYLE_DEF  =
         (
-        text            =>
+        'text'          =>
                 {
                 tag             => 'style:style',
                 name            => 'name',
                 class           => odf_text_style
                 },
-        paragraph       =>
+        'paragraph'     =>
                 {
                 tag             => 'style:style',
                 name            => 'name',
                 class           => odf_paragraph_style
                 },
-        list            =>
+        'list'          =>
                 {
                 tag             => 'text:list-style',
                 name            => 'style:name',
                 class           => odf_list_style
                 },
-        outline         =>
+        'outline'       =>
                 {
                 tag             => 'text:outline-style',
                 name            => undef,
                 class           => odf_outline_style
                 },
-        table           =>
+        'table'         =>
                 {
                 tag             => 'style:style',
                 name            => 'name',
@@ -98,10 +98,43 @@ our %STYLE_DEF  =
                 tag             => 'style:page-layout',
                 name            => 'name',
                 class           => odf_page_layout
+                },
+        'presentation page layout'      =>
+                {
+                tag             => 'style:presentation-page-layout',
+                name            => 'name',
+                class           => odf_presentation_page_layout
+                },
+        'graphic'       =>
+                {
+                tag             => 'style:style',
+                name            => 'name',
+                class           => odf_graphic_style
+                },
+        'presentation'  =>
+                {
+                tag             => 'style:style',
+                name            => 'name',
+                class           => odf_graphic_style
+                },
+        'drawing page'  =>
+                {
+                tag             => 'style:style',
+                name            => 'name',
+                class           => odf_drawing_page_style
                 }
         );
 
 #-----------------------------------------------------------------------------
+
+sub     set_class
+        {
+        my $self        = shift;
+        my $family      = shift || $self->get_family;
+        return undef unless $family;
+        my $desc        = $STYLE_DEF{$family}   or return undef;
+        return bless $self, $desc->{class};
+        }
 
 sub	get_family_path
 	{
@@ -126,6 +159,7 @@ sub     set_name
         {
         my $self        = shift;
         my $name        = shift;
+
         return undef unless defined $name;
         return $self->set_tag($name) if (caller() eq 'XML::Twig::Elt');
         my $family = $self->get_family;
@@ -149,23 +183,14 @@ sub     get_name
 sub	set_display_name
 	{
 	my $self	= shift;
-	$self->set_attribute('display name' => shift);
+	$self->set_attribute('style:display-name' => shift);
 	}
 
 sub	get_display_name
 	{
 	my $self	= shift;
-	return $self->get_attribute('display name' => shift);
+	return $self->get_attribute('style:display-name' => shift);
 	}
-
-sub     set_class
-        {
-        my $self        = shift;
-        my $family      = shift || $self->get_family;
-        return undef unless $family;
-        my $desc        = $STYLE_DEF{$family}   or return undef;
-        return bless $self, $desc->{class};
-        }
 
 sub     set_family
         {
@@ -176,11 +201,50 @@ sub     set_family
         return $self->set_attribute(family => $family);
         }
 
+sub	set_parent
+	{
+	my $self	= shift;
+	return $self->set_attribute('parent style name' => shift);
+	}
+
+sub	set_style_class
+	{
+	my $self	= shift;
+	return $self->set_attribute(class => shift);
+	}
+
 sub     is_default
         {
         my $self        = shift;
         my $tag = $self->get_tag        or return undef;
         return $tag eq 'style:default-style' ? TRUE : FALSE;
+        }
+
+sub     could_be_default
+        {
+        my $self        = shift;
+        my $tag = $self->get_tag        or return undef;
+        return $tag eq 'style:style' ? TRUE : FALSE;
+        }
+
+sub     make_default
+        {
+        my $self        = shift;
+        return $self if $self->is_default;
+        if ($self->could_be_default)
+                {
+                my $ds = $self->clone; $self->delete;
+                my $f = $ds->get_family;
+                $ds->del_attributes;
+                $ds->set_tag('style:default-style');
+                $ds->set_family($f);
+                return $ds;
+                }
+        else
+                {
+                alert "Wrong default style";
+                return FALSE;
+                }
         }
 
 #-----------------------------------------------------------------------------
@@ -217,11 +281,20 @@ sub	create
                 {
                 $style = odf_create_element($tag);
                 }
-        if ($opt{name}) { $style->set_name($opt{name}); delete $opt{name}; }
         $style->set_family($family);
 	bless $style, $desc->{class};
+        $style->set_name($opt{name});
+        $style->set_display_name($opt{display_name});
+        $style->set_parent($opt{parent});
+        delete @opt{qw(name display_name parent)};
         $style->initialize(%opt);
         return $style;
+	}
+
+sub	initialize
+	{
+	my $self	= shift;
+	return ($self->set_properties(@_) || undef);
 	}
 
 #-----------------------------------------------------------------------------
@@ -237,6 +310,7 @@ sub     get_family
 #-----------------------------------------------------------------------------
 
 sub     properties_tag          {}
+sub     attribute_name          { my $self = shift; return shift; }
 
 sub     set_properties_context
         {
@@ -251,20 +325,52 @@ sub     set_properties_context
         return $self->set_child($pt);
         }
 
+sub     set_properties
+        {
+        my      $self   = shift;
+        my      %opt    = @_;
+        my $area = $opt{area} || $self->get_family; delete $opt{area};
+        return $self->ODF::lpOD::TextStyle::set_properties(%opt)
+                if $area eq 'text';
+        my $f = $area; $f =~ s/[ _]/-/g;
+        my $pt = $self->properties_tag() || ('style:' . $f . '-properties');
+        my $pr = $self->first_child($pt);
+        if ($opt{clone})
+                {
+                my $proto = $opt{clone}->first_child($pt) or return undef;
+                $pr->delete() if $pr;
+                $proto->clone->paste_last_child($self);
+                }
+        else
+                {
+                $pr //= $self->insert_element($pt);
+
+                foreach my $k (keys %opt)
+                        {
+                        my $att = $STYLE_DEF{$area}
+                                                ->{class}
+                                                ->attribute_name($k);
+                        $pr->set_attribute($att => $opt{$k});
+                        }
+                }
+        return $self->get_properties(area => $area);
+        }
+
 sub     get_properties
         {
         my $self        = shift;
         my $pt = $self->properties_tag;
         unless ($pt)
                 {
-                my $area = shift || $self->get_family;
+                my %opt = @_;
+                my $area = $opt{area} || $self->get_family;
                 $area =~ s/[ _]/-/g;
                 $pt = $self->ns_prefix() . ':' . $area . '-properties';
                 }
         my $pr = $self->get_child($pt);
         return $pr ? $pr->get_attributes() : undef;
         }
-        
+
 #-----------------------------------------------------------------------------
 
 sub     set_background
@@ -273,11 +379,15 @@ sub     set_background
         my %opt         = @_;
         if (exists $opt{color})
                 {
-                $self->set_properties('fo:background-color' => $opt{color});
+                $self->set_properties
+                        (
+                        area                    => $opt{area},
+                        'fo:background-color'   => $opt{color}
+                        );
                 }
         if (exists $opt{url})
                 {
-                my $pr = $self->set_properties_context;
+                my $pr = $self->set_properties_context($opt{area});
                 my $im = $pr->get_child('style:background-image');
                 $im->delete if $im;
                 if (defined $opt{url})
@@ -286,7 +396,7 @@ sub     set_background
                         $im->set_attribute('xlink:href' => $opt{url});
                         $im->set_attribute('draw:opacity' => $opt{opacity});
                         $im->set_attribute('filter name' => $opt{filter});
-                        delete @opt{qw(url opacity filter color)};
+                        delete @opt{qw(area url opacity filter color)};
                         $im->set_attributes(%opt);
                         }
                 }
@@ -295,8 +405,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::TextStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-05T19:37:56';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-11-10T11:51:43';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -318,26 +428,14 @@ sub     initialize
                 class           => 'text',
                 @_
                 );
-
-        $self->set_attribute('family' => 'text');
-        $self->set_attribute('display name' => $opt{display_name});
-        $self->set_attribute('class' => $opt{class});
-        $self->set_attribute('parent style name' => $opt{parent});
-        delete @opt{qw(family name display_name class parent)};
+        $self->set_style_class($opt{class}); delete $opt{class};
         my $result = $self->set_properties(%opt);
-
         return $result ? $self : undef;
         }
 
 #-----------------------------------------------------------------------------
 
-sub     get_properties
-        {
-        my $self        = shift;
-
-        my $p = $self->first_child('style:text-properties');
-        return $p ? $p->get_attributes : undef;
-        }
+sub     properties_tag          { 'style:text-properties' }
 
 sub     set_properties
         {
@@ -388,8 +486,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::ParagraphStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-10-29T18:38:58';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-11-10T11:54:23';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -442,75 +540,22 @@ sub     initialize
                 @_
                 );
 
-        $self->set_attribute('family' => 'paragraph');
-        $self->set_attribute('name' => $opt{name});
-        $self->set_attribute('display name' => $opt{display_name});
-        $self->set_attribute('class' => $opt{class});
-        $self->set_attribute('parent style name' => $opt{parent});
-        delete @opt{qw(family name class display_name parent)};
+        $self->set_style_class($opt{class}); delete $opt{class};
         my $result = $self->set_properties(area => 'paragraph', %opt);
-
         return $result ? $self : undef;
-        }
-
-#-----------------------------------------------------------------------------
-
-sub     get_properties
-        {
-        my $self        = shift;
-        my %opt         =
-                (
-                area            => 'paragraph',
-                @_
-                );
-        my $p = $self->first_child('style:' . $opt{area} . '-properties');
-        return $p ? $p->get_attributes : undef;
-        }
-
-sub     set_properties
-        {
-        my      $self   = shift;
-        my      %opt    =
-                (
-                area            => 'paragraph',
-                @_
-                );
-        my $area = $opt{area}; delete $opt{area};
-        return $self->ODF::lpOD::TextStyle::set_properties(%opt)
-                if $area eq 'text';
-        my $pt = 'style:' . $area . '-properties';
-        my $pr = $self->first_child($pt);
-        if ($opt{clone})
-                {
-                my $proto = $opt{clone}->first_child($pt) or return undef;
-                $pr->delete() if $pr;
-                $proto->clone->paste_last_child($self);
-                }
-        else
-                {
-                $pr //= $self->insert_element($pt);
-
-                foreach my $k (keys %opt)
-                        {
-                        my $att = $self->attribute_name($k) // $k;
-                        $pr->set_attribute($att => $opt{$k});
-                        }
-                }
-        return $self->get_properties(area => $area);
         }
 
 #=============================================================================
 package ODF::lpOD::ListStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-06T17:18:46';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-11-13T17:54:48';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 sub     get_family      { 'list' }
 
 sub     get_properties  {}
-
 sub     set_properties  {}
 
 sub     set_background
@@ -520,14 +565,6 @@ sub     set_background
         }
 
 #-----------------------------------------------------------------------------
-
-sub     initialize
-        {
-        my $self        = shift;
-        my %opt         = @_;
-        $self->set_display_name($opt{display_name});
-        return $self;
-        }
 
 sub     level_style_tag
         {
@@ -620,8 +657,8 @@ sub	set_level_style
 #=============================================================================
 package ODF::lpOD::OutlineStyle;
 use base 'ODF::lpOD::ListStyle';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-06T17:26:10';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-11-13T17:59:51';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -631,14 +668,12 @@ sub     context_path            { STYLES, '//office:styles' }
 
 sub     get_display_name        {}
 sub     set_display_name        {}
+sub     get_properties          {}
+sub     set_properties          {}
 
 #-----------------------------------------------------------------------------
 
-sub     initialize
-        {
-        my $self        = shift;
-        return $self;
-        }
+sub     initialize              { return shift; }
 
 sub     level_style_tag { 'text:outline-level-style' }
 
@@ -669,8 +704,8 @@ sub     set_level_style
 #=============================================================================
 package ODF::lpOD::TableStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-03T20:06:17';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-14T19:47:04';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -696,14 +731,6 @@ sub     properties_tag
 
 #-----------------------------------------------------------------------------
 
-sub     get_properties
-        {
-        my $self        = shift;
-        my $pt = $self->properties_tag;
-        my $p = $self->first_child($pt);
-        return $p ? $p->get_attributes : undef;
-        }
-
 sub	set_properties
 	{
 	my $self	= shift;
@@ -720,8 +747,20 @@ sub	set_properties
         else
                 {
                 $pr //= $self->insert_element($pt);
-                foreach my $k (keys %opt)
+                OPT: foreach my $k (keys %opt)
                         {
+                        if ($k eq 'margin')
+                                {
+                                my $v = $opt{$k};
+                                $pr->set_attributes
+                                        (
+                                        'fo:margin-left'        => $v,
+                                        'fo:margin-right'       => $v,
+                                        'fo:margin-bottom'      => $v,
+                                        'fo:margin-top'         => $v
+                                        );
+                                next OPT;
+                                }
                         my $attr;
                         given ($k)
                                 {
@@ -751,10 +790,25 @@ sub	set_properties
 #=============================================================================
 package ODF::lpOD::ColumnStyle;
 use base 'ODF::lpOD::TableStyle';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-01T22:37:17';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-14T19:17:55';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
+
+sub     width_values
+        {
+        my $arg         = shift         or return undef;
+        $arg =~ s/\s*//g; $arg =~ s/%/*/g;
+        my ($v1, $v2) = split(/,/, $arg);
+        my ($av, $rv);
+        for ($v1, $v2)
+                {
+                next unless defined $_;
+                if ($_ =~ /\*/) { $rv = $_ }
+                else            { $av = $_ }
+                }
+        return ($av, $rv);
+        }
 
 sub     set_properties
         {
@@ -762,7 +816,9 @@ sub     set_properties
         my %opt         = @_;
         if ($opt{width})
                 {
-                $opt{'column width'} = $opt{width}; delete $opt{width};
+                ($opt{'column width'}, $opt{'rel column width'}) =
+                                                width_values($opt{width});
+                delete $opt{width};
                 }
         return $self->SUPER::set_properties(%opt);
         }
@@ -795,8 +851,8 @@ use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::MasterPage;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-07T19:44:20';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-13T17:36:26';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -819,7 +875,6 @@ sub	initialize
 	{
 	my $self	= shift;
 	my %opt         = @_;
-        $self->set_attribute('display name' => $opt{display_name});
         $self->set_layout($opt{layout});
         $self->set_next($opt{next});
         return $self;
@@ -890,8 +945,8 @@ sub	set_next
 #=============================================================================
 package ODF::lpOD::PageEndStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-07T23:20:41';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-13T17:33:10';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -901,15 +956,6 @@ sub     get_display_name        {}
 sub     set_display_name        {}
 
 sub     properties_tag          { 'style:header-footer-properties' }
-
-#-----------------------------------------------------------------------------
-
-sub	initialize
-	{
-	my $self	= shift;
-        $self->set_properties(@_);
-        return $self;
-	}
 
 #-----------------------------------------------------------------------------
 
@@ -948,8 +994,8 @@ sub	set_properties
 #=============================================================================
 package ODF::lpOD::PageLayout;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-08T09:35:59';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-14T20:40:24';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -961,15 +1007,6 @@ sub     get_display_name        {}
 sub     set_display_name        {}
 
 sub     properties_tag  { 'style:page-layout-properties' }
-
-#-----------------------------------------------------------------------------
-
-sub	initialize
-	{
-	my $self	= shift;
-        $self->set_properties(@_);
-        return $self;
-	}
 
 #-----------------------------------------------------------------------------
 
@@ -1088,6 +1125,113 @@ sub	set_columns
                 }
         return $self->get_column_count;
 	}
+
+#-----------------------------------------------------------------------------
+
+sub     get_size
+        {
+        my $self        = shift;
+        my $sep         = shift // ', ';
+        my %p = $self->get_properties;
+        my $w = $p{'fo:page-width'};
+        my $h = $p{'fo:page-height'};
+        return wantarray ? ($w, $h) : join $sep, ($w // ""), ($h // "");
+        }
+
+sub     set_size
+        {
+        my $self        = shift;
+        my ($w, $h)     = input_2d_value(@_);
+        $self->set_properties(width => $w, height => $h);
+        return $self->get_size;
+        }        
+
+#=============================================================================
+package ODF::lpOD::PresentationPageLayout;
+use base 'ODF::lpOD::Style';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-13T21:17:09';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub	get_family      { 'presentation page layout' }
+sub     context_path    { STYLES, '//office:styles' }
+sub     initialize      { return shift; }
+
+sub     get_properties  {}
+sub     set_properties  {}
+
+sub     set_background
+        {
+        alert("Background properties not supported for this object");
+        return FALSE;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub	set_placeholder
+	{
+	my $self	= shift;
+        my $shape       = shift;
+        unless ($shape)
+                {
+                alert "Missing object class"; return FALSE;
+                }
+	my $ph = ref $shape ?
+                $shape                                          :
+                odf_create_element('presentation:placeholder');
+        $ph->set_attribute(object => $shape);
+        my %opt         = @_;
+        $ph->set_size($opt{size});
+        $ph->set_position($opt{position});
+        return $self->append_element($ph);
+	}
+
+sub	get_placeholders
+	{
+	my $self	= shift;
+	return $self->get_children('presentation:placeholder');
+	}
+
+#=============================================================================
+package ODF::lpOD::DrawingPageStyle;
+use base 'ODF::lpOD::Style';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-13T12:49:25';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     set_background
+        {
+        alert("Background properties not supported for this object");
+        return FALSE;
+        }
+
+#=============================================================================
+package ODF::lpOD::GraphicStyle;
+use base 'ODF::lpOD::Style';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-11T15:24:00';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub	initialize
+	{
+	my $self	= shift;
+        my %opt         = @_;
+        $opt{area} = 'graphic';
+        $self->set_properties(%opt);
+	return $self;
+	}
+
+#-----------------------------------------------------------------------------
+
+sub	attribute_name
+        {
+        my $self        = shift;
+        my $p           = shift         or return undef;
+        return ($p =~ /:/) ? $p : 'draw:' . $p;
+        }
 
 #=============================================================================
 1;

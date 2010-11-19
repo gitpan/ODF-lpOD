@@ -1135,6 +1135,364 @@ if the change type is C<deletion>.
 
 =back
 
+=head1  Text Fields
+
+A I<text field> is a special text area, generally short-sized, whose content may
+be automatically set, changed or checked by an interactive editor or viewer
+according to a calculation formula and/or a content coming from somewhere
+in the environment.
+
+A I<table cell> may be regarded as an example of field, according to such a
+definition. However, while a table cell is always part of a table row that is in
+turn an element in a table, a I<text field> may be inserted anywhere in the
+content of a text paragraph.
+
+=head2  Common field-related features
+
+=head3  Field creation and retrieval
+
+A text field is created "in place" using the C<set_field()> element-based
+method from a text container that may be a paragraph, a heading or a span;
+C<set_field()> requires a first argument that specifies the kind of
+information to be associated (and possibly displayed) with the field.
+
+Regarding the positioning, this method works in a similar way as
+C<set_bookmark()> or C<set_index_mark()> introduced in the I<Bookmarks and
+index marks> section.
+
+By default, the field is created and inserted  before the first character of
+the content in the calling element. As an example, this instruction creates
+a C<title> field (whose role is to display the title of the document) before
+the first character of a paragraph:
+
+        $paragraph->set_field("title");
+
+A field may be positioned at any place in the text of the host container; to do
+so, an optional C<offset> parameter, whose value is the offset (i.e. character
+sequential position) of the target, may be provided. The value of this parameter
+is either a positive position, zero-based and counted from the beginning, or a
+negative position counted from the end. The following example puts a C<title>
+field at the fifth position and a C<subject> field 5 characters before the
+end:
+
+        $paragraph->set_field("title", offset => 4);
+        $paragraph->set_field("subject", offset => -5);
+
+The C<set_field()> method allows field positioning at a position that depends
+on the content of the target, instead of a position. Thanks to a C<before> or
+a C<after> parameter, it's possible to provide a regexp that tells
+to insert the new field just before of after the first substring that
+matches a given filter. The next example inserts the document subject after
+a given string:
+
+        $paragraph->set_field(
+                "subject",
+                after   => "this paper is related to "
+                );
+
+More generally, C<set_field()> allows the same positioning options as
+C<set_bookmark()> for simple position bookmarks.
+
+C<set_field()> returns the created ODF element in case of success, or null if
+(due to the given parameters and the content of the target container) the field
+can't be created.
+
+A text field can't be identified by a unique name or ID attribute and can't be
+selected by coordinates in the same way as a cell in a table. However, there is
+a context-based C<get_fields()> method that returns, by default, all the text
+field elements in the calling context. This method, when called with a single
+C<content> parameter, that specifies the associated content, returns the fields
+that match the given kind of content only, if any. For example, this instruction
+returns all the page number fields in the document body:
+
+        $document->get_body->get_fields("page number");
+
+=head3  Field datatypes
+
+The value of a field has a data type. The default data type is C<string>, but
+it's possible to set any ODF-compliant data type as well, using the optional
+parameter C<type>. According to ODF 1.1, §6.7.1, possible types are C<float>,
+C<percentage>, C<currency>, C<date>, C<time>, C<boolean> and, of course,
+C<string>.
+
+If the selected C<type> is C<currency>, then a C<currency> additional
+parameter is required, in order to provide the conventional currency unit
+identifier (ex: EUR, USD). As soon as a C<currency> parameter is set,
+C<set_field()> automatically selects C<currency> as the field type (so the
+C<type> parameter may be omitted).
+
+Note that for some kinds of fields, the data type is implicit and can't be
+selected by the applications; in such a situation, the C<type> parameter, if
+provided, is just ignored. For example, a C<title> or C<subject> field is
+always a string, so its data type is implicit and can't be set.
+
+=head3  Common field properties and methods
+
+Some fields may be created with an optional C<fixed> boolean parameter, that
+is C<'false'> by default but, if C<'true'>, means that the content of the field
+should not be automatically updated by the editing applications. For example,
+a C<date> field, that is (by default) automatically set to the current date by
+a typical ODF editor each time the document is updated is no longer changed as
+long as its C<fixed> attribute is C<true>. This option is allowed for some
+kinds of text fields.
+
+A numeric text field (ex: date, number) may be associated with a display format,
+that is identified by a unique name and described elsewhere through a numeric
+style; this style is set using the C<style> parameter with C<set_field()>.
+
+While a field is often inserted in order to allow a viewer or editor to set an
+automatically calculated value, it's possible to force an initial content (that
+may be persistent if C<fixed> is true) using the optional C<value> and/or
+C<text> parameters. If the data type is C<string>, the C<value> is the same
+as the C<text>. For a C<date> or a C<time>, the value is stored in ISO-8601
+date format. For other types, the C<value> is the numeric computable value
+of the field. The C<text>, if provided, is a conventional representation of
+the value according to a display format.
+
+Text fields use a particular implementation of the generic C<get_text()>
+method. When called from a text field element, this method returns the text of
+the element (as it could have been set using the C<text> property), if any.
+If the element doesn't contain any text, this method returns the value "as is",
+i.e. without formatting.
+
+The generic C<set_text()> method allows the applications to change the C<text>
+content of the element at any time.
+
+=head2  Document fields
+
+According to the ODF vocabulary, document fields are text fields that I<"can
+display information about the current document or about a specific part of the
+current document">.
+
+This definition could be extended knowing that some so-called I<document fields>
+may host contents that are not really informations about the document.
+
+The kind of document field is selected using the mandatory argument of
+C<set_field()> or C<get_fields()>.
+
+The whole set of allowed document fields is described in the section 6.2 of the
+ODF 1.1 specification. Some of them are introduced below with their associated
+properties (the so-called I<content key> means the field kind selector that must
+be provided when creating a field with C<set_field()>).
+
+=head3  Date fields
+
+Content key: C<date>. Supports C<fixed> (that should preserve the stored date
+from automatic change each time the document is edited).
+
+A date field may contain either the current date or, if C<fixed>, an arbitrary
+other date.
+
+A date field may be adjusted by a certain time period, which is specified using
+the C<adjust> parameter. If the time period is negative, it gets subtracted
+from the value of the date field, yielding a date before the current date.
+The value of C<adjust> must be a valid duration.
+
+This example inserts a field that displays the date of the day before
+yesterday, due to a C<date adjust> value that specified a negative value of
+48 hours, 0 minutes and 0 seconds:
+
+        $paragraph->set_field(
+                "date",
+                style   => "DateStyle",
+                adjust  => "-PT48H00M00S"
+                );
+
+Note that the display format is controlled by the given style (that is, of
+course, a date style), and that a date field may be more precise than the date
+of the day; whatever the displayed information, a date field is able to store
+a full date and time value.
+
+=head3  Time fields
+
+Content key: C<time>. Supports C<fixed>.
+
+A time field behaves like a date field, but it stores the current time or an
+arbitrary fixed time only. The C<adjust> parameter, if provided, must be set
+with a valid time duration, like with a date field.
+
+=head3  Page number fields
+
+Content key: C<page number>. Supports C<fixed>.
+
+This field displays, by default, the current page number. If C<fixed>, it can
+contain an arbitrary other page number. It allows an C<adjust>, telling the
+editing applications to display the number of another page, if this page exists.
+In addition, it supports a C<select> argument that may be set to C<current>
+(the default), C<previous>, or C<next>, and that specifies if the value is
+the number of the current, the previous or the next page.
+
+=head3  Page continuation fields
+
+Content key: C<page continuation>.
+
+This field conditionally displays a continuation string if the current page is
+preceded or followed by another page. It requires a C<text> parameter, that is
+the continuation text to display, and a C<select> parameter, that specifies
+what is the page whose existence must be checked.
+
+The example below creates a field that displays "See next page" if and only if
+the current page is not the last one:
+
+        $paragraph->set_field("page continuation", select => "next");
+
+=head3  Sender and Author fields
+
+Content key: various (see below). Supports C<fixed>.
+
+The API allows to set various fields whose purpose is to display in the document
+body or in the page headers or footers some informations whose source is not
+precisely specified but which regard the so-called "sender" and "author" of the
+document. Some of these informations may come from the document metadata.
+
+The general form of the corresponding content keys is C<sender xxx> or
+C<author yyy>, where "xxx" may be C<firstname>, C<lastname>, C<initials>,
+C<title>, C<position>, C<email>, C<phone private>, C<fax>, C<company>,
+C<phone work>, C<street>, C<city>, C<postal code>, C<country>,
+C<state or province>, and "yyy" may be C<name> or C<initials>.
+
+Every sender and author field is created with the appropriate content key and
+the optional C<fixed> flag only.
+
+The following example tells the editing applications to print the initials
+of the document sender (if such an information is available) immediately after
+a given string::
+
+        $paragraph->set_field("sender initials", after => "Issued by ");
+
+Of course, every C<sender-> or C<author-> field may be C<fixed> and can
+display a given value provided using the C<text> optional parameter.
+
+=head3  Chapter and sheet name fields
+
+Content key: C<chapter> or C<sheet name>.
+
+A chapter field displays the name and/or the number of the current heading in
+a document where chapters make sense, while sheet name fields, in spreadsheet
+documents, display the name of the current sheet (or table).
+
+For a chapter field, C<set_field()> allows two parameters, namely C<display>
+and C<level>:
+
+=over
+
+=item
+
+C<display> specifies the kind of information related to the current chapter
+that the field should display; possible values are C<number>, C<name>,
+C<number-and-name>, C<plain-number>, C<plain-number-and-name> (see ODF 1.1
+§6.2.7);
+
+=item
+
+C<level> is an integer value that specifies the level of the heading that is
+referred to by the field; default is 1.
+
+This examples inserts a field that displays the name of the current level 1
+heading::
+
+        $paragraph->set_field("chapter", level => 1, display => "name");
+
+For a sheet name field, no parameter but the C<sheet name> argument is needed;
+the field just displays the name of the current sheet. Note that this field
+makes sense for spreadsheet documents only but that the calling element for
+C<set_field()> should be a paragraph attached to a cell and not a cell, knowing
+that a text fields belongs to a paragraph. Example::
+
+        $paragraph->set_field("sheet name");
+
+=head2  Declared variable fields
+
+A text field may be associated to a so-called "variable", that is, according to
+ODF 1.1 (§6.3) a particular user-defined field declared once with an unique name
+and used at one or several places in the document. However, the behavior of such
+a variable is a bit complex knowing that its content is not set once for all.
+
+A variable may appear with a content at one place, and with a different content
+at another place. It should always appear with the same data type. However, the
+ODF 1.1 specification is self-contradictory about this question; it tells:
+
+I<"A simple variable should not contain different value types at different places
+in a document. However, an implementation may allow the use of different value
+types for different instances of the same variable.">
+
+More precisely, ODF allows several kinds of variables, including so-called
+I<simple>, I<user> and I<sequence> variables. The present lpOD level 1 API
+supports the two first categories. While a I<simple> variable may have
+different values (and, practically, different types) according to its display
+fields, a I<user> variable displays the same content everywhere in the document.
+
+In order to associate a field with an existing variable, C<set_field()> must be
+used with the first argument set to C<variable>, and an additional
+C<name> parameter, set to the unique name of the associated variable, is
+required. If the associated variable is a I<user> variable, the C<value> and
+C<type> parameters are not allowed. If the variable is I<simple>, then it's
+possible to set a specific value and/or type, with the effects described
+hereafter. The associated variable may not exist when the field is created (it
+may be created later), so it's not automatically checked when the field is
+created through C<set_field()>.
+
+The following example sets a field that displays the content of a declared
+variable whose name is supposed to be "Amount":
+
+        $paragraph->set_field("variable", name => "Amount );
+
+When a field associated to a I<simple> variable is inserted using
+C<set_field()>, its content is set, by default, to the existing content and
+type of the variable. If a C<value> and/or C<text> parameter is provided, the
+field takes this new content, which becomes the default content for subsequent
+fields associated to the same variable, but the previous fields keep their
+values. The same apply to the field type, if a new C<type> is provided. Beware,
+by I<subsequent> and I<previous> we mean the fields that precede or follow the
+field that is created with a changed content in the order of the document, not
+in the order of their creation.
+
+It's possible to insert a variable-based field somewhere without displaying its
+value through a text viewer. An optional C<display> parameter may be set to
+C<none>, that makes the field invisible, or to C<value> (the default) to allow
+the GUI-based applications to display the value.
+
+On the other hand, all the fields associated to a I<user> variable take the same
+value. Each time the content of the variable is changed, all the associated
+fields change accordingly. The API doesn't allow the application to change this
+content through the insertion of an associated field. If needed, the variable
+content may be changed explicitly using another method.
+
+If the lpOD-based application needs to install a variable that doesn't exist,
+it must use the document-based C<set_variable()> method, that takes a mandatory
+first argument that is its unique name, a C<type> (whose default is C<string>)
+and of course a C<currency> parameter if C<type> is C<currency>. Because
+C<set_variable()> doesn't set anything visible in the document, it doesn't take
+any positioning or formatting parameter. A C<value> parameter is needed in
+order to set the initial content of the variable.
+
+The example below "declares" the variable that is used by a text field in the
+previous example::
+
+        $document->set_variable(
+                "Count",
+                name    => "Amount",
+                type    => "float",
+                value   => 123
+                );
+
+A C<class> parameter may be provided to select the C<user> or C<simple> kind
+of variables; the default is C<user>.
+
+A declared variable may be retrieved thanks to its unique name, using the
+C<get_variable()> document-based method with the name as argument, and a named
+C<class> parameter that restricts the search to the C<user> or C<simple>
+variables. If C<class> is not provided, C<get_variable()> looks among both
+the C<user> and C<simple> variables.
+
+The returned object, if any, provides C<get_xxx()>- and C<set_xxx()>-like
+accessors, where C<xxx> stands for C<value>, C<type>, or C<currency>, that
+allow the user to change these properties at any time.
+
+A document-based C<get_variables()> method, with a C<class> named parameter,
+returns all the variables of the given variable class; without parameter, it
+returns the list of the C<user> and C<simple> variables.
+
 =head1	COPYRIGHT & LICENSE
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.

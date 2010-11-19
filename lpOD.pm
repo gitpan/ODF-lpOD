@@ -27,12 +27,18 @@ use strict;
 #       The main module for the lpOD Project
 #-----------------------------------------------------------------------------
 package ODF::lpOD;
-our $VERSION                    =       "0.200";
-use constant PACKAGE_DATE       =>      "2010-11-08T11:12:34";
+our $VERSION                    =       "0.300";
+use constant PACKAGE_DATE       =>      "2010-11-19T12:02:41";
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Document;
-
+use ODF::lpOD::TextElement;
+use ODF::lpOD::Field;
+use ODF::lpOD::StructuredContainer;
+use ODF::lpOD::Table;
+use ODF::lpOD::Style;
+use ODF::lpOD::Attributes;
+#-----------------------------------------------------------------------------
 use base 'Exporter';
 our @EXPORT     = ();
 push @EXPORT,   @ODF::lpOD::Common::EXPORT;

@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.107';
-use constant PACKAGE_DATE       => '2010-11-07T23:32:14';
+our	$VERSION	        = '0.108';
+use constant PACKAGE_DATE       => '2010-11-18T16:13:44';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -55,7 +55,7 @@ our @EXPORT     = qw
         odf_create_list
         odf_create_table odf_create_column odf_create_row odf_create_cell
         odf_create_column_group odf_create_row_group
-        odf_create_field
+        odf_create_field odf_create_simple_variable odf_create_user_variable
         odf_create_note odf_create_annotation
         odf_create_style
 
@@ -67,7 +67,9 @@ our @EXPORT     = qw
         odf_bibliography_mark odf_note odf_annotation odf_changed_region
         odf_paragraph odf_heading odf_draw_page odf_image odf_shape odf_frame
         odf_area odf_rectangle odf_ellipse odf_vector odf_line odf_connector
-        odf_list odf_table odf_column odf_row odf_cell odf_field
+        odf_field odf_variable odf_simple_variable odf_user_variable
+        odf_text_field odf_classify_text_field
+        odf_list odf_table odf_column odf_row odf_cell
         odf_matrix odf_column_group odf_row_group odf_table_element
         odf_section
         odf_file_entry
@@ -75,10 +77,13 @@ our @EXPORT     = qw
         odf_style
         odf_text_style odf_paragraph_style odf_list_style odf_outline_style
         odf_table_style odf_column_style odf_row_style odf_cell_style
-        odf_master_page odf_page_layout odf_page_end_style
+        odf_master_page odf_page_end_style odf_drawing_page_style
+        odf_page_layout odf_presentation_page_layout
+        odf_graphic_style
 
         TRUE FALSE PRETTY
-        is_true is_false is_odf_datatype odf_boolean process_options
+        is_true is_false defined_false
+        is_odf_datatype odf_boolean process_options
         
         META CONTENT STYLES SETTINGS MANIFEST MIMETYPE
 
@@ -87,7 +92,7 @@ our @EXPORT     = qw
         input_conversion output_conversion search_string
         get_local_encoding set_local_encoding
         is_numeric iso_date numeric_date check_odf_value odf_value
-        file_parse file_type image_size
+        file_parse file_type image_size input_2d_value
         alert not_implemented
         
         PRETTY_PRINT EMPTY_TAGS
@@ -120,6 +125,10 @@ use constant
         odf_heading             => 'ODF::lpOD::Heading',
         odf_list                => 'ODF::lpOD::List',
         odf_field               => 'ODF::lpOD::Field',
+        odf_variable            => 'ODF::lpOD::Variable',
+        odf_simple_variable     => 'ODF::lpOD::SimpleVariable',
+        odf_user_variable       => 'ODF::lpOD::UserVariable',
+        odf_text_field          => 'ODF::lpOD::TextField',
         odf_table               => 'ODF::lpOD::Table',
         odf_table_element       => 'ODF::lpOD::TableElement',
         odf_matrix              => 'ODF::lpOD::Matrix',
@@ -154,7 +163,11 @@ use constant
         odf_cell_style          => 'ODF::lpOD::CellStyle',
         odf_master_page         => 'ODF::lpOD::MasterPage',
         odf_page_layout         => 'ODF::lpOD::PageLayout',
+        odf_presentation_page_layout
+                                => 'ODF::lpOD::PresentationPageLayout',
+        odf_graphic_style       => 'ODF::lpOD::GraphicStyle',
         odf_page_end_style      => 'ODF::lpOD::PageEndStyle',
+        odf_drawing_page_style  => 'ODF::lpOD::DrawingPageStyle',
         odf_file_entry          => 'ODF::lpOD::FileEntry'
         };
 
@@ -215,7 +228,6 @@ our %ODF_TEMPLATE           =
         'spreadsheet'   => 'spreadsheet.ods',
         'presentation'  => 'presentation.odp',
         'drawing'       => 'drawing.odg'
-        #TBC
         );
 
 our $LOCAL_ENCODING     = 'utf8';       # application local text encoding
@@ -232,34 +244,32 @@ our $LPOD_PART          = '#lpod:part'; # lpOD link from element to xmlpart
 #=== common function aliases =================================================
 
 BEGIN   {
-        *odf_get_document                       =
-                *ODF::lpOD::Document::get_from_uri;
-        *odf_new_document_from_template         =
-                *ODF::lpOD::Document::create_from_template;
-        *odf_new_document_from_type            =
-                *ODF::lpOD::Document::create;
-        *odf_new_document                       =
-                *ODF::lpOD::Document::create;
-
-        *odf_get_container                      =
-                *ODF::lpOD::Container::get_from_uri;
-        *odf_new_container_from_template        =
-                *ODF::lpOD::Container::create_from_template;
-        *odf_new_container                      =
-                *ODF::lpOD::Container::create;
-        *odf_new_container_from_type            =
-                *ODF::lpOD::Container::create;
-        
+        *odf_get_document       = *ODF::lpOD::Document::get_from_uri;
+        *odf_new_document_from_template
+                                = *ODF::lpOD::Document::create_from_template;
+        *odf_new_document_from_type
+                                = *ODF::lpOD::Document::create;
+        *odf_new_document       = *ODF::lpOD::Document::create;
+        *odf_get_container      = *ODF::lpOD::Container::get_from_uri;
+        *odf_new_container_from_template
+                                = *ODF::lpOD::Container::create_from_template;
+        *odf_new_container      = *ODF::lpOD::Container::create;
+        *odf_new_container_from_type
+                                = *ODF::lpOD::Container::create;
         *odf_get_xmlpart        = *ODF::lpOD::XMLPart::get;
         
         *odf_create_element     = *ODF::lpOD::Element::create;
         *odf_create_paragraph   = *ODF::lpOD::Paragraph::create;
         *odf_create_heading     = *ODF::lpOD::Heading::create;
         *odf_create_field       = *ODF::lpOD::Field::create;
+        *odf_create_simple_variable
+                                = *ODF::lpOD::SimpleVariable::create;
+        *odf_create_user_variable
+                                = *ODF::lpOD::UserVariable::create;
         *odf_create_table       = *ODF::lpOD::Table::create;
-        *odf_create_column_group                =
-                *ODF::lpOD::RowGroup::create;
-        *odf_create_row_group   = *ODF::lpOD::Row::create;
+        *odf_create_row_group   = *ODF::lpOD::RowGroup::create;
+        *odf_create_column_group
+                                = *ODF::lpOD::ColumnGroup::create;
         *odf_create_column      = *ODF::lpOD::Column::create;
         *odf_create_row         = *ODF::lpOD::Row::create;
         *odf_create_cell        = *ODF::lpOD::Cell::create;
@@ -280,6 +290,8 @@ BEGIN   {
         *odf_create_note        = *ODF::lpOD::Note::create;
         *odf_create_annotation  = *ODF::lpOD::Annotation::create;
         *odf_create_style       = *ODF::lpOD::Style::create;
+        *odf_classify_text_field
+                                = *ODF::lpOD::TextField::classify;
 
         *is_numeric             = *Scalar::Util::looks_like_number;
         *odf_value              = *check_odf_value;
@@ -352,6 +364,13 @@ sub     is_false
         {
         return is_true(shift) ? FALSE : TRUE;
         }
+
+sub	defined_false
+	{
+	my $arg	= shift;
+	return FALSE unless defined $arg;
+        return is_false($arg) ? TRUE : FALSE;
+	}
 
 sub     odf_boolean
         {
@@ -594,6 +613,32 @@ sub     image_size
         $w .= 'pt'; $h .= 'pt';
         return [ $w, $h ];
         }
+
+sub	input_2d_value
+	{
+        my $arg         = shift or return undef;
+	my ($x, $y);
+        if (ref $arg)
+                {
+                $x = $arg->[0]; $y = $arg->[1];
+                }
+        elsif ($arg)
+                {
+                if ($arg =~ /,/)
+		        {
+		        $arg =~ s/\s*//g;
+		        ($x, $y) = split(',', $arg);
+		        }
+		else
+		        {
+		        $x = $arg; $y = shift;
+		        }
+		}
+	$x ||= '0cm'; $y ||= '0cm';
+	$x .= 'cm' unless $x =~ /[a-zA-Z]$/;
+	$y .= 'cm' unless $y =~ /[a-zA-Z]$/;
+        return ($x, $y);
+	}        
 
 #-----------------------------------------------------------------------------
 

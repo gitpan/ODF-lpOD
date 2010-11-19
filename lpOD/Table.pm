@@ -20,14 +20,16 @@
 #    you may not use this file except in compliance with the License.
 #    You may obtain a copy of the License at
 #    http://www.apache.org/licenses/LICENSE-2.0
-#-----------------------------------------------------------------------------
+#=============================================================================
 use     5.010_000;
 use     strict;
 #=============================================================================
+#	Tables and table components (columns, rows, cells, row/col groups)
+#=============================================================================
 package ODF::lpOD::Matrix;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-28T11:15:31';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-15T08:41:47';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -63,7 +65,7 @@ sub     alpha_to_num
 
 sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
 	{
-	my $arg	= shift // return undef;                                #/
+	my $arg	= shift // return undef;
         $arg = shift if ref($arg) || $arg eq __PACKAGE__;
 	return ($arg, @_) unless defined $arg;
 	my $coord = uc $arg;
@@ -82,7 +84,7 @@ sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
 
 sub     translate_range
         {
-        my $arg = shift // return undef;                                #/
+        my $arg = shift // return undef;
         $arg = shift if ref($arg) || $arg eq __PACKAGE__;
         return ($arg, @_) unless (defined $arg && $arg =~ /:/);
         my $range = uc $arg;
@@ -887,8 +889,8 @@ sub     get_row_header
 #=============================================================================
 package ODF::lpOD::TableElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-28T11:51:27';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-15T08:42:40';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -909,7 +911,7 @@ sub     get_repeated
                 {
                 alert "Unknown object"; return undef;
                 } 
-        my $result = $self->get_attribute($attr) // 1;                  #/
+        my $result = $self->get_attribute($attr) // 1;
         if ($result < 1)
                 {
                 alert "Strange repeat property $result";
@@ -962,7 +964,7 @@ sub     get_position
         my $elt = $self->previous($parent);
         while ($elt)
                 {
-                $position += $elt->get_repeated // 1;                   #/
+                $position += $elt->get_repeated // 1;
                 $elt = $elt->previous($parent);
                 }
         return wantarray ? ($parent->get_name, $position) : $position;
@@ -1274,180 +1276,15 @@ sub     previous
         }
 
 #=============================================================================
-package ODF::lpOD::Field;
-use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-25T21:47:06';
-use ODF::lpOD::Common;
-#-----------------------------------------------------------------------------
-
-sub     create
-        {
-        my $tag = shift;
-        unless ($tag)
-                {
-                alert "Missing element tag";
-                return FALSE;
-                }
-        my %opt = process_options
-                (
-                type    => 'string',
-                value   => undef,
-                text    => undef,
-                @_
-                );
-
-        my $field = odf_element->new($tag);
-        unless ($field)
-                {
-                alert "Field $tag creation failure";
-                return FALSE;
-                }
-        bless $field, __PACKAGE__;
-
-        if (defined $opt{text})
-                {
-                $field->set_text($opt{text});
-                delete $opt{text};
-                }
-        unless ($field->set_type($opt{type}))
-                {
-                alert "Type setting failure";
-                $field->delete; return FALSE;
-                }
-        if (defined $opt{value})
-                {
-                unless ($field->set_value($opt{value}))
-                        {
-                        alert "Value setting failure";
-                        $field->delete; return FALSE;
-                        }
-                }
-
-        return $field;
-        }
-
-#-----------------------------------------------------------------------------
-
-sub     get_type
-        {
-        my $self        = shift;
-        return $self->att('office:value-type')
-                        // 'string';
-        }
-
-sub     set_type
-        {
-        my $self        = shift;
-        my $type        = shift;
-        unless ($type && $type ~~ @ODF::lpOD::Common::DATA_TYPES)
-                {
-                alert "Missing or wrong data type";
-                return FALSE;
-                }
-        $self->del_attribute('office:currency') unless $type eq 'currency';
-        return $self->set_att('office:value-type', $type);
-        }
-
-sub     get_currency
-        {
-        my $self        = shift;
-        return $self->att('office:currency');
-        }
-
-sub     set_currency
-        {
-        my $self        = shift;
-        my $currency    = shift;
-        $self->set_type('currency') if $currency;
-        return $self->set_att('office:currency', $currency);
-        }
-
-sub     get_value
-        {
-        my $self        = shift;
-        my $type        = $self->get_type();
-        given ($type)
-                {
-                when ('string')
-                        {
-                        return $self->get_text;
-                        }
-                when (['date', 'time'])
-                        {
-                        my $attr = 'office:' . $type . '-value';
-                        return $self->att($attr);
-                        }
-                when (['float', 'currency', 'percentage'])
-                        {
-                        return $self->att('office:value');
-                        }
-                when ('boolean')
-                        {
-                        my $v = $self->att('office:boolean-value');
-                        return defined $v ? is_true($v) : undef;
-                        }
-                }
-        }
-
-sub     set_value
-        {
-        my $self        = shift;
-        my $value       = shift         or return undef;
-        my $type        = $self->get_type();
-
-        given ($type)
-                {
-                when ('string')
-                        {
-                        $self->set_text($value);
-                        }
-                when ('date')
-                        {
-                        if (is_numeric($value))
-                                {
-                                $value = iso_date($value);
-                                }
-                        $self->set_att('office:date-value', $value);
-                        }
-                when ('time')
-                        {
-                        $self->set_att('office:time-value', $value);
-                        }
-                when (['float', 'currency', 'percentage'])
-                        {
-                        $self->set_att('office:value', $value);
-                        }
-                when ('boolean')
-                        {
-                        $self->set_att(
-                                'office:boolean-value',
-                                odf_boolean($value)
-                                );
-                        }
-                }
-        return $self->get_value;
-        }
-
-#-----------------------------------------------------------------------------
-
-sub     get_text
-        {
-        my $self        = shift;
-        return $self->SUPER::get_text(recursive => TRUE);
-        }
-
-#=============================================================================
 #       Table cells
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
 use base ('ODF::lpOD::TableElement', 'ODF::lpOD::Field');
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-06-29T10:47:27';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-16T08:30:11';
 use ODF::lpOD::Common;
 
 BEGIN   {
-        *get_text               = *ODF::lpOD::Field::get_text;
         *get_type               = *ODF::lpOD::Field::get_type;
         }
 
@@ -1505,7 +1342,7 @@ sub     get_position
         my $elt = $self->previous;
         while ($elt)
                 {
-                $position += $elt->get_repeated // 1;                   #/
+                $position += $elt->get_repeated // 1;
                 $elt = $elt->previous;
                 }
         if (wantarray)
@@ -1532,6 +1369,12 @@ sub     set_text
         $self->cut_children;
         $self->append_element
                 (odf_create_paragraph(text => $text, style => $opt{style}));
+        }
+
+sub     get_text
+        {
+        my $self        = shift;
+        return $self->ODF::lpOD::Element::get_text(recursive => TRUE);
         }
 
 sub     get_content
@@ -1639,4 +1482,3 @@ sub     get_span
 
 #=============================================================================
 1;
-

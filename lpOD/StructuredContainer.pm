@@ -24,12 +24,12 @@
 use     5.010_000;
 use     strict;
 #=============================================================================
-#       Structured containers : Sections, lists, draw pages
+#       Structured containers : Sections, lists, draw pages, frames, shapes...
 #-----------------------------------------------------------------------------
 package ODF::lpOD::StructuredContainer;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-07-28T14:02:00';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-11T20:00:13';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Section;
@@ -271,8 +271,8 @@ sub     set_id
 #=============================================================================
 package ODF::lpOD::Shape;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-07-28T09:07:17';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-13T20:50:09';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -296,7 +296,10 @@ sub     create
         $f->set_title($opt{title});
         $f->set_description($opt{description});
         delete @opt
-           {qw(name style size position page anchor_type title description)};
+                {qw(
+                        tag name style size position page
+                        anchor_type title description
+                )};
         foreach my $a (keys %opt)
                 {
                 $f->set_attribute($a => $opt{$a});
@@ -309,28 +312,7 @@ sub     create
 sub     input_2d
         {
         my $self        = shift;
-        my $arg         = shift         or return undef;
-        my ($x, $y);
-        if (ref $arg)
-                {
-                $x = $arg->[0]; $y = $arg->[1];
-                }
-        elsif ($arg)
-                {
-                if ($arg =~ /,/)
-		        {
-		        $arg =~ s/\s*//g;
-		        ($x, $y) = split(',', $arg);
-		        }
-		else
-		        {
-		        $x = $arg; $y = shift;
-		        }
-		}
-	$x ||= '0cm'; $y ||= '0cm';
-	$x .= 'cm' unless $x =~ /[a-zA-Z]$/;
-	$y .= 'cm' unless $y =~ /[a-zA-Z]$/;
-        return ($x, $y);
+        return input_2d_value(@_);
         }
 
 sub     set_anchor_page
@@ -382,23 +364,6 @@ sub     get_description
         return $t->get_text;        
         }
 
-sub     set_position
-        {
-        my $self        = shift;
-        my ($x, $y)     = odf_frame->input_2d(@_);
-        $self->set_attribute('svg:x' => $x);
-        $self->set_attribute('svg:y' => $y);
-        return ($x, $y);
-        }
-
-sub     get_position
-        {
-        my $self        = shift;
-        my $x = $self->get_attribute('svg:x');
-        my $y = $self->get_attribute('svg:y');
-        return wantarray ? ($x, $y) : [$x, $y];
-        }
-
 sub     set_text_style
         {
         my $self        = shift;
@@ -414,38 +379,19 @@ sub     get_text_style
 #=============================================================================
 package ODF::lpOD::Area;
 use base 'ODF::lpOD::Shape';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-07-28T08:52:02';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-13T20:46:34';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 sub     create
         {
         my %opt         = @_;
-        my $size        = $opt{size} // "1cm, 1cm";                     #/
+        my $size        = $opt{size} // "1cm, 1cm";
         delete @opt {qw(start end size)};
         my $a = odf_create_shape(%opt);
         $a->set_size($size)     if $a;
         return $a;
-        }
-
-#-----------------------------------------------------------------------------
-
-sub     set_size
-        {
-        my $self        = shift;
-        my ($w, $h)     = odf_shape->input_2d(@_);
-        $self->set_attribute('svg:width' => $w);
-        $self->set_attribute('svg:height' => $h);
-        return wantarray ? ($w, $h) : [$w, $h];
-        }
-
-sub     get_size
-        {
-        my $self        = shift;
-        my $w = $self->get_attribute('svg:width');
-        my $h = $self->get_attribute('svg:height');
-        return wantarray ? ($w, $h) : [$w, $h];
         }
 
 #=============================================================================
@@ -477,8 +423,8 @@ sub     create
 #=============================================================================
 package ODF::lpOD::Vector;
 use base 'ODF::lpOD::Shape';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-07-26T17:16:16';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-13T20:29:38';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -499,7 +445,7 @@ sub     create
 sub     set_start_position
         {
         my $self        = shift;
-        my ($x, $y)     = odf_frame->input_2d(@_);
+        my ($x, $y)     = input_2d_value(@_);
         $self->set_attribute('svg:x1' => $x);
         $self->set_attribute('svg:y1' => $y);
         return ($x, $y);
@@ -508,7 +454,7 @@ sub     set_start_position
 sub     set_end_position
         {
         my $self        = shift;
-        my ($x, $y)     = odf_frame->input_2d(@_);
+        my ($x, $y)     = input_2d_value(@_);
         $self->set_attribute('svg:x2' => $x);
         $self->set_attribute('svg:y2' => $y);
         return ($x, $y);

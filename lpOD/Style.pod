@@ -115,7 +115,7 @@ displayed in the background, namely:
 =item
 
 C<position>: a string that specifies the horizontal and vertical positions
-of the image, through one or two space-separated words (in any order) among
+of the image, through one or two comma-separated words (in any order) among
 C<center>, C<left>, C<right>, C<top>, C<bottom> (default: C<center>);
 
 =item
@@ -726,7 +726,7 @@ the family. It may be customized using C<set_properties()>.
 
 The most necessary property is C<width>, wich may be an absolute width (i.e.
 a string containing the number and the length unit), a relative length (i.e.
-a string containing a number followed by a star), or both (space-separated).
+a string containing a number followed by a star), or both (comma-separated).
 See §15.9.1 in the ODF specification for details about the relative widths.
 
 The C<break xxx> parameters (where C<xxx> is C<before> or C<after>), are
@@ -751,6 +751,45 @@ any row using the style, legal values are C<page>, C<column>, C<auto>;
 default is C<auto>.
 
 The row style supports the common C<set_background()> method.
+
+=head1  Graphic styles
+
+A graphic style apply to frames, i.e. to image or text box containers.
+
+It controls the way the content is displayed. Knowing that a frame may
+include text and/or graphics, a graphic style may own B<graphic>, B<paragraph>
+and/or B<text> properties, so its full definition mya require three distinct
+areas.
+
+A graphic style may be created through the generic C<odf_create_style()>
+constructor, with C<graphic> as family and the common optional parameters
+(C<name>, C<display name>, C<parent>). Other parameters, if any, are regarded
+as properties for the B<graphic> area.
+
+The user can get or set any property in an existing graphic style through
+C<get_properties()> or C<set_properties()> with the appropriate C<area>
+option, whose possible values are C<graphic>, C<text>, and C<paragraph>.
+The default area is C<graphic>.
+
+The B<text> and B<paragraph> properties are the same as those of a paragraph
+style (see above).
+
+The B<graphic> properties must be provided according to the ODF specification.
+However, knowing that the most part of them belong to the ODF drawing ("draw")
+namespace, the lpOD API automatically regards any property specified without
+namespace prefix as a "draw" property (i.e. the C<draw:blue> color correction
+property may be wrote C<blue> when used as a C<set_properties()> parameter).
+
+The following example creates a graphic style with 50% transparency, 10% green
+color adjustment and 5% luminance adjustment::
+
+        $gs = odf_create_style(
+                'graphic',
+                name            => 'MyFilter',
+                'image opacity' => '50%',
+                green           => '10%',
+                luminance       => '5%'
+                );
 
 =head1  Page styles
 
@@ -979,3 +1018,62 @@ argument is missing or less than 2, then the page layout is no longer columned.
 It's possible to set extra properties in order to specify each column
 individually and to define a separator line between columns, through the
 low-level (lpOD 1) API.
+
+=head1  Presentation page layouts
+
+A presentation page layout (whose use is optional with a draw page) is not
+really a style. However, it's described  and designed as a style in the ODF
+specification, so it's processed as a style through the lpOD API. Practically,
+a presentation page layout typically comes from a template presentation
+document and consists of a set of placeholders, each one specifying the class
+and the coordinates of a shape (see §14.15 then §9.6 in the ODF specification
+for details), knowing that a placeholder indicates a location in a page where
+the user must fill in some information.
+
+Like other styles, a presentation page layout is identified by a C<name> and
+owns an optional C<display name>. It's created by the C<odf_create_style()>
+generic style constructor, with C<presentation page layout> as family name.
+Remember that this family is B<not> related by any mean to the C<page layout>
+family.
+
+Once created, a presentation page layout is populated using its element-specific
+C<set_placeholder()> method. This method can either append a previously created
+(and free) placeholder object, or create and append a new placeholder.
+
+When used for creation, C<set_placeholder()> must be called with the
+presentation object class (specified as a string) as its first argument.
+The possible values are those of the §9.6.1 in the ODF specification, namely
+C<title>, C<outline>, C<subtitle>, C<text>, C<graphic>, C<object>,
+C<chart>, C<table>, C<orgchart>, C<page>, C<notes>, C<handout>.
+
+In addition, the following properties must be provided with
+C<set_placeholder()>:
+
+=over
+
+=item
+
+C<position>, the coordinates of the placeholder, as a list of 2 strings
+containing the X and Y positions (each string specifies the number
+and the unit, ex. "1cm", "2pt");
+
+=item
+
+C<size>, the absolute size of the placeholder, provided in the same format
+as the position, in length or percentage.
+
+=back
+
+The object class argument may be replaced by a valid placeholder element
+(previously cloned from an existing placeholder or by any other mean). If so,
+this element is used as is, and the position/size parameters are ignored.
+
+The C<get_placeholders()> method allows the user to get all the placeholder
+elements belonging to the calling presentation page layout object as a list.
+Each one may me individually deleted, cloned, or updated. From a given
+placeholder element, C<set_position()>, C<get_position()>, C<set_size()>,
+and C<get_size()> allow the user to set or get the coordinates and/or the
+size.
+
+The C<set_placeholder()> method always returns the inserted placeholder
+element.

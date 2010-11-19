@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.107';
-use     constant PACKAGE_DATE => '2010-11-07T21:56:47';
+our     $VERSION    = '0.108';
+use     constant PACKAGE_DATE => '2010-11-19T09:07:23';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -396,6 +396,7 @@ sub     get_style
                 }
 
         my $style; my $xp;
+        my $f = $family; $f =~ s/[ _]/-/g;
         given ($family)
                 {
                 when ('list')
@@ -403,19 +404,13 @@ sub     get_style
                         $xp =   '//text:list-style[@style:name="'       .
                                 $name . '"]';
                         }
-                when ('master page')
+                when (/(master|page layout)/)
                         {
-                        $xp =   '//style:master-page[@style:name="'     .
-                                $name . '"]';
-                        }
-                when ('page layout')
-                        {
-                        $xp =   '//style:page-layout[@style:name="'     .
+                        $xp =   '//style:' . $f . '[@style:name="'     .
                                 $name . '"]';
                         }
                 default
                         {
-                        my $f = $family; $f =~ s/[ _]/-/g;
                         $xp =   '//style:style[@style:name="'   .
                                 $name                           .
                                 '"][@style:family="'            .
@@ -446,7 +441,7 @@ sub     get_styles
                         {
                         $xp =   '//text:list-style';
                         }
-                when(/page/)
+                when (/(master|page layout)/)
                         {
                         $xp = '//style:' . $f;
                         }
@@ -487,24 +482,46 @@ sub     select_style_context
         my $style       = shift;
         my $context     = $self->get_required_context($style);
         return $context if $context;
-        my ($part_name, $xp);
         my %opt         = @_;
-        if  (
-                is_false($opt{automatic})
-                        or
-                is_true($opt{default})
-                        or
-                ($opt{part} && ($opt{part} eq STYLES))
-            )
+        my $xp;
+        my $part_name = is_true($opt{default}) ? STYLES : $opt{part};
+        if (is_true($opt{default}) || defined_false($opt{automatic}))
                 {
-                $part_name = STYLES;
+                $part_name = STYLES; delete $opt{automatic};
+                $xp = '//office:styles';
                 }
         else
                 {
-                $part_name = CONTENT;
+                $part_name = $opt{part};
+                if (is_true($opt{automatic}))
+                        {
+                        $xp = '//office:automatic-styles';
+                        $part_name ||= CONTENT;
+                        }
+                else
+                        {
+                        given ($part_name)
+                                {
+                                when (undef)
+                                        {
+                                        $part_name = STYLES;
+                                        $xp = is_true($opt{automatic}) ?
+                                                '//office:automatic-styles' :
+                                                '//office:styles';
+                                        }
+                                when (STYLES)
+                                        {
+                                        $xp = is_true($opt{automatic}) ?
+                                                '//office:automatic-styles' :
+                                                '//office:styles';
+                                        }
+                                when (CONTENT)
+                                        {
+                                        $xp = '//office:automatic-styles';
+                                        }
+                                }
+                        }
                 }
-        $xp = is_true($opt{automatic}) ?
-                '//office:automatic-styles' : '//office:styles';
         $context = $self->get_element($part_name, $xp);
         unless ($context)
                 {
@@ -514,7 +531,7 @@ sub     select_style_context
         return $context;
         }
 
-sub     insert_text_style
+sub     insert_regular_style
         {
         my $self        = shift;
         my $style       = shift;
@@ -536,7 +553,7 @@ sub     insert_text_style
         return $context->insert_element($style);
         }
 
-sub     insert_regular_style
+sub     insert_special_style
         {
         my $self        = shift;
         my $style       = shift;
@@ -561,6 +578,23 @@ sub     insert_outline_style
         return $context->insert_element($style);
         }
 
+sub	insert_default_style
+	{
+	my $self	= shift;
+	my $style       = shift;
+        my $context = $self->get_element(STYLES, '//office:styles');
+        unless ($context)
+                {
+                alert "Default style context not available";
+                return undef;
+                }
+        my $family = $style->get_family;
+        my $ds = $style->make_default           or return FALSE;
+        my $old = $self->get_style($family);
+        $old->delete() if $old;
+        return $context->insert_element($ds);
+	}
+
 sub     insert_style
         {
         my $self        = shift;
@@ -575,26 +609,17 @@ sub     insert_style
         my $family      = $style->get_family;
         if (is_true($opt{default}))
                 {
-                my $context = $self->get_element(STYLES, '//office:styles');
-                unless ($context)
-                        {
-                        alert "Default style context not available";
-                        return undef;
-                        }
-                $style->set_name(undef);
-                my $old = $self->get_style($family);
-                $old->delete() if $old;
-                return $context->insert_element($style);
+                return $self->insert_default_style($style, $family);
                 }
         given ($family)
                 {
-                when (['text', 'paragraph'])
-                        {
-                        return $self->insert_text_style($style, %opt);
-                        }
-                when (['list', 'master page', 'page layout'])
+                when (['text', 'paragraph', 'graphic', 'drawing page'])
                         {
                         return $self->insert_regular_style($style, %opt);
+                        }
+                when (/(list|master|page layout)/)
+                        {
+                        return $self->insert_special_style($style, %opt);
                         }
                 when ('outline')
                         {
@@ -604,13 +629,147 @@ sub     insert_style
                         {
                         $opt{automatic} = TRUE unless exists $opt{automatic};
                         $opt{part} = CONTENT unless $opt{part};
-                        return $self->insert_regular_style($style, %opt);
+                        return $self->insert_special_style($style, %opt);
                         }
                 default
                         {
                         alert "Not supported"; return undef;
                         }
                 }
+        }
+
+#--- document variable handling ----------------------------------------------
+
+sub     get_user_variables
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        my $context     = $opt{context} // $self->get_body;     
+        return $context->get_elements('text:user-field-decl');
+        }
+
+sub	get_simple_variables
+	{
+	my $self	= shift;
+        my %opt         = @_;
+        my $context     = $opt{context} // $self->get_body;
+        return $context->get_elements('text:variable-decl');
+	}
+
+sub	get_variables
+	{
+	my $self	= shift;
+        my %opt         = @_;
+        given ($opt{class})
+                {
+                when (undef)
+                        {
+                        return  (
+                                $self->get_user_variables(@_),
+                                $self->get_simple_variables(@_)
+                                );
+                        }
+                when ('user')
+                        {
+                        return $self->get_user_variables;
+                        }
+                when ('simple')
+                        {
+                        return $self->get_simple_variables;
+                        }
+                default
+                        {
+                        alert "Unknown variable class $opt{class}";
+                        return undef;
+                        }
+                }
+	}
+
+sub     get_variable
+        {
+        my $self        = shift;
+        my $name        = shift;
+        my %opt         = ( class => 'user', @_ );
+        my $context     = $opt{context} // $self->get_body;
+        my $tag;
+        given ($opt{class})
+                {
+                when (undef)
+                        {
+                        return  $self->get_variable($name, class => 'user')
+                                                ||
+                                $self->get_variable($name, class => 'simple');
+                        }
+                when ('user')
+                        {
+                        $tag = 'text:user-field-decl';
+                        }
+                when ('simple')
+                        {
+                        $tag = 'text:variable-decl';
+                        }
+                default
+                        {
+                        alert "Wrong variable class"; return undef;
+                        }
+                }
+        
+        return $context->get_element
+                ($tag, attribute => 'name', value => $name);
+        }
+
+sub     set_variable
+        {
+        my $self        = shift;
+        my $name        = shift;
+        unless ($name)
+                {
+                alert "Missing variable name";          return FALSE;
+                }
+        if ($self->get_variable($name, class => undef))
+                {
+                alert "Variable $name already exists";  return FALSE;
+                }
+        my %opt         =
+                (
+                name    => $name,
+                class   => 'user',
+                type    => 'string',
+                @_
+                );
+        my $class = $opt{class};
+        my $context = $opt{context};
+        delete @opt{qw(class context)};
+        my $var;
+        given ($class)
+                {
+                when ('user')
+                        {
+                        $var = odf_create_user_variable(%opt);
+                        }
+                when ('simple')
+                        {
+                        $var = odf_create_simple_variable(%opt);
+                        }
+                default
+                        {
+                        alert "Unsupported variable class";
+                        }
+                }
+        if ($var)
+                {
+                $context //= $self->get_required_context($var);
+                if ($context)
+                        {
+                        $context->append_element($var);
+                        }
+                else
+                        {
+                        alert "Unknown object insertion context";
+                        $var->delete; $var = undef;
+                        }
+                }
+        return $var;
         }
 
 #=============================================================================
@@ -1006,18 +1165,16 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '0.105';
-use constant PACKAGE_DATE => '2010-10-20T16:09:51';
+our     $VERSION    = '0.106';
+use constant PACKAGE_DATE => '2010-11-18T18:05:09';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
-use ODF::lpOD::Element;
-#=============================================================================
 
 BEGIN   {
-        *get_container  = *container;
-        *get_document   = *document;
-        *root           = *get_root;
-        *get_elements   = *get_element_list;
+        *get_container          = *container;
+        *get_document           = *document;
+        *root                   = *get_root;
+        *get_element_list       = *get_elements;
         }
 
 sub     class_of
@@ -1045,7 +1202,11 @@ our %CLASS      =
         );
 
 sub     pre_load        {}
-sub     post_load       {}
+sub     post_load
+        {
+        my $self        = shift;
+        $self->get_root->set_classes;
+        }
 
 #=== exported part ===========================================================
 
@@ -1263,7 +1424,7 @@ sub     store
 
 #--- general element management ----------------------------------------------
 
-sub     get_element_list
+sub     get_elements
         {
         my ($self, $xpath) = @_;
         return $self->{context}->get_xpath($xpath);
@@ -1337,50 +1498,28 @@ sub     get_change
 #=============================================================================
 package ODF::lpOD::Content;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-08-30T19:25:00';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-18T18:01:21';
 use ODF::lpOD::Common;
-#-----------------------------------------------------------------------------
-
-sub     post_load
-        {
-        my $self        = shift;
-        my $context     = $self->get_root;
-        foreach my $style ($context->descendants('style:style'))
-                {
-                $style->set_class;
-                }
-        }
-
 #=============================================================================
 package ODF::lpOD::Styles;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-08-30T19:35:00';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-18T18:01:21';
 use ODF::lpOD::Common;
-#-----------------------------------------------------------------------------
-
-sub     post_load
-        {
-        my $self        = shift;
-        my $context     = $self->get_root;
-        foreach my $style ($context->descendants('style:style'))
-                {
-                $style->set_class;
-                }
-        }
-
 #=============================================================================
 package ODF::lpOD::Meta;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-08-02T11:15:06';
+our $VERSION    = '0.104';
+use constant PACKAGE_DATE => '2010-11-18T18:02:53';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN   {
         *get_element_list       = *get_elements;
         }
+
+sub     post_load       {}
 
 #-----------------------------------------------------------------------------
 
@@ -1678,15 +1817,23 @@ sub     store
 #=============================================================================
 package ODF::lpOD::Settings;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-18T18:07:56';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     post_load       {}
+
 #=============================================================================
 package ODF::lpOD::Manifest;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-07-22T07:16:23';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-11-18T18:07:34';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     post_load       {}
+
 #-----------------------------------------------------------------------------
 
 sub     get_entries
