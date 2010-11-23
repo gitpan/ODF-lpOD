@@ -855,7 +855,7 @@ identifier.
 
 =over
 
-=iteù
+=item
 
 C<get_id()> the note identifier (generic element method);
 
@@ -1387,6 +1387,8 @@ C<number-and-name>, C<plain-number>, C<plain-number-and-name> (see ODF 1.1
 
 C<level> is an integer value that specifies the level of the heading that is
 referred to by the field; default is 1.
+
+=back
 
 This examples inserts a field that displays the name of the current level 1
 heading::

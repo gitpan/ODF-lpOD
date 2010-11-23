@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.108';
-use     constant PACKAGE_DATE => '2010-11-19T09:07:23';
+our     $VERSION    = '0.109';
+use     constant PACKAGE_DATE => '2010-11-22T19:13:34';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -772,6 +772,20 @@ sub     set_variable
         return $var;
         }
 
+#--- table of content handling -----------------------------------------------
+
+sub	get_tocs
+	{
+	my $self	= shift;
+        return $self->get_part(CONTENT)->get_tocs(@_);
+	}
+
+sub     get_toc
+        {
+        my $self        = shift;
+        return $self->get_part(CONTENT)->get_toc(@_);
+        }
+
 #=============================================================================
 package ODF::lpOD::Container;
 our	$VERSION	= '0.103';
@@ -1498,9 +1512,35 @@ sub     get_change
 #=============================================================================
 package ODF::lpOD::Content;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-18T18:01:21';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-11-22T19:10:29';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub	get_tocs
+	{
+	my $self	= shift;
+	my $context     = $self->get_body;
+        return $context->get_elements('text:table-of-content');
+	}
+
+sub     get_toc
+        {
+        my $self        = shift;
+        my $name        = shift;
+        unless ($name)
+                {
+                alert "Missing TOC name"; return undef;
+                }
+        my $context = $self->get_body;
+        return $context->get_element
+                (
+                'text:table-of-content',
+                attribute       => 'name',
+                value           => $name
+                );
+        }
+
 #=============================================================================
 package ODF::lpOD::Styles;
 use base 'ODF::lpOD::XMLPart';

@@ -444,6 +444,102 @@ C<lines>, C<line>, and C<curve>.
 
 =back
 
+=head1   Tables of contents
+
+A table of contents (TOC) is represented by an C<odf_toc> object, which is
+created using the C<odf_create_toc()> constructor.
+
+=head2   TOC creation
+
+A table of contents is created as a free element using the C<odf_create_toc()>
+constructor, with a mandatory unique name as its first argument, and the
+following parameters:
+
+=over
+
+=item
+
+C<title>: an optional title (to be displayed at the TOC head), whose
+default value is the given name;
+
+=item
+
+C<style>: the name of a section style applying to the TOC;
+
+=item
+
+C<protected>: a boolean flag that tells the editing applications if the
+  section is write-protected (default=C<TRUE>);
+
+=item
+
+C<outline level>: specifies the last outline level to be used used when
+generating the TOC from headings; if this parameter is omitted, all the
+outline levels are used by default;
+
+=item
+
+C<use outline>: a boolean flag that specifies if the TOC must be generated
+from headings (default=C<TRUE>);
+
+=item
+
+C<use index marks>: a boolean flag that specifies if the TOC must be
+generated from index marks (default=C<FALSE>).
+
+=back
+
+A table of contents object, after creation, may be put somewhere in a
+document using a generic method such as C<insert_element()>.
+
+
+=head2   TOC retrieval
+
+An existing table of contents may be retrieved by name using the context
+method C<get_toc()>.
+
+It's possible to retrieve the full list of the TOCs in a context through
+C<get_tocs()>, without argument.
+
+
+=head2   TOC methods
+
+The C<odf_toc> elements provide the following methods:
+
+=over
+
+=item
+
+C<get_name()> and C<set_name()> to get or set the internal unique name;
+
+=item
+
+C<get_title()> and C<set_title()> to get or change the display TOC title;
+with C<set_title()>, the first argumentis the text of the title, and a
+C<style> named parameter is allowed to specify a paragraph style for the title;
+
+=item
+
+C<get_outline_level()> and C<set_outline_level()> to get or change the
+current outline level property;
+
+=item
+
+C<get_use_outline()> and C<set_use_outline()> to get or set the use outline
+flag;
+
+=item
+
+C<get_use_index_marks()> and C<set_use_index_marks()> to get or set the use
+index marks flag.
+
+=item
+
+C<get_protected()> and C<set_protected()> to get or set the current protection
+status.
+
+=back
+
 =head1	COPYRIGHT & LICENSE
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.

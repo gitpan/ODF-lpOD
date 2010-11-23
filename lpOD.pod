@@ -31,7 +31,7 @@ ODF::lpOD - Languages & platform for OpenDocument
         $document->save;
         exit;
 
-The code example shows above loads a document from an existing "report.odt" file,
+The code example above loads a document from an existing "report.odt" file,
 updates various data in the document, then saves the changes. The following
 actions are done in the document:
 
@@ -387,7 +387,7 @@ L<ODF::lpOD::Element>: Common features, available with any element.
 
 L<ODF::lpOD::TextElement>: Text containers (paragraphs, headings), and various
 elements that may take place in paragraphs (bookmarks, index marks,
-bibliography marks).
+bibliography marks, text variables).
 
 =item *
 
@@ -396,11 +396,11 @@ L<ODF::lpOD::Table>: Access to tables and their content
 =item *
 
 L<ODF::lpOD::StructuredContainer>: High-level structures such as sections,
-lists, and draw pages
+lists, draw pages, shapes, image or text frames, tables of contents.
 
 =item *
 
-L<ODF::lpOD::Style>: Text style retrieval, update, or creation
+L<ODF::lpOD::Style>: Style retrieval, update, or creation
 
 =item *
 

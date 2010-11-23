@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::StructuredContainer;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-11T20:00:13';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-11-21T18:22:59';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Section;
@@ -725,7 +725,7 @@ sub     set_text_box
 package ODF::lpOD::Image;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-07-18T16:04:34';
+use constant PACKAGE_DATE => '2010-11-23T11:57:22';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -789,6 +789,186 @@ sub     get_content
         my $bin = $self->first_child('office:binary-data') or return undef;
         return $bin->text;
         }
+
+#=============================================================================
+package ODF::lpOD::TOC;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-23T11:39:04';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+use constant TOC_SOURCE             => 'text:table-of-content-source';
+use constant TOC_ENTRY_TEMPLATE     => 'text:table-of-content-entry-template';
+use constant TOC_TITLE_TEMPLATE     => 'text:index-title-template';
+
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my $name        = shift;
+        my %opt         = process_options(@_);
+        my $toc = odf_element->new('text:table-of-content');
+        $toc->set_name($name);
+        $toc->set_style($opt{style});
+        $toc->set_protected($opt{protected} // TRUE);
+        $toc->set_outline_level($opt{outline_level} // 10);
+        $toc->set_use_outline($opt{use_outline} // TRUE);
+        $toc->set_use_index_marks($opt{use_index_marks} // FALSE);
+        $toc->set_title($opt{title} // $name);
+        return $toc;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub	get_source
+	{
+	my $self	= shift;
+	return $self->first_child(TOC_SOURCE);
+	}
+
+sub	set_source
+	{
+	my $self	= shift;
+	return  $self->set_child(TOC_SOURCE);
+	}
+
+sub     source_attribute
+        {
+        my $self        = shift;
+        my $attr        = shift;
+        my %opt         = @_;
+        my ($source, $val);
+        if (exists $opt{value})
+                {
+                $source = $self->set_source;
+                $val = $opt{value};
+                $val = odf_boolean($val) if $attr =~ /^use/;
+                $source->set_attribute($attr => $val);
+                }
+        else
+                {
+                $source = $self->get_source;
+                $val = $source ? $source->get_attribute($attr) : undef;
+                $val = TRUE if (is_true($val) && $attr =~ /^use/);
+                }
+        return $val;
+        }
+
+sub	get_title
+	{
+	my $self	= shift;
+        my $title = $self->first_descendant(TOC_TITLE_TEMPLATE);
+        return $title ? $title->get_text : undef;
+	}
+
+sub	set_title
+	{
+	my $self	= shift;
+        my $text        = shift;
+        my %opt         = @_;
+	my $source = $self->set_source;
+        my $style = $opt{style}; delete $opt{style};
+        return $source->set_child
+                        (
+                        TOC_TITLE_TEMPLATE,
+                        $text,
+                        'style name'    => $style,
+                        @_
+                        );
+	}
+
+sub	get_outline_level
+	{
+	my $self	= shift;
+        return $self->source_attribute('outline level');
+	}
+
+sub	set_outline_level
+	{
+	my $self	= shift;
+        my $level       = shift;
+        my $source = $self->set_source;
+        $source->set_attribute('outline level' => $level);
+        foreach my $l (1..$level)
+                {
+                my $t = $source->get_element
+                        (
+                        TOC_ENTRY_TEMPLATE,
+                        attribute       => 'outline level',
+                        value           => $l
+                        )
+                        //
+                $source->append_element(TOC_ENTRY_TEMPLATE);
+
+                $t->set_attribute ('outline level' => $l);
+
+                $t->append_element('text:index-entry-chapter');
+                $t->append_element('text:index-entry-span')
+                        ->set_text("  ");
+                $t->append_element('text:index-entry-text');
+                $t->append_element('text:index-entry-tab-stop')
+                        ->set_attributes
+                                (
+                                'style:type'            => 'right',
+                                'style:leader-char'     => '.'
+                                );
+                $t->append_element('text:index-entry-page-number');
+                }
+	return $level;
+	}
+
+sub	get_protected
+	{
+	my $self	= shift;
+	return is_true($self->get_attribute('protected'));
+	}
+
+sub	set_protected
+	{
+	my $self	= shift;
+	$self->set_attribute(protected => odf_boolean(shift));
+        return $self->get_protected;
+	}
+
+sub	get_use_index_marks
+	{
+	my $self	= shift;
+	return $self->source_attribute('use index marks');
+	}
+
+sub	set_use_index_marks
+	{
+	my $self	= shift;
+	return $self->source_attribute('use index marks', value => shift);
+	}
+
+sub	get_use_outline
+	{
+	my $self	= shift;
+	return $self->source_attribute('use outline');
+	}
+
+sub     set_use_outline
+        {
+        my $self        = shift;
+        return $self->source_attribute('use outline', value => shift);
+        }
+
+#-----------------------------------------------------------------------------
+
+sub	get_entry_template
+	{
+	my $self	= shift;
+        my $level       = shift;
+	my $source = $self->get_source;
+        return $source->get_element
+                (
+                TOC_ENTRY_TEMPLATE,
+                attribute       => 'outline level',
+                value           => $level
+                );
+	}
 
 #=============================================================================
 1;

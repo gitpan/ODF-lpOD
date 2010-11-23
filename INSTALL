@@ -37,10 +37,3 @@ nnn is the version number);
 5) If nothing looks wrong, execute "make install" as system administrator from
 the same directory.
 
-
-About this release
-==================
-
-This release covers only a part of the lpOD functional specification.
-The full implementation is in progress.
-

@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.108';
-use constant PACKAGE_DATE       => '2010-11-18T16:13:44';
+our	$VERSION	        = '0.109';
+use constant PACKAGE_DATE       => '2010-11-23T09:18:48';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -58,6 +58,7 @@ our @EXPORT     = qw
         odf_create_field odf_create_simple_variable odf_create_user_variable
         odf_create_note odf_create_annotation
         odf_create_style
+        odf_create_toc
 
         odf_document odf_container
         odf_xmlpart odf_content odf_styles odf_meta odf_settings odf_manifest
@@ -71,7 +72,7 @@ our @EXPORT     = qw
         odf_text_field odf_classify_text_field
         odf_list odf_table odf_column odf_row odf_cell
         odf_matrix odf_column_group odf_row_group odf_table_element
-        odf_section
+        odf_section odf_toc
         odf_file_entry
 
         odf_style
@@ -168,7 +169,8 @@ use constant
         odf_graphic_style       => 'ODF::lpOD::GraphicStyle',
         odf_page_end_style      => 'ODF::lpOD::PageEndStyle',
         odf_drawing_page_style  => 'ODF::lpOD::DrawingPageStyle',
-        odf_file_entry          => 'ODF::lpOD::FileEntry'
+        odf_file_entry          => 'ODF::lpOD::FileEntry',
+        odf_toc                 => 'ODF::lpOD::TOC'
         };
 
 #--- lpOD common tools and parameters ----------------------------------------
@@ -292,6 +294,7 @@ BEGIN   {
         *odf_create_style       = *ODF::lpOD::Style::create;
         *odf_classify_text_field
                                 = *ODF::lpOD::TextField::classify;
+        *odf_create_toc         = *ODF::lpOD::TOC::create;
 
         *is_numeric             = *Scalar::Util::looks_like_number;
         *odf_value              = *check_odf_value;
@@ -348,6 +351,10 @@ sub     is_true
                 when (["", "false", "off", "no"])
                         {
                         return FALSE;
+                        }
+                when ('true')
+                        {
+                        return TRUE;
                         }
                 when (0)
                         {

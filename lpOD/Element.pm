@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.109';
-use constant PACKAGE_DATE => '2010-11-18T23:21:37';
+our     $VERSION        = '0.110';
+use constant PACKAGE_DATE => '2010-11-22T08:21:16';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -74,7 +74,8 @@ our %CLASS    =
         'style:presentation-page-layout'
                                         => odf_presentation_page_layout,
         'style:header-style'            => odf_page_end_style,
-        'style:footer-style'            => odf_page_end_style
+        'style:footer-style'            => odf_page_end_style,
+        'text:table-of-content'         => odf_toc
         );
 
 #=== aliases and initialization ==============================================
