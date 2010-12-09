@@ -428,7 +428,62 @@ legal values are C<page>, C<column>, C<auto>.
 
 A pararaph style may have a background color or image.
 
-=head2  List family
+=head1  Font declarations
+
+Every font name that is used in a text style (or in a paragraph text property)
+must be I<declared> in the document, either in the C<CONTENT> part or in the
+C<STYLES> part. The basic rule is that a font declaration must appear in the
+part where the corresponding font name appears in a style definition.
+
+So, both the C<STYLES> and C<CONTENT> ODF XML part objects provide methods
+for dealing with font declarations.
+
+C<set_font_declaration()> allows the user to put a font declaration in the
+calling C<odf_xmlpart> object. This method requires a font name (unique for
+the part) as its first argument. Some additional named parameters may be
+provided:
+
+=over
+
+=item
+
+C<family>: the font family, whose default is the font name itself;
+
+=item
+
+C<family generic>: the generic font family name (ex: "roman");
+
+=item
+
+C<pitch>: specifies whether a font has a fixed or variable width;
+
+=item
+
+C<adornments>: adornments, like "bold" or "italic" that can be used to
+locate a font in addition to the family name;
+
+=item
+
+C<charset>: the character set of the font.
+
+=back
+
+For details about these options, see ODF 1.1 §14.6 and §15.4, knowing that
+each option corresponds to a C<style:font-xxx> ODF attribute where C<xxx> is the
+option name.
+
+C<set_font_declaration()> deletes and replaces any previously existing
+font corresponding to the given name. It returns the font declaration object,
+that is a C<odf_element>.
+
+C<set_font_declaration()> may be used as a C<odf_document()> method; in this
+context, it inserts the same font declaration in C<CONTENT> and C<STYLES>.
+
+C<get_font_declaration()> is a C<odf_xmlpart> method allowing to select an
+existing font declaration by name (if any). The returned object may be deleted
+or cloned as any other C<odf_element>.
+
+=head1  List family
 
 A list style is a set of styles that control the formatting properties of
 the list items at every hierachical level. As a consequence, a list style
@@ -498,13 +553,65 @@ The following example shows the way to create a new list style then
 to set some properties for levels 1 to 3, each one with a different type:
 
    $ls = odf_create_style('list', name => 'ListStyle1');
-   $ls->set_level_style(1, type => 'number', prefix => ' ', suffix => '. ');
-   $ls->set_level_style(2, type => 'bullet', character => '-');
-   $ls->set_level_style(3, type => 'image', url => 'bullet.jpg');
+   $ls->set_level_style(
+        1, type => 'number', format => "1", prefix => ' ', suffix => '. '
+        );
+   $ls->set_level_style(
+        2, type => 'bullet', character => '-'
+        );
+   $ls->set_level_style(
+        3, type => 'image', url => 'bullet.jpg'
+        );
 
 The C<set_level_style()> method returns an ODF element, representing the list
 level style definition, and which could be processed later through any element-
 or style-oriented function.
+
+A list level style definition may be extended using its own C<set_properties()>
+method, allowing the user to set properties that can't be covered by the
+C<set_level_style()> parameters. These properties are:
+
+=over
+
+=item
+
+C<space before>: the ident level, i.e. the space before the number for all
+paragraphs at this level;
+
+=item
+
+C<min label width>: the minimum width of the item labels at this level;
+
+=item
+
+C<min label distance>: the minimum distance between the number and the text
+of the item;
+
+=item
+
+C<align>: the alignment of the item label relatively to the width as set
+through C<min label width>; may be 'center', 'start', 'end';
+
+=item
+
+C<font>: the name of a font that is used to display a bullet character (for
+bullet list level styles);
+
+=item
+
+C<height> and C<width>: the height and width of the image (for image list
+level styles).
+
+=back
+
+The next example shows the way to set a level 1 number list level style with
+a 1cm indent and a 5mm minimal space between the label and the item::
+
+        $ls->set_level_style(1, type => 'number', format => '1')
+                ->set_properties(
+                        'space before'          => '1cm',
+                        'min label distance'    => '5mm'
+                        );
 
 An individual list level style may be reloaded through C<get_level_style()>,
 with the level number as its only one argument; it returns a regular ODF element
@@ -535,7 +642,7 @@ document. The C<set_level_style()> method may be used with an already defined
 level; in such a situation, the old level style is replaced by the new one. So
 it's easy to clone an existing list style then modify it for one or more levels.
 
-=head2  Outline style
+=head1  Outline style
 
 According to the ODF specification, "the outline style is a list style that
 is applied to all headings within a text document where the heading's paragraph

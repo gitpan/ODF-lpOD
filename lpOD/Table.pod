@@ -30,9 +30,6 @@ tables, sections and frames.
 Every table is identified by a name (which must be unique for the
 document) and may own some optional properties.
 
-I<Note: the implemented and documented features, in the present development
-version, are only a subset of the full lpOD specification about tables.>
-
 =head1  Table creation and retrieval
 
 Like any other C<odf_element> table may be created either from scratch
@@ -77,14 +74,8 @@ is I<not> a security feature);
 
 =item
 
-C<display>: boolean, tells that the table should be visible; default is
+C<print>: boolean, tells that the table should be printable; default is
 C<TRUE>;
-
-=item
-
-C<print>: boolean, tells that the table should be printable; however, the
-table is not printable if C<display> is C<FALSE>, whatever the value of
-C<print>; default is C<TRUE>;
 
 =item
 
@@ -111,6 +102,11 @@ the context-based C<get_table_by_name> with the name as argument. It may
 be selected by its sequential position in the list of the tables belonging
 to the context, using C<get_table_by_position>, with a zero-based numeric
 argument (possibly counted back from the end if the argument is negative).
+A C<get_table()> method is provided, that works like C<get_table_by_position()>
+if the argument is numeric or like C<get_table_by_name()> otherwise (of course,
+if the name of the desired table looks like a number, there is no choice but
+C<get_table_by_name()> to retrieve it by name). Without argument,
+C<get_table()> returns the first table in the context (if any).
 In addition, it's possible to retrieve a table according to its content,
 through C<get_table_by_content>; this method returns the first table (in
 the order of the document) whose text content matches the given argument,
@@ -143,6 +139,46 @@ second row in a table (assuming that C<$t> is a previously selected table):
         $cell = $t->get_cell('B2');
         $cell = $t->get_cell(1, 1);
 
+C<get_row()> allows the user to select a table row as an ODF element. This
+method requires a zero-based numeric value.
+
+C<get_column()> works according to the same logic and returns a table column
+ODF element.
+
+The full set of row and column objects may be selected using the table-based
+C<get_rows()> and C<get_columns()> methods. By default these methods
+return repectively the full list of rows or columns. They can be restricted to
+a specified range of rows or columns. The restriction may be expressed through
+two numeric, zero-based arguments indicating the positions of the first and the
+last item of the range. Alternatively, the range may be specified using a more
+"spreadsheet-like" syntax, in only one alphanumeric argument representing the
+visible representation of the range through a GUI; this argument is the
+concatenation of the visible numbers of the starting and ending elements,
+separated by a ":", knowing that "1" is the visible number of the row zero
+while "A" is the visible number or the column zero. As a consequence, the two
+following instructions are equivalent and return a list including the rows from
+5 to 10 belonging to the table I<t>:
+
+        @rows = $t->get_rows(5, 10);
+        @rows = $t->get_rows('6:11');
+
+According to the same logic, each of the two instruction below returns the
+columns from 8 to 15::
+
+        @cols = $t->get_columns(8, 15);
+        @cols = $t->get_columns('I:P');
+
+Once selected, knowing that cells are contained in rows, a row-based
+C<get_cell()> method is provided. When called from a row object,
+C<get_cell()> requires the same parameter as the table-based C<get_column()>
+method. For example, the following sequence returns the same cell as in the
+previous example:
+
+        $r = $t->get_row(1);
+        $c = $r->get_cell(1);
+
+=head1  Cell range selection
+
 C<get_cells> extracts rectangular ranges of cells in order to allow the
 applications to store and process them out of the document tree, through
 regular 2D tables. The range selection is defined by the coordinates of the
@@ -158,26 +194,28 @@ of a table:
         @cells = $table->get_cells(1,1,14,3);
 
 Note that, after such a selection, C<$cells[0][0]> contains the "B2" cell of
-the ODF table. If C<get_cells> is called without argument, the selection covers
-the whole table.
+the ODF table.
+
+If C<get_cells> is called without argument, the selection covers the whole
+table.
+
+A row object has its own C<get_cell()> method. The row based version of
+C<get_cells()> returns, of course, a one-row table of cell objects. When
+used without argument, it selects all the cells of the row. It may be called
+with either a pair of numeric arguments that represent the start and the end
+positions of the cell range, or an alphanumeric argument (whose the numeric
+content is ignored and should be omitted) corresponding to the start and end
+columns in conventional spreadsheet notation. The following example shows two
+ways to select the same cell range (beginning at the 2nd position and ending
+at the 26th one) in a previously selected row:
+
+        @cells = $r->get_cells('B:Z');
+        @cells = $r->get_cells(1, 25);
 
 The elements of the Perl table returned by C<get_cells> are references to the
 cells of the ODF table (not copies); the Perl table just maps an ODF table
 area, and any cell property change made through this Perl table affects the
 underlying ODF cell.
-
-C<get_row> allows the user to select a table row as an ODF element. This
-method requires a zero-based numeric value. If the required row exists, it's
-returned; the method returns C<undef> otherwise. C<get_row> provides a
-C<odf_row> object, that provides its own C<get_cell> method. When called from
-a C<odf_row>, C<get_cell> requires a numeric argument only, that is the zero-
-based position on the needed cell.
-
-C<get_column> works according to the same logic and returns a table column
-object, that is a C<odf_column> instance. (Remember that a column doesn't
-contain cells.)
-
-C<get_column_list> returns all the columns as a list.
 
 =head1  Row and column customization
 
@@ -331,7 +369,6 @@ while the third and third instructions select the first cell of a table header::
    header = table.get_header()
    c2 = header.get_cell(0,0)
 
-
 =head1  Individual cell property handling
 
 A cell owns both a I<content> and some I<properties> which may be processed
@@ -452,4 +489,3 @@ You may obtain a copy of the License at
 L<http://www.apache.org/licenses/LICENSE-2.0>
 
 =cut
-

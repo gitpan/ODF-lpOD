@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.110';
-use constant PACKAGE_DATE => '2010-11-22T08:21:16';
+our     $VERSION        = '0.111';
+use constant PACKAGE_DATE => '2010-12-09T14:58:36';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -65,9 +65,12 @@ our %CLASS    =
         'draw:frame'                    => odf_frame,
         'draw:image'                    => odf_image,
         'manifest:file-entry'           => odf_file_entry,
+        'style:font-face'               => odf_font_declaration,
         'style:style'                   => odf_style,
         'style:default-style'           => odf_style,
         'text:list-style'               => odf_list_style,
+        'text:list-level-style-number'  => odf_list_level_style,
+        'text:list-level-style-bullet'  => odf_list_level_style,
         'text:outline-style'            => odf_outline_style,
         'style:master-page'             => odf_master_page,
         'style:page-layout'             => odf_page_layout,
@@ -101,7 +104,6 @@ BEGIN
         *get_index_mark_list            = *get_index_marks;
         *get_bibliography_mark_list     = *get_bibliography_marks;
         *get_table_list                 = *get_tables;
-        *get_table                      = *get_table_by_name;
         *get_part                       = *lpod_part;
         *get_document                   = *document;
         }
@@ -598,6 +600,11 @@ sub     get_element
                 position        => 0,
                 @_
                 );
+        if ($opt{bookmark})
+                {
+                return $self->get_element_by_bookmark
+                                ($opt{bookmark}, tag => $tag);
+                }
         return $self->_get_elements($tag, %opt);
         }
 
@@ -623,6 +630,11 @@ sub     get_paragraph
         {
         my $self        = shift;
         my %opt         = @_;
+        if ($opt{bookmark})
+                {
+                return $self->get_element_by_bookmark
+                                ($opt{bookmark}, tag => 'text:p');
+                }
         unless (defined $opt{style})
                 {
                 return $self->get_element('text:p', %opt);
@@ -658,6 +670,11 @@ sub     get_heading
         {
         my $self        = shift;
         my %opt         = @_;
+        if ($opt{bookmark})
+                {
+                return $self->get_element_by_bookmark
+                        ($opt{bookmark}, tag => 'text:h');
+                }
         if (defined $opt{level})
                 {
                 $opt{attribute} = 'outline level';
@@ -715,6 +732,15 @@ sub	get_fields
 	}
 
 #--- table retrieval ---------------------------------------------------------
+
+sub	get_table
+	{
+	my $self	= shift;
+	my $arg         = shift // 0;
+        return is_numeric($arg) ?
+                $self->get_table_by_position($arg, @_)  :
+                $self->get_table_by_name($arg, @_);
+	}
 
 sub     get_tables
         {
@@ -971,16 +997,17 @@ sub     get_element_by_bookmark
                 {
                 alert("Bookmark not found"); return FALSE;
                 }
+        if ($opt{tag})
+                {
+                return $bookmark->get_ancestor($opt{tag});
+                }
         return $bookmark->parent;
         }
 
 sub     get_paragraph_by_bookmark
         {
         my $self        = shift;
-        my $elt         = $self->get_element_by_bookmark(@_)
-                        or return FALSE;
-        return $elt->isa(odf_paragraph) ?
-                $elt : $elt->get_ancestor(qr'text:(p|h)');
+        return $self->get_element_by_bookmark(tag => 'text:p');
         }
 
 sub     get_bookmark_text
@@ -1784,7 +1811,7 @@ sub     search
                         $self->_search_backward($expr, %opt);
                 }
         $r{match} = output_conversion($match);
-        return %r;
+        return wantarray ? %r : { %r };
         }
 
 sub     replace
@@ -1833,15 +1860,18 @@ sub     AUTOLOAD
         my $name = $target->{attribute};
         my $type = $target->{type};
 
+        my $value = undef;
         given ($action)
                 {
                 when ('get')
                         {
-                        return $element->get_attribute($name, @_);
+                        $value = $element->get_attribute($name, @_);
+                        return ($type and ($type eq 'boolean')) ?
+                                                is_true($value) : $value;
                         }
                 when ('set')
                         {
-                        my $value = input_conversion(shift);
+                        $value = input_conversion(shift);
                         if ($type)
                                 {
                                 $value = check_odf_value($value, $type);

@@ -327,9 +327,15 @@ sub     contains
 #=============================================================================
 package ODF::lpOD::ColumnGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-28T20:26:24';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-25T20:15:10';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN	{
+	*get_column_list		= *get_columns;
+	}
+
 #-----------------------------------------------------------------------------
 
 sub     create { return odf_element->new('table:table-column-group', @_); }
@@ -421,7 +427,7 @@ sub     get_column
         return $col;
         }
 
-sub     get_column_list
+sub     get_columns
         {
         my $self        = shift;
         my $arg         = shift;
@@ -564,9 +570,15 @@ sub     uncollapse
 #=============================================================================
 package ODF::lpOD::RowGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-28T20:24:21';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-24T19:12:18';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN	{
+	*get_row_list			= *get_rows;
+	}
+
 #-----------------------------------------------------------------------------
 
 sub     create { return odf_element->new('table:table-row-group', @_); }
@@ -659,7 +671,7 @@ sub     get_row
         return $row;
         }
 
-sub     get_row_list
+sub     get_rows
         {
         my $self        = shift;
         my $arg         = shift;

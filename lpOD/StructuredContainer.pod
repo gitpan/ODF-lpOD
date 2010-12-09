@@ -11,6 +11,70 @@ These element types are implemented through the C<odf_section>, C<odf_list>,
 C<odf_draw_page>, C<odf_frame>, C<odf_rectangle>, C<odf_ellipse>, C<odf_line>,
 and C<odf_connector> classes.
 
+=head1   Item lists
+
+A list is a structured object that contains an optional list header followed by
+any number of list items. The list header, if defined, contains one or more
+paragraphs that are displayed before the list. A list item can contain
+paragraphs, headings, or lists. Its properties are C<style>, that is an
+appropriate list style, and C<continue numbering>, a boolean value that, if
+true, means that I<if the numbering style of the preceding list is the same as
+the current list, the number of the first list item in the current list is the
+number of the last item in the preceding list incremented by one>
+(default=false).
+
+A list is created using C<odf_create_list()>, then inserted using
+C<insert_element()> as usual.
+
+A list header is created "in place" with C<set_header()>, called from a list
+element; this method returns an ODF element that can be used later as a context
+to append paragraphs in the header. Alternatively, it's possible to call the
+list-based C<set_header()> with one or more existing paragraphs as arguments,
+so these paragraphs are immediately incorporated in the new list header. Note
+that every use of C<set_header()> replaces any existing header by a new one.
+
+Regular list items are created in place (like the optional list header) using
+C<add_item()> wich creates one or more new items and inserts them at a
+position which depends on optional parameters, according to the same kind
+of logic than the table-based C<add_row()> method. Without any argument, a
+single item is appended at end of the list. An optional C<before> named
+parameter may be provided; if defined, the value of this parameter must be an
+item number (in numeric, zero-based form) in the range of the list; the new
+items are inserted I<before> the original item that existed at the given
+position. Alternatively, a C<after> parameter may be provided instead of
+C<before>; it produces a similar result, but the new items are inserted
+I<after> the given position. If a additional I<number> parameter is provided
+with a integer value, the corresponding number of identical items are
+inserted in place.
+
+By default, a new item is created empty. However, as a shortcut for the most
+common case, it's possible to directly create it with a text content. To do
+so, the text content must be provided through a C<text> parameter; an
+optional C<style> parameter, whose value is a regular paragraph style, may
+provided too. The new item is then created with a single paragraph as content
+(that is the most typical situation).
+
+Another optional C<start value> parameter may be set in order to restart the
+numbering of the current list at the given value. Of course, this start value
+apply to the first inserted item if C<add_item()> is used to create many items
+in a single call.
+
+C<add_item()> returns the newly created list of item elements. In addition,
+an existing item may be selected in the list context using C<get_item()> with
+its numeric position. A list item is an ODF element, so any content element
+may be attached to it using C<insert_element()> or C<append_element()>.
+
+Note that, unlike headings, list items don't have an explicit level property.
+All the items in an ODF list have the same level. Knowing that a list may be
+inside an item belonging to another list, the hierarchy is represented by the
+structural list imbrication, not by item attributes.
+
+A list may be retrieved using the context-based C<get_list()> method, whose
+optional parameters are the same as C<get_element()>. A C<get_list_by_id()>
+method selects a list according to its (optional) identifier. In addition,
+C<get_lists()> selects the item lists contained in the context according
+to the same rules as C<get_elements()>.
+
 =head1  Sections
 
 A section is a named region in a text document. It's a high level container that
@@ -60,8 +124,8 @@ A new section may be inserted or appended somewhere using C<insert_element>
 or C<append_element>. (Of course, an existing section may be copied and
 pasted thanks to the common C<clone> method.)
 
-A section may be retrieved using C<get_section> with the unique name of the
-needed section as argument, while C<get_section_list> returns all the
+A section may be retrieved using C<get_section()> with the unique name of the
+needed section as argument, while C<get_sections()> returns all the
 sections (if any) of the context.
 
 =head1  Draw pages
@@ -96,8 +160,8 @@ C<style>: the name of a drawing page style (existing or to be defined);
 =item
 
 C<master>: the name of a master page whose structure is appropriate for
-   draw pages (beware, a master page defined for a text document don't always
-   fit for draw pages);
+draw pages (beware, a master page defined for a text document don't always
+fit for draw pages);
 
 =item
 
@@ -132,7 +196,7 @@ the argument, then, in case of failure, it looks for a draw page whose name
 matches. Alternatively, the user can explicitly select a draw page by name
 using C<get_draw_page_by_name()> or according to its zero-based position in
 the document using C<get_draw_page_by_position()>. The whole list of draw
-pages may be returned by C<get_draw_page_list()>.
+pages may be returned by C<get_draw_pages()>.
 
 Populating a draw page doesn't require element-specific methods, knowing that:
 

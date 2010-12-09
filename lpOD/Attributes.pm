@@ -24,10 +24,9 @@
 use     5.010_000;
 use	strict;
 package ODF::lpOD::Attributes;
-use constant PACKAGE_DATE => '2010-11-06T12:22:25';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-11-24T09:04:26';
 #==============================================================================
-# Generated from OpenDocument-schema-v1.1.rng
-#------------------------------------------------------------------------------
 %ODF::lpOD::Connector::ATTRIBUTE =
 	(
 	caption_id                      =>
@@ -438,6 +437,20 @@ use constant PACKAGE_DATE => '2010-11-06T12:22:25';
 		},
 	);
 #------------------------------------------------------------------------------
+%ODF::lpOD::PresentationPageLayout::ATTRIBUTE =
+	(
+	name                            =>
+		{
+		attribute => "style:name",
+		type      => "styleName"
+		},
+	display_name                    =>
+		{
+		attribute => "style:display-name",
+		type      => "string"
+		},
+	);
+#------------------------------------------------------------------------------
 %ODF::lpOD::Style::ATTRIBUTE =
 	(
 	name                            =>
@@ -494,74 +507,6 @@ use constant PACKAGE_DATE => '2010-11-06T12:22:25';
 #------------------------------------------------------------------------------
 %ODF::lpOD::Cell::ATTRIBUTE =
 	(
-	number_columns_repeated         =>
-		{
-		attribute => "table:number-columns-repeated",
-		type      => "positiveInteger"
-		},
-	style_name                      =>
-		{
-		attribute => "table:style-name",
-		type      => "styleNameRef"
-		},
-	content_validation_name         =>
-		{
-		attribute => "table:content-validation-name",
-		type      => "string"
-		},
-	formula                         =>
-		{
-		attribute => "table:formula",
-		type      => "string"
-		},
-	protect                         =>
-		{
-		attribute => "table:protect",
-		type      => "boolean"
-		},
-	);
-#------------------------------------------------------------------------------
-%ODF::lpOD::Table::ATTRIBUTE =
-	(
-	name                            =>
-		{
-		attribute => "table:name",
-		type      => "string"
-		},
-	style_name                      =>
-		{
-		attribute => "table:style-name",
-		type      => "styleNameRef"
-		},
-	protected                       =>
-		{
-		attribute => "table:protected",
-		type      => "boolean"
-		},
-	protection_key                  =>
-		{
-		attribute => "table:protection-key",
-		type      => "Unknown"
-		},
-	print                           =>
-		{
-		attribute => "table:print",
-		type      => "boolean"
-		},
-	print_ranges                    =>
-		{
-		attribute => "table:print-ranges",
-		type      => "cellRangeAddressList"
-		},
-	is_sub_table                    =>
-		{
-		attribute => "table:is-sub-table",
-		type      => "boolean"
-		},
-	);
-#------------------------------------------------------------------------------
-%ODF::lpOD::Cell::ATTRIBUTE =
-	(
 	number_columns_spanned          =>
 		{
 		attribute => "table:number-columns-spanned",
@@ -605,6 +550,45 @@ use constant PACKAGE_DATE => '2010-11-06T12:22:25';
 	protect                         =>
 		{
 		attribute => "table:protect",
+		type      => "boolean"
+		}
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::Table::ATTRIBUTE =
+	(
+	name                            =>
+		{
+		attribute => "table:name",
+		type      => "string"
+		},
+	style_name                      =>
+		{
+		attribute => "table:style-name",
+		type      => "styleNameRef"
+		},
+	protected                       =>
+		{
+		attribute => "table:protected",
+		type      => "boolean"
+		},
+	protection_key                  =>
+		{
+		attribute => "table:protection-key",
+		type      => "Unknown"
+		},
+	print                           =>
+		{
+		attribute => "table:print",
+		type      => "boolean"
+		},
+	print_ranges                    =>
+		{
+		attribute => "table:print-ranges",
+		type      => "cellRangeAddressList"
+		},
+	is_sub_table                    =>
+		{
+		attribute => "table:is-sub-table",
 		type      => "boolean"
 		},
 	);
@@ -983,6 +967,128 @@ use constant PACKAGE_DATE => '2010-11-06T12:22:25';
 		{
 		attribute => "text:class-names",
 		type      => "styleNameRefs"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::TOC::ATTRIBUTE =
+	(
+	style_name                      =>
+		{
+		attribute => "text:style-name",
+		type      => "styleNameRef"
+		},
+	name                            =>
+		{
+		attribute => "text:name",
+		type      => "string"
+		},
+	protected                       =>
+		{
+		attribute => "text:protected",
+		type      => "boolean"
+		},
+	protection_key                  =>
+		{
+		attribute => "text:protection-key",
+		type      => "string"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::UserVariable::ATTRIBUTE =
+	(
+	value_type                      =>
+		{
+		attribute => "office:value-type",
+		type      => "Unknown"
+		},
+	value                           =>
+		{
+		attribute => "office:value",
+		type      => "double"
+		},
+	value_type                      =>
+		{
+		attribute => "office:value-type",
+		type      => "Unknown"
+		},
+	value                           =>
+		{
+		attribute => "office:value",
+		type      => "double"
+		},
+	value_type                      =>
+		{
+		attribute => "office:value-type",
+		type      => "Unknown"
+		},
+	value                           =>
+		{
+		attribute => "office:value",
+		type      => "double"
+		},
+	currency                        =>
+		{
+		attribute => "office:currency",
+		type      => "string"
+		},
+	value_type                      =>
+		{
+		attribute => "office:value-type",
+		type      => "Unknown"
+		},
+	date_value                      =>
+		{
+		attribute => "office:date-value",
+		type      => "dateOrDateTime"
+		},
+	value_type                      =>
+		{
+		attribute => "office:value-type",
+		type      => "Unknown"
+		},
+	time_value                      =>
+		{
+		attribute => "office:time-value",
+		type      => "duration"
+		},
+	value_type                      =>
+		{
+		attribute => "office:value-type",
+		type      => "Unknown"
+		},
+	boolean_value                   =>
+		{
+		attribute => "office:boolean-value",
+		type      => "boolean"
+		},
+	value_type                      =>
+		{
+		attribute => "office:value-type",
+		type      => "Unknown"
+		},
+	string_value                    =>
+		{
+		attribute => "office:string-value",
+		type      => "string"
+		},
+	name                            =>
+		{
+		attribute => "text:name",
+		type      => "variableName"
+		},
+	);
+#------------------------------------------------------------------------------
+%ODF::lpOD::SimpleVariable::ATTRIBUTE =
+	(
+	value_type                      =>
+		{
+		attribute => "office:value-type",
+		type      => "valueType"
+		},
+	name                            =>
+		{
+		attribute => "text:name",
+		type      => "variableName"
 		},
 	);
 #==============================================================================

@@ -93,7 +93,7 @@ no file is created before an explicit use of the C<save> method.
 
 The following example creates a spreadsheet document instance:
 
-        my $doc = odf_new_document_from_type('spreadsheet');
+        my $doc = odf_new_document('spreadsheet');
 
 The real content of the instance depends on the default template.
 
@@ -356,6 +356,12 @@ each use field in the matadata part of a document:
                     "Type   " . $uf->{type}
                 }
 
+=head3  set_user_fields()
+
+Allows the applications to set or change all the user-defined items.
+Its argument is a list of hash refs with the same structure as the result of
+C<get_user_fields()>.
+
 =head3  set_user_field(name, value, type)
 
 Creates or changes a user field. The first argument is the name (identifier).
@@ -504,10 +510,6 @@ in the C<META> and C<CONTENT> parts:
         my $doc = odf_get_document("/home/users/jmg/report.odt");
         my $meta = $doc->get_part(META);
         my $content = $doc->get_part(CONTENT);
-        # meta updates are made here
-        $meta->store;
-        # content updates are made here
-        $content->store;
         $document->save;
 
 An optional C<target> parameter may be provided to C<save()>. If set, this

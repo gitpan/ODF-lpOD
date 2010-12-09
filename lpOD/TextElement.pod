@@ -195,6 +195,33 @@ All the properties that may be set through C<odf_create_heading> may be read or
 set later using corresponding C<get_xxx> or C<set_xxx> attributes.
 These properties are allowed for headings only.
 
+=head1  Text processing inside a paragraph
+
+The traditional string editing methods (i.e. regex-based search & replace
+functions) are available against the text content of a paragraph.
+
+C<search()> is a element-based method which takes a search string (or a
+regular expression) as argument and returns the offset of the first substring
+matching the argument in the text content of the element. A null return value
+means no match. In case of success, the method returns a data structure whose
+attributes are the text node (C<segment>), the offset in the segment
+(C<offset>), and the matching substring itself (C<match>).
+
+The search space includes all the text children and descendants of the calling
+context.
+
+C<replace()> is a context-based method. It takes two arguments, the first one
+being a search string like with C<search()>, the second one a text which will
+replace any substring matching the search string. The return value of the
+method is the total number of matches. If the second argument is an empty
+string, every matching substring is just deleted without replacement. If the
+second argument is missing, then nothing is changed, and the method just counts
+the number of matches. This method is context-based, so it recursively works on
+all the paragraphs, headers and spans below the calling element; the calling
+element may be any ODF element, including the elements that can't directly own a
+text content. It may be called at the document level. The return value is the
+number of replacements done.
+
 =head1  Text spans and hyperlinks
 
 A paragraph may contain special markup elements. A I<text span> is a particular
@@ -260,6 +287,30 @@ context to create a hyperlink span that spreads over its whole content:
                 offset  => 0,
                 url     => 'http://www.lpod-project.org'
                 );
+
+The C<set_hyperlink()> method allows additional options regarding the link
+properties, namely:
+
+=over
+
+=item
+
+C<name>: a significant name, distinct from the URL;
+
+=item
+
+C<title>: a link title;
+
+=item
+
+C<style>: a text style, corresponding to the "unvisited" state;
+
+=item
+
+C<visited style>: a text style, to apply when the state is "visited".
+
+Note that the two style-related options, if set, override the default styling
+for the "visited" and "unvisited" states.
 
 =head1  Bookmarks and index marks
 

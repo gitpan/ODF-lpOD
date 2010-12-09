@@ -548,8 +548,8 @@ sub     initialize
 #=============================================================================
 package ODF::lpOD::ListStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-11-13T17:54:48';
+our $VERSION    = '0.104';
+use constant PACKAGE_DATE => '2010-12-07T12:21:12';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -619,8 +619,7 @@ sub	set_level_style
                 return $self->append_element($e);
                 }
         my $type = $opt{type} || 'number';
-        my $tag = $self->level_style_tag($type) or return FALSE;
-        $e = odf_create_element($self->level_style_tag($type));
+        $e = ODF::lpOD::ListLevelStyle::create($type) or return FALSE;
         given ($type)
                 {
                 when ('number')
@@ -652,6 +651,101 @@ sub	set_level_style
         $e->set_style($opt{style});
         my $old = $self->get_level_style($level); $old && $old->delete;
         return $self->append_element($e);
+        }
+
+#=============================================================================
+package ODF::lpOD::ListLevelStyle;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-12-07T14:15:46';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+our %ATTR       =
+        (
+        align           => 'fo:text-align',
+        font            => 'style:font-name',
+        width           => 'fo:width',
+        height          => 'fo:height'
+        );
+
+our %PROP = reverse %ATTR;
+
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my $type        = shift;
+        my $tag;
+        given ($type)
+                {
+                when (undef)
+                        {
+                        alert "Missing list level type";
+                        }
+                when (['bullet', 'number', 'image'])
+                        {
+                        $tag = 'text:list-level-style-' . $type;
+                        }
+                default
+                        {
+                        alert "Wrong list level type";
+                        }
+                }
+        return $tag ? odf_create_element($tag) : undef;
+        }
+
+sub     get_type
+        {
+        my $self        = shift;
+        my $t = $self->get_tag;
+        $t =~ /([a-z])$/;
+        return $t;
+        }
+
+sub     get_properties
+        {
+        my $self        = shift;
+        my $pr = $self->first_child('style:list-level-properties')
+                        or return undef;
+        my %prop;
+        my %att = $pr->get_attributes;
+        foreach my $k (keys %att)
+                {
+                my $p = $PROP{$k};
+                unless ($p)
+                        {
+                        $p = $k;
+                        $p =~ s/^.*://; $p =~ s/-/_/g;
+                        }
+                $prop{$p} = $att{$k};
+                }
+        return wantarray ? %prop : { %prop };
+        }
+
+sub     set_properties
+        {
+        my $self        = shift;
+        my %opt         = process_options(@_);
+        my $pr = $self->set_child('style:list-level-properties');
+        foreach my $k (keys %opt)
+                {
+                my $att;
+                if ($k =~ /:/)
+                        {
+                        $att = $k;
+                        }
+                else
+                        {
+                        $att = $ATTR{$k};
+                        unless ($att)
+                                {
+                                $att = 'text:' . $k;
+                                }
+                        }
+                $pr->set_attribute($att => $opt{$k});
+                }
+        return $pr;
         }
 
 #=============================================================================
@@ -1231,6 +1325,38 @@ sub	attribute_name
         my $self        = shift;
         my $p           = shift         or return undef;
         return ($p =~ /:/) ? $p : 'draw:' . $p;
+        }
+
+#=============================================================================
+package ODF::lpOD::FontDeclaration;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-12-03T09:06:50';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my $name        = shift;
+        my %opt         =
+                (
+                family          => $name,
+                @_
+                );
+        unless ($name)
+                {
+                alert "Missing font name"; return FALSE;
+                }
+        my $fd = odf_create_element('style:font-face');
+        $fd->set_name($name);
+        $fd->set_attribute('svg:font-family' => $opt{family});
+        delete $opt{family};
+        foreach my $k (keys %opt)
+                {
+                my $att = $k =~ /:/ ? $k : 'style:font-' . $k;
+                $fd->set_attribute($att => $opt{$k});
+                }
+        return $fd;
         }
 
 #=============================================================================

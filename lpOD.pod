@@ -66,8 +66,6 @@ functional structure and the user's point of view. As a consequence, it may be u
 
 The lpOD API is object oriented.
 
-I<The present distribution is a partial, but operational implementation of the lpOD functional specifications. The documented features will be extended, but should not be removed.>
-
 =head1  Basic document access principles
 
 The general access to the documents uses the C<odf_document> class. Before
@@ -341,7 +339,6 @@ of the big picture through this simple program:
                         text => "Hello World !"
                         )
                 );
-        $content->store;
         $doc->save(target => "helloworld.odt");
         exit;
 
@@ -387,11 +384,11 @@ L<ODF::lpOD::Element>: Common features, available with any element.
 
 L<ODF::lpOD::TextElement>: Text containers (paragraphs, headings), and various
 elements that may take place in paragraphs (bookmarks, index marks,
-bibliography marks, text variables).
+bibliography marks, text variables and fields).
 
 =item *
 
-L<ODF::lpOD::Table>: Access to tables and their content
+L<ODF::lpOD::Table>: Access to tables and their content.
 
 =item *
 

@@ -98,8 +98,8 @@ sub     set_hyperlink
 #=============================================================================
 package ODF::lpOD::List;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-07-06T13:08:17';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-12-07T11:32:39';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -216,7 +216,7 @@ sub     add_item
                         }
                 }
         $elt->set_attribute('start value', $start) if defined $start;
-        return  @items;
+        return  wantarray ? @items : $elt;
         }
 
 sub     set_header

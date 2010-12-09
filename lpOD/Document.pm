@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.109';
-use     constant PACKAGE_DATE => '2010-11-22T19:13:34';
+our     $VERSION    = '0.110';
+use     constant PACKAGE_DATE => '2010-12-04T15:10:11';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -786,6 +786,17 @@ sub     get_toc
         return $self->get_part(CONTENT)->get_toc(@_);
         }
 
+#--- font declaration --------------------------------------------------------
+
+sub	set_font_declaration
+	{
+	my $self	= shift;
+	return  (
+                $self->get_part(CONTENT)->set_font_declaration(@_),
+                $self->get_part(STYLES)->set_font_declaration(@_)
+                );
+	}
+
 #=============================================================================
 package ODF::lpOD::Container;
 our	$VERSION	= '0.103';
@@ -1179,8 +1190,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '0.106';
-use constant PACKAGE_DATE => '2010-11-18T18:05:09';
+our     $VERSION    = '0.107';
+use constant PACKAGE_DATE => '2010-11-28T12:52:02';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1322,6 +1333,19 @@ sub     load
         $self->post_load;
         return TRUE;
         }
+
+sub	needs_update
+	{
+	my $self	= shift;
+	my $arg         = shift;
+        given ($arg)
+                {
+                when (undef)    {}
+                when (TRUE)     { $self->{update} = TRUE  }
+                when (FALSE)    { $self->{update} = FALSE }
+                }
+        return $self->{update};
+	}
 
 #--- destructor --------------------------------------------------------------
 
@@ -1472,7 +1496,7 @@ sub     delete_element
         return $element->delete;
         }
 
-#-----------------------------------------------------------------------------
+#--- tracked change handling -------------------------------------------------
 
 sub     get_tracked_changes_root
         {
@@ -1510,10 +1534,54 @@ sub     get_change
         }
 
 #=============================================================================
-package ODF::lpOD::Content;
+package ODF::lpOD::StyleContainer;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-11-22T19:10:29';
+our $VERSION    = '0.101';
+use constant PACKAGE_DATE => '2010-12-04T15:13:50';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub	get_font_declarations
+	{
+	my $self	= shift;
+	return $self->get_elements
+                ('//office:font-face-decls/style:font-face');
+	}
+
+sub	get_font_declaration
+	{
+	my $self	= shift;
+	my $name        = shift         or return undef;
+        my $xp =        '//office:font-face-decls'              .
+                        '/style:font-face[@style:name="'        .
+                        $name                                   .
+                        '"]';
+        return $self->get_element($xp);
+	}
+
+sub	set_font_declaration
+	{
+	my $self	= shift;
+	my $name        = shift;
+        unless ($name)
+                {
+                alert "Missing font name"; return undef;
+                }
+        my %opt         = process_options(@_);
+        $opt{family}    ||= $name;
+        my $fd = $self->get_font_declaration($name);
+        $fd->delete if $fd;
+        return $self
+                ->get_root
+                ->set_child('office:font-face-decls')
+                ->insert_element(odf_create_font_declaration($name, %opt));
+	}
+
+#=============================================================================
+package ODF::lpOD::Content;
+use base 'ODF::lpOD::StyleContainer';
+our $VERSION    = '0.104';
+use constant PACKAGE_DATE => '2010-12-03T20:12:14';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1543,15 +1611,15 @@ sub     get_toc
 
 #=============================================================================
 package ODF::lpOD::Styles;
-use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-18T18:01:21';
+use base 'ODF::lpOD::StyleContainer';
+our $VERSION    = '0.103';
+use constant PACKAGE_DATE => '2010-12-03T20:11:57';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Meta;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-11-18T18:02:53';
+our $VERSION    = '0.105';
+use constant PACKAGE_DATE => '2010-11-25T14:30:56';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1766,6 +1834,16 @@ sub     get_user_fields
                 }
         return @result;
         }
+
+sub	set_user_fields
+	{
+	my $self	= shift;
+        foreach my $f (@_)
+                {
+                $self->set_user_field($f->{name}, $f->{value}, $f->{type});
+                }
+        return $self->get_user_fields;
+	}
 
 #-----------------------------------------------------------------------------
 

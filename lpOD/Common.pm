@@ -28,7 +28,7 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
 our	$VERSION	        = '0.109';
-use constant PACKAGE_DATE       => '2010-11-23T09:18:48';
+use constant PACKAGE_DATE       => '2010-12-07T11:46:39';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -57,7 +57,7 @@ our @EXPORT     = qw
         odf_create_column_group odf_create_row_group
         odf_create_field odf_create_simple_variable odf_create_user_variable
         odf_create_note odf_create_annotation
-        odf_create_style
+        odf_create_style odf_create_font_declaration
         odf_create_toc
 
         odf_document odf_container
@@ -76,11 +76,13 @@ our @EXPORT     = qw
         odf_file_entry
 
         odf_style
-        odf_text_style odf_paragraph_style odf_list_style odf_outline_style
+        odf_text_style odf_paragraph_style
+        odf_list_style odf_list_level_style odf_outline_style
         odf_table_style odf_column_style odf_row_style odf_cell_style
         odf_master_page odf_page_end_style odf_drawing_page_style
         odf_page_layout odf_presentation_page_layout
         odf_graphic_style
+        odf_font_declaration
 
         TRUE FALSE PRETTY
         is_true is_false defined_false
@@ -153,10 +155,12 @@ use constant
         odf_note                => 'ODF::lpOD::Note',
         odf_annotation          => 'ODF::lpOD::Annotation',
         odf_changed_region      => 'ODF::lpOD::ChangedRegion',
+        odf_font_declaration    => 'ODF::lpOD::FontDeclaration',
         odf_style               => 'ODF::lpOD::Style',
         odf_text_style          => 'ODF::lpOD::TextStyle',
         odf_paragraph_style     => 'ODF::lpOD::ParagraphStyle',
         odf_list_style          => 'ODF::lpOD::ListStyle',
+        odf_list_level_style    => 'ODF::lpOD::ListLevelStyle',
         odf_outline_style       => 'ODF::lpOD::OutlineStyle',
         odf_table_style         => 'ODF::lpOD::TableStyle',
         odf_column_style        => 'ODF::lpOD::ColumnStyle',
@@ -291,6 +295,8 @@ BEGIN   {
         *odf_create_image_frame = *ODF::lpOD::Frame::create_image;
         *odf_create_note        = *ODF::lpOD::Note::create;
         *odf_create_annotation  = *ODF::lpOD::Annotation::create;
+        *odf_create_font_declaration
+                                = *ODF::lpOD::FontDeclaration::create;
         *odf_create_style       = *ODF::lpOD::Style::create;
         *odf_classify_text_field
                                 = *ODF::lpOD::TextField::classify;
@@ -549,7 +555,7 @@ sub     search_string
                 );
         my $start       = $opt{offset};
         my $ln = length($content);
-        if (abs($start) >= $ln)
+        if ((defined $start) and (abs($start) >= $ln))
                 {
                 alert "[$start $ln] out of range";
                 return undef;
