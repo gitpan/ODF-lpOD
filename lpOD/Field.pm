@@ -28,8 +28,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Field;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-19T08:58:09';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-12-13T17:07:05';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -144,37 +144,35 @@ sub     get_value
 sub     set_value
         {
         my $self        = shift;
-        my $value       = shift         or return undef;
+        my $value       = shift;
         my $type        = $self->get_type();
 
+        my $v = check_odf_value($value, $type);
         given ($type)
                 {
                 when ('string')
                         {
-                        $self->set_attribute('office:string-value' => shift);
+                        $self->set_attribute('office:string-value' => $v);
                         }
                 when ('date')
                         {
-                        if (is_numeric($value))
+                        if (is_numeric($v))
                                 {
-                                $value = iso_date($value);
+                                $v = iso_date($v);
                                 }
-                        $self->set_att('office:date-value', $value);
+                        $self->set_att('office:date-value', $v);
                         }
                 when ('time')
                         {
-                        $self->set_att('office:time-value', $value);
+                        $self->set_att('office:time-value', $v);
                         }
                 when (['float', 'currency', 'percentage'])
                         {
-                        $self->set_att('office:value', $value);
+                        $self->set_att('office:value', $v);
                         }
                 when ('boolean')
                         {
-                        $self->set_att(
-                                'office:boolean-value',
-                                odf_boolean($value)
-                                );
+                        $self->set_att('office:boolean-value', $v);
                         }
                 }
         return $self->get_value;
@@ -246,8 +244,8 @@ sub     get_value       {}
 #=============================================================================
 package ODF::lpOD::TextField;
 use base 'ODF::lpOD::Field';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-18T17:01:05';
+our $VERSION    = '0.102';
+use constant PACKAGE_DATE => '2010-12-20T19:28:11';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -300,6 +298,18 @@ sub	set_class
 	my $self	= shift;
 	return classify($self);
 	}        
+
+sub	set_style
+	{
+	my $self	= shift;
+	return $self->set_attribute('style:data-style-name' => shift);
+	}
+
+sub	get_style
+	{
+	my $self	= shift;
+	return $self->get_attribute('style:data-style-name');
+	}
 
 #-----------------------------------------------------------------------------
 

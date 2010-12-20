@@ -344,6 +344,11 @@ element instead of a I<text> style element, provided that the given paragraph
 style contains a I<text> part; so the text part of the given paragraph style (and
 this part only) is used as the prototype.
 
+Among the creation option for style paragraphs, a C<master page> parameter
+may be set in order to specify the style of the page where the paragraphs
+using the style will appear. A paragraph whose style has a master page is the
+first of a new page.
+
 The API allows the user to set any attribute using its official name according
 to the ODF specification related to the paragraph formatting properties (§15.5).
 However, the API allows the use of mnemonic shortcuts for a few, frequently
@@ -755,7 +760,7 @@ the usual C<name> parameter, and the following parameters:
 
 C<width>: the table width (in length, not in columns), provided either in
 absolute values or as a percentage of the page width; both absolute and
-relative values may be provided as a string, separated by a space, if needed;
+relative values may be provided as a string, separated by a comma, if needed;
 
 =item
 
@@ -804,7 +809,8 @@ are cell properties.
 
 A cell style is created using C<odf_create_style()> with C<table cell> as the
 family. A C<data style> may be provided as an optional parameter, which is
-recommended as soon as the style is about to be used for numeric cells.
+recommended as soon as the style is about to be used for numeric cells. The
+value of this parameter is the identifier or a I<number style>.
 
 Once created, a cell style may be customized using C<set_properties()>. See
 §15.11 in the ODF specification for the full list of possible properties.
@@ -835,6 +841,10 @@ The most necessary property is C<width>, wich may be an absolute width (i.e.
 a string containing the number and the length unit), a relative length (i.e.
 a string containing a number followed by a star), or both (comma-separated).
 See §15.9.1 in the ODF specification for details about the relative widths.
+
+Optionally, a C<optimal width> boolean property may be provided, to specify
+that the column width should be recalculated automatically if some content in
+the column changes.
 
 The C<break xxx> parameters (where C<xxx> is C<before> or C<after>), are
 allowed to specify if a page or column break must be inserted before or after
@@ -1059,6 +1069,12 @@ notation (ex: '21cm');
 
 =item
 
+C<size>: the page size, as two comma-separated values in a single string,
+the width coming first; this option is a shortcut that may replace C<width>
+and C<height> (ex: '21cm, 29.7cm');
+
+=item
+
 C<number format>, C<number prefix>, and C<number suffix>: the format,
 prefix and suffix which define the default number representation for page
 styles, which is used to display page numbers within headers and footers;
@@ -1184,3 +1200,57 @@ size.
 
 The C<set_placeholder()> method always returns the inserted placeholder
 element.
+
+=head1  Inter-document style replication
+
+A special, document-based C<substitute_styles()>, allows the user to remove
+any existing style registered in the current document and to replace them
+by copies of the styles registered in another document. This method requires
+either the path/name of the ODF source file, or an already created
+odf_document instance. The most simple (and drastic) use looks like in the
+following instruction:
+
+        $doc->substitute_styles("pretty_styled_file.odt");
+
+This method allows the applications to use and reuse ODF files as style
+databases. Be careful: in order to avoid name collisions and/or unresolved
+dependencies, this method deletes every previously defined style in the
+calling document before importing the styles of the source document, so it
+must be used I<before> any style creation or customization.
+
+The effects of C<substitute_styles()> may be restricted to a particular area
+through options. For example, if you want do keep your local automatic styles,
+you can exclude them from the substitution as shown below:
+
+        $doc->substitute_styles(
+                "pretty_styled_file.odt"
+                automatic       => FALSE
+                );
+
+The C<substitute_styles()> options are C<automatic>, C<common> (for the
+I<common> styles), C<master> (for the I<master pages> and similar styles),
+and C<fonts> (for the I<font declarations>). All these options are set to
+C<TRUE> by default. Switching an option to C<FALSE> may be risky unless you
+really know that you want, because complex dependencies may exist between
+styles registered in different areas.
+
+Alternatively, you can use C<substitute_styles()> as a I<part-based> method,
+so the substitution works only with this part. As an example, the following
+sequence substitutes only the font declarations registered in the C<CONTENT>
+parts of the document:
+
+        $doc->get_part(CONTENT)->substitute_styles(
+                "pretty_styled_file.odt",
+                automatic       => FALSE,
+                fonts           => TRUE
+                );
+
+Knowing that the C<CONTENT> part (according to the ODF rules) can't contain
+common or master styles, the C<common> and C<master> options are automatically
+set to C<FALSE> when C<substitute_styles()> is used from this part.
+
+Of course, the bulk style substitution in not the only way to import styles
+registered elsewhere. Thanks to C<get_style()> and C<get_styles()>, styles
+may be picked individually or by family, cloned and registered locally by
+C<insert_style()>.
+

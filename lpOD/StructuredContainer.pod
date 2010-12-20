@@ -346,6 +346,11 @@ of the text box.
 For C<odf_create_image_frame()> the first argument is the link to the internal
 or external image resource.
 
+If the C<size> parameter is not set, lpOD attempts to set it to the original
+image size if C<Image::Size> is installed in your environment, if the given
+resource is a readable image file in the local filesystem, and if the image
+type is supported by C<Image::Size>.
+
 =head1  Drawing shapes
 
 =head2  Common Drawing Shape Attributes

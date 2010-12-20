@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-11-19T08:20:05';
+our $VERSION    = '0.104';
+use constant PACKAGE_DATE => '2010-12-20T19:47:14';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -160,6 +160,14 @@ sub     split_content
                 if ($position eq 'end')
                         {
                         my $e = $self->append_element($tag);
+                        $e->set_attributes($opt{attributes});
+                        $e->set_text($opt{text});
+                        $e->set_class;
+                        return $e;
+                        }
+                if ($position == 0 && ! defined $search)
+                        {
+                        my $e = $self->insert_element($tag);
                         $e->set_attributes($opt{attributes});
                         $e->set_text($opt{text});
                         $e->set_class;
@@ -460,6 +468,28 @@ sub     set_span
         return $self->split_content(tag => 'span', %opt);
         }
 
+sub	remove_spans
+	{
+	my $self	= shift;
+
+        my $tmp = $self->clone;
+        $self->delete_children;
+        my $count       = 0;
+        foreach my $e ($tmp->descendants)
+                {
+                unless ($e->is('text:span'))
+                        {
+                        $e->move(last_child => $self);
+                        }
+                else
+                        {
+                        $count++;
+                        }
+                }
+        $tmp->delete;
+        return $count;
+	}
+
 sub     set_hyperlink
         {
         my $self        = shift;
@@ -691,7 +721,7 @@ sub	set_field
                         alert "Unsupported field type"; return undef;
                         }
                 }
-        foreach my $k (keys %opt)
+        OPTION: foreach my $k (keys %opt)
                 {
                 if (ref $opt{$k} || ($k eq 'role'))
                         {
@@ -705,8 +735,23 @@ sub	set_field
                                 ]
                         )
                         {
-                        $opt{$k} = odf_boolean($opt{$k}) if ($k eq 'fixed');
-                        $opt{attributes}{$k} = $opt{$k};
+                        given ($k)
+                                {
+                                when ('fixed')
+                                        {
+                                        $opt{attributes}{$k} =
+                                                odf_boolean($opt{$k});
+                                        }
+                                when ('style')
+                                        {
+                                        my $a = 'style:data-style-name';
+                                        $opt{attributes}{$a} = $opt{$k};
+                                        }
+                                default
+                                        {
+                                        $opt{attributes}{$k} = $opt{$k};
+                                        }
+                                }
                         delete $opt{$k};
                         }
                 }

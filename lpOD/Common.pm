@@ -28,7 +28,7 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
 our	$VERSION	        = '0.109';
-use constant PACKAGE_DATE       => '2010-12-07T11:46:39';
+use constant PACKAGE_DATE       => '2010-12-17T23:40:00';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -79,6 +79,7 @@ our @EXPORT     = qw
         odf_text_style odf_paragraph_style
         odf_list_style odf_list_level_style odf_outline_style
         odf_table_style odf_column_style odf_row_style odf_cell_style
+        odf_number_style
         odf_master_page odf_page_end_style odf_drawing_page_style
         odf_page_layout odf_presentation_page_layout
         odf_graphic_style
@@ -87,6 +88,7 @@ our @EXPORT     = qw
         TRUE FALSE PRETTY
         is_true is_false defined_false
         is_odf_datatype odf_boolean process_options
+        alpha_to_num translate_coordinates translate_range
         
         META CONTENT STYLES SETTINGS MANIFEST MIMETYPE
 
@@ -166,6 +168,7 @@ use constant
         odf_column_style        => 'ODF::lpOD::ColumnStyle',
         odf_row_style           => 'ODF::lpOD::RowStyle',
         odf_cell_style          => 'ODF::lpOD::CellStyle',
+        odf_number_style        => 'ODF::lpOD::NumberStyle',
         odf_master_page         => 'ODF::lpOD::MasterPage',
         odf_page_layout         => 'ODF::lpOD::PageLayout',
         odf_presentation_page_layout
@@ -464,6 +467,61 @@ sub     process_options
                 $out{$outk} = $in{$ink}; 
                 }
         return %out;
+        }
+
+sub     alpha_to_num
+        {
+        my $arg = shift         or return 0;
+        $arg = shift if ref($arg) || $arg eq __PACKAGE__;
+        my $alpha = uc $arg;
+        unless ($alpha =~ /^[A-Z]*$/)
+                {
+                return $arg if $alpha =~ /^[0-9\-]*$/;
+                alert "Wrong alpha value $arg: digits not allowed";
+                return undef;
+                }
+
+        my @asplit = split('', $alpha);
+        my $num = 0;
+        foreach my $p (@asplit)
+                {
+		$num *= 26;
+		$num += ((ord($p) - ord('A')) + 1);
+                }
+        $num--;
+        return $num;
+        }
+
+sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
+	{
+	my $arg	= shift // return undef;
+        $arg = shift if ref($arg) || $arg eq __PACKAGE__;
+	return ($arg, @_) unless defined $arg;
+	my $coord = uc $arg;
+	return ($arg, @_) unless $coord =~ /[A-Z]/;
+
+	$coord	=~ s/\s*//g;
+	$coord	=~ /(^[A-Z]*)(\d*)/;
+	my $c	= $1;
+	my $r	= $2;
+	return ($arg, @_) unless ($c && $r);
+
+	my $rownum = $r - 1;
+	my $colnum = alpha_to_num($c);
+	return ($rownum, $colnum, @_);
+	}
+
+sub     translate_range				#TOCHECK
+        {
+        my $arg = shift // return undef;
+        $arg = shift if ref($arg) || $arg eq __PACKAGE__;
+        return ($arg, @_) unless (defined $arg && $arg =~ /:/);
+        my $range = uc $arg;
+        $range =~ s/\s*//g;
+        my ($start, $end) = split(':', $range);
+        my @r = ();
+	push @r, translate_coordinates($_) for ($start, $end);
+        return @r;
         }
 
 #-----------------------------------------------------------------------------

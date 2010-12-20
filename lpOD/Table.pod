@@ -462,6 +462,159 @@ a given cell is covered or not through the boolean C<is_covered()> cell method.
 In addition, the span values of a covered cell are automatically set to 1, and
 C<set_span()> is forbidden with covered cells.
 
+=head1  Performance issues
+
+The table-oriented access methods perform relatively well against tables
+including up to thousands, if not tens of thousands of cells. So there is no
+performance issue with tables belonging to text documents. On the other hand,
+spreadsheet documents may contain tables whose size in potentially unlimited.
+As soon as you are faced to wrong response times and overloaded CPUs, you may
+consider using the following workarounds, which can (sometimes) improve the
+performances, possibly at the cost of a reduced functionality.
+
+=head2  Accessing cells from rows
+
+Remember that cells belong to rows and rows belong to tables. As a consequence,
+accessing a cell is faster from the row than from the table. So, each time you
+need to get several cells belonging to the same row, you should first get the
+row then use it as the context for subsequent cell accesses. As an illustration,
+each of the two following code snippets scans a whole table and loads the text
+of every cell in a list, but the second one is faster:
+
+        # table scan, way 1
+        my @text = ();
+        my ($l, $w) = $table->get_size;
+        for (my $i = 0 ; $i < $l ; $i++) {
+                for (my $j = 0 ; $j < $w ; $j++) {
+                        push @text, $table->get_cell($i, $j)->get_text;
+                        }
+                }
+
+        # table scan, way 2
+        my @text = ();
+        my ($l, $w) = $table->get_size;
+        for (my $i = 0 ; $i < $l ; $i++) {
+                my $row = $table->get_row($i);
+                for (my $j = 0 ; $j < $w ; $j++) {
+                        push @text, $row->get_cell($j)->get_text;
+                        }
+                }
+
+At a higher level but for the same reasons, C<get_cell()> and C<get_cells()>
+are slower as column group methods that as table or row group methods. In other
+words, when a cell belongs to the intersection of a row group and a column
+group, it may be accessed faster from the table or the row group than from the
+column group.
+
+=head2  Mapping ODF tables with Perl lists
+
+Thanks to C<get_cells()>, you can easily associate a Perl table to a selected
+area in a document table. As an example, the following instruction produces
+a 2D Perl list that maps the "B4:Z50" area in a given table:
+
+        my @cells = $table->get_cells("B4:Z50");
+
+While C<get_cells()> is a costly method, it provides an array of pre-selected
+cells. Beware that C<get_cells()> return the cells themselves, not copies, so,
+after the instruction above, C<$cells[0][0]> is the "B4" cell of the ODF table,
+while C<$cells[-1][-1]> is the "Z50" cell, and so on. As a consequence, the
+2 instructions below are functionally equivalent, but the second one in much
+faster because there is no need to look for the cell in the XML data structure:
+
+        $text = $table->get_cell("C5")->get_text;
+        $text = $cells[1][1]->get_text;
+
+Using such a mapping doesn't significanty improve the overall performances,
+but it allows the applications to execute the slow job once for all, then
+provide a good interactivity. However, be careful about very large areas:
+using C<get_cells()> to load hundreds of thousands of cells may be practically
+too slow to be practical. In addition, the mapping is no longer accurate
+as soon as the structure of the underlying table is changed due to row/column
+insertions or deletions. For read-only access, have a look at the "read
+optimized" option (introduced below) that could help.
+
+=head2  Working area limitation
+
+The global size of a typical spreadsheet table is by far larger than the size
+of the really used part. As an example, your spreadsheet processor may silently
+store a 65536x1024 table while the last really used cell is, say, Z50,
+so the size of the useful part is 50x26. In such a situation, lpOD can't
+automatically decide what is the useful size, so it processes the full size.
+The first result is a huge time and resource waste. As soon as you know the
+useful size of a table, you can instruct the C<odf_table> instance to ignore
+the extra area, thanks to C<set_working_area()>. The instruction below tells
+that, for the current session, the table will be processed as if its size was
+500x100:
+
+        my $table = $doc->get_body->get_table("Sheet1");
+        $table->set_working_area(500, 100);
+
+Note that this operational restriction has no effect if the real size is
+smaller than the given size. On the other hand, C<set_working_area()> doesn't
+destroy the table content that resides out of the working area, if any; it just
+prevents you from accessing any object beyond your declared limits through
+the official table-oriented methods, namely C<get_row()>, C<get_cell()>, and
+C<get_column()>. However, the "hidden" area remains available for low-level
+hacking with basic element handling methods (for example, if you issue a
+C<get_paragraphs()> from the table object, it will look for all the paragraphs
+belonging to all the real cells of the calling table).
+
+The working area restriction doesn't produce any persistent effect when the
+document is saved.
+
+Note that the C<get_size()> method itself is affected by C<set_working_area()>;
+it returns the declared size, unless the real size is smaller.
+
+You can change the working area according to your current needs. Successive
+calls of C<set_working_area()> are allowed, so the working area may be enlarged
+or reduced at will.
+
+The working area restriction may be removed using C<set_working_area()>
+without argument.
+
+=head2  Read-only declaration
+
+As soon as an object is selected using any official table component selector
+(such as C<get_cell()>, C<get_row()>, and so on), lpOD acts by default as if
+this object could be updated or deleted, and as if something (a row, a column
+or a cell) could be inserted before or after it. As a consequence, the internal
+data structure of the spreadsheet may be changed, resulting in useless
+processing if case of read-only access. However, lpOD allows the applications
+to use tables in "read optimized" mode, so it may avoid any update preparation,
+allowing better response times. To activate this mode, the user must set the
+"read optimized" flag to C<TRUE> using C<read_optimize()> like that:
+
+        my $table = $doc->get_body->get_table("Sheet1");
+        $table->read_optimize(TRUE);
+
+Caution: C<read_optimize()> means that you I<assume> that you will not make
+updates; it doesn't I<prevent> you from updating cells, deleting rows, and so
+on. So, be careful: you can corrupt the table and get very strange and
+unpredictable results as soon as you make updates in read optimized mode.
+
+This optimization option is useful for large table area scans, particularly
+with very sparse tables (i.e. tables where significant cells are separated
+by large empty areas). On the other hand, it's not efficient, and at worst may
+increase the response time, for individual access to a cell. So don't use it
+without testing.
+
+Note that you can switch this mode off and restore the default behavior at
+any time. You just have to recall C<read_optimize()> with C<FALSE> as argument.
+Like C<set_working_area()>, C<read_optimize()> doesn't produce any persistent
+effect.
+
+However, there is a possible trap, illustrated by the next (wrong) example:
+
+        $table->read_optimize(TRUE);
+        $cell = $table->get_cell("Z26");
+        $table->read_optimize(FALSE);
+        $cell->set_value(1234);
+
+In this sequence, we selected a cell while the table was in "read optimized"
+mode, then we cancelled this mode and executed an update. The result is not
+predictable (it will be sometimes right, sometimes wrong). The rule is: never
+update an object selected in read optimized mode. Before any update, we must
+select the object in normal mode.
 
 =head1	COPYRIGHT & LICENSE
 

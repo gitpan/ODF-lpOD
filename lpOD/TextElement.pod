@@ -1523,8 +1523,7 @@ The example below "declares" the variable that is used by a text field in the
 previous example::
 
         $document->set_variable(
-                "Count",
-                name    => "Amount",
+                "Amount",
                 type    => "float",
                 value   => 123
                 );

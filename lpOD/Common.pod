@@ -70,6 +70,21 @@ Without argument, returns the current date in ODF-compliant format.
 Translates an ISO-8601 date, coming from an ODF document, into a Perl computable
 C<time> value.
 
+=head3  translate_coordinates(alpha_spreadsheet_coordinates)
+
+Returns the zero-based row number and column number according to a string
+representing spreadsheet-like coordinated. For example "A1" gives (0, 0),
+"Z10" gives (9, 25), and so on. Note that the row number comes first in the
+result, while the column letter comes first in the argument.
+
+=head3  translate_range(alpha_spreadsheet_range)
+
+Returns the zero-based numeric coordinates of the two positions that define
+a range in a spreadsheet, according to an alphanumeric range expression. As
+an example, "B4:F12" gives (3, 1, 11, 5). Note that the given string must be
+separated in two part by a colon; each part is translated according to the
+same logic as C<translate_coordinates()>, producing a list of 4 values.
+
 =head1  External file control
 
 =head3  file_parse(file_path)

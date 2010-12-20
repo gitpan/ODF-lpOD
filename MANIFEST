@@ -25,6 +25,7 @@ lpOD/Table.pod
 lpOD/StructuredContainer.pod
 lpOD/Style.pod
 lpOD/Common.pod
+lpOD/Tutorial.pod
 t/01w.t
 t/02r.t
 META.yml                                 Module meta-data (added by MakeMaker)

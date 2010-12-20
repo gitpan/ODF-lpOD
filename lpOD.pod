@@ -405,9 +405,8 @@ L<ODF::lpOD::Common>: Common utility functions
 
 =back
 
-You may have a look at L<http://docs.lpod-project.org> in order to know the
-scope of the lpOD project and get an idea about the additional features that
-will be implemented soon.
+Before diving into this documentation, you may read L<ODF::lpOD::Tutorial>,
+that should be more beginner-friendly, and try to run the given examples.
 
 =head1	COPYRIGHT & LICENSE
 

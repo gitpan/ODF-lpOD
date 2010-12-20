@@ -28,7 +28,7 @@ use strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
 our     $VERSION    = '0.110';
-use     constant PACKAGE_DATE => '2010-12-04T15:10:11';
+use     constant PACKAGE_DATE => '2010-12-18T17:33:22';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -311,6 +311,21 @@ sub     get_required_context
         return undef;
         }
 
+#--- context import & replacement --------------------------------------------
+
+sub	substitute_context
+	{
+	my $self	= shift;
+        my $doc         = shift;
+	my $part        = shift;
+        my $path        = shift;
+        my $origin      = $doc->get_element($part, $path)
+                                        or return undef;
+        my $destination = $self->get_element($part, $path)
+                                        or return undef;
+        return $destination->substitute_children($origin);
+	}
+
 #--- direct element retrieval ------------------------------------------------
 
 sub     get_element
@@ -433,6 +448,10 @@ sub     get_styles
                 {
                 alert "Missing style family"; return undef;
                 }
+        if ($family ~~ odf_number_style->families)
+                {
+                return $self->get_numeric_styles($family);
+                }
         my $xp;
         my $f = $family; $f =~ s/[ _]/-/g;
         given ($family)
@@ -456,6 +475,23 @@ sub     get_styles
                 $self->get_elements(CONTENT, $xp)
                 );        
         }
+
+sub	get_numeric_styles
+	{
+	my $self	= shift;
+        my $family      = shift;
+        my $filter = $family ?
+                'number:' . $family . '-style'  :
+                qr'number:.*-style';
+        my @ns = ();
+        foreach my $part (STYLES, CONTENT)
+                {
+                my $r = $self->get_part($part)->get_root;
+                push @ns, $_->get_descendants($filter)
+                        for $r->get_elements(qr'office:(automatic-|)styles');
+                }
+        return @ns;
+	}
 
 sub     check_stylename
         {
@@ -613,7 +649,10 @@ sub     insert_style
                 }
         given ($family)
                 {
-                when (['text', 'paragraph', 'graphic', 'drawing page'])
+                when    ([
+                        'text', 'paragraph', 'graphic', 'drawing page',
+                        'number', 'currency'
+                        ])
                         {
                         return $self->insert_regular_style($style, %opt);
                         }
@@ -636,6 +675,44 @@ sub     insert_style
                         alert "Not supported"; return undef;
                         }
                 }
+        }
+
+#--- bulk style replacement by import from another document ------------------
+
+sub     substitute_styles
+        {
+        my $self        = shift;
+        my $from        = shift;
+        my %opt         =
+                (
+                common          => TRUE,
+                master          => TRUE,
+                automatic       => TRUE,
+                fonts           => TRUE,
+                @_
+                );
+        my $source;
+        if (ref $from)
+                {
+                $source = $from if $from->isa(odf_document);
+                }
+        else
+                {
+                $source = odf_get_document($from);
+                }
+        unless ($source)
+                {
+                alert "Malformed or not available source"; return FALSE;
+                }
+
+        my $count = 0;
+        foreach my $part ($self->get_part(CONTENT), $self->get_part(STYLES))
+                {
+                $count += $part->substitute_styles($source, %opt);
+                }
+
+        $source->DESTROY unless ref $from;
+        return $count;
         }
 
 #--- document variable handling ----------------------------------------------
@@ -1190,8 +1267,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '0.107';
-use constant PACKAGE_DATE => '2010-11-28T12:52:02';
+our     $VERSION    = '0.108';
+use constant PACKAGE_DATE => '2010-12-18T16:33:31';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1345,6 +1422,12 @@ sub	needs_update
                 when (FALSE)    { $self->{update} = FALSE }
                 }
         return $self->{update};
+	}
+
+sub	get_name
+	{
+	my $self	= shift;
+	return $self->{part};
 	}
 
 #--- destructor --------------------------------------------------------------
@@ -1537,7 +1620,7 @@ sub     get_change
 package ODF::lpOD::StyleContainer;
 use base 'ODF::lpOD::XMLPart';
 our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-12-04T15:13:50';
+use constant PACKAGE_DATE => '2010-12-18T16:55:04';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1575,6 +1658,79 @@ sub	set_font_declaration
                 ->get_root
                 ->set_child('office:font-face-decls')
                 ->insert_element(odf_create_font_declaration($name, %opt));
+	}
+
+sub	substitute_context
+	{
+	my $self	= shift;
+        my $doc         = shift;
+        my $path        = shift;
+
+        my $part        = $self->get_name;
+        my $origin      = $doc->get_element($part, $path)
+                                        or return undef;
+        my $destination = $self->get_element($path)
+                                        or return undef;
+        return $destination->substitute_children($origin);
+	}
+
+sub	substitute_styles
+	{
+	my $self	= shift;
+        my $from        = shift;
+
+        my %opt         =
+                (
+                common          => TRUE,
+                master          => TRUE,
+                automatic       => TRUE,
+                fonts           => TRUE,
+                @_
+                );
+        my $part = $self->get_name;
+        if ($part ne STYLES)
+                {
+                delete @opt{qw(common master)};
+                }
+        my $source;
+        if (ref $from)
+                {
+                $source = $from if $from->isa(odf_document);
+                }
+        else
+                {
+                $source = odf_get_document($from);
+                }
+        unless ($source)
+                {
+                alert "Malformed or not available source"; return FALSE;
+                }
+
+        my $count = 0;
+
+        if (is_true($opt{automatic}))
+                {
+                $count += $self->substitute_context
+                        ($source, '//office:automatic-styles');
+                }
+        if (is_true($opt{common}))
+                {
+                $count += $self->substitute_context
+                        ($source, '//office:styles');
+                }
+        if (is_true($opt{master}))
+                {
+                $count += $self->substitute_context
+                        ($source, '//office:master-styles');
+                }
+        if (is_true($opt{fonts}))
+                {
+                $count += $self->substitute_context
+                        ($source, '//office:font-face-decls');
+                }
+
+        $source->DESTROY unless ref $from;
+        return $count;
 	}
 
 #=============================================================================

@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.111';
-use constant PACKAGE_DATE => '2010-12-09T14:58:36';
+our     $VERSION        = '0.112';
+use constant PACKAGE_DATE => '2010-12-18T16:11:07';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -91,6 +91,7 @@ BEGIN
         *get_children                   = *XML::Twig::Elt::children;
         *get_descendants                = *XML::Twig::Elt::descendants;
         *get_parent                     = *XML::Twig::Elt::parent;
+        *get_ancestor                   = *XML::Twig::Elt::parent;
         *previous_sibling               = *XML::Twig::Elt::prev_sibling;
         *ungroup                        = *XML::Twig::Elt::erase;
         *get_root                       = *XML::Twig::Elt::root;
@@ -99,6 +100,7 @@ BEGIN
         *_set_text                      = *XML::Twig::Elt::set_text;
         *_get_text                      = *XML::Twig::Elt::text;
         *_set_tag                       = *XML::Twig::Elt::set_tag;
+        *replace_element                = *XML::Twig::Elt::replace;
         *get_element_list               = *get_elements;
         *get_bookmark_list              = *get_bookmarks;
         *get_index_mark_list            = *get_index_marks;
@@ -152,7 +154,14 @@ sub     new
         my $element     = $class->SUPER::new(@_);
                 # possible subclassing according to the tag
         my $tag = $element->tag;
-        bless $element, $CLASS{$tag} if $CLASS{$tag};
+        if ($CLASS{$tag})
+                {
+                bless $element, $CLASS{$tag};
+                }
+        elsif ($tag =~ /^number:.*-style$/)
+                {
+                bless $element, odf_style;
+                }
                 # optional user-defined post-constructor function
         if ($INIT_CALLBACK && (caller() eq 'XML::Twig'))
                 {
@@ -282,6 +291,38 @@ sub	delete_child
         return TRUE;
 	}
 
+sub	delete_children
+	{
+	my $self	= shift;
+	my @children= $self->children(shift);
+        my $count = 0;
+        foreach my $e (@children)
+                {
+                $e->delete; $count++;
+                }
+        return $count;
+	}
+
+sub     import_children
+        {
+        my $self        = shift;
+        my $source      = shift         or return FALSE;
+        my $count = 0;
+        foreach my $e ($source->children(shift))
+                {
+                $e->clone->paste_last_child($self); $count++
+                }
+        return $count;
+        }
+
+sub	substitute_children
+	{
+	my $self	= shift;
+	my $source      = shift         or return FALSE;
+        $self->delete_children(@_);
+        return $self->import_children($source, @_);
+	}
+
 sub     replace_child
         {
         my $self        = shift;
@@ -321,12 +362,6 @@ sub     get_class
         {
         my $self        = shift;
         return Scalar::Util::blessed($self);
-        }
-
-sub     get_ancestor
-        {
-        my $self        = shift;
-        return $self->parent(@_);
         }
 
 sub     get_children_elements
@@ -399,15 +434,8 @@ sub     repeat
                 return FALSE;
                 }
         my $r           = shift;
-        unless (defined $r)
-                {
-                my $prefix      = $self->ns_prefix;
-                if ($prefix && $prefix eq 'table')
-                        {
-                        $r = $self->get_repeated;
-                        $self->set_repeated(undef);
-                        }
-                }
+        return undef unless defined $r;
+
         my $count = 0;
         while ($r > 1)
                 {
@@ -439,6 +467,45 @@ sub     set_lpod_mark
         return $id;
         }
 
+sub     ro
+        {
+        my $self        = shift;
+        my $ro          = shift;
+        unless (defined $ro)
+                {
+                return $self->att('#lpod:ro');
+                }
+        elsif (is_true($ro))
+                {
+                $self->set_att('#lpod:ro', TRUE);
+                }
+        else
+                {
+                $self->del_att('#lpod:ro') if $self->att('#lpod:ro');
+                return undef;
+                }
+        }
+
+sub     rw
+        {
+        my $self        = shift;
+        my $rw          = shift;
+        unless (defined $rw)
+                {
+                return is_false($self->att('#lpod:ro'));
+                }
+        elsif (is_true($rw))
+                {
+                $self->del_att('#lpod:ro') if $self->att('#lpod:ro');
+                return TRUE;
+                }
+        elsif (is_false($rw))
+                {
+                $self->set_att('#lpod:ro', TRUE);
+                return FALSE;
+                }
+        }
+
 sub     get_lpod_mark
         {
         my $self        = shift;
@@ -466,7 +533,7 @@ sub     remove_lpod_marks
         {
         my $self        = shift;
         $_->delete()
-                for $self->get_element_list($ODF::lpOD::Common::LPOD_MARK);
+                for $self->get_elements($ODF::lpOD::Common::LPOD_MARK);
         }
 
 sub     set_lpod_id
@@ -663,7 +730,7 @@ sub     get_paragraphs
                 $opt{value} = $opt{style};
                 delete $opt{style};
                 }
-        return $self->get_element_list('text:p', %opt);
+        return $self->get_elements('text:p', %opt);
         }
 
 sub     get_heading
@@ -694,7 +761,7 @@ sub     get_headings
                 $opt{value} = $opt{level};
                 delete $opt{level};
                 }
-        return $self->get_element_list('text:h', %opt);
+        return $self->get_elements('text:h', %opt);
         }
 
 sub     get_list
@@ -712,7 +779,7 @@ sub     get_list_by_id
 sub     get_lists
         {
         my $self        = shift;
-        return $self->get_element_list('text:list', @_);
+        return $self->get_elements('text:list', @_);
         }
 
 sub	get_fields
@@ -745,7 +812,7 @@ sub	get_table
 sub     get_tables
         {
         my $self        = shift;
-        return $self->get_element_list('table:table', @_);
+        return $self->get_elements('table:table', @_);
         }
 
 sub     get_table_by_name
@@ -916,7 +983,7 @@ sub     get_index_marks
                 }
         return FALSE unless $filter;
         $filter = $filter . '$|' . $filter . '-start$';
-        return $self->get_element_list(qr($filter));
+        return $self->get_elements(qr($filter));
         }
 
 sub     clean_marks
@@ -924,7 +991,7 @@ sub     clean_marks
         my $self        = shift;
         my $count = 0;
         my ($tag, $start, $end, $att, $id);
-        foreach $start ($self->get_element_list(qr'mark-start$'))
+        foreach $start ($self->get_elements(qr'mark-start$'))
                 {
                 $tag = $start->get_tag;
                 $att = $tag =~ /bookmark/ ? 'text:name' : 'text:id';
@@ -947,7 +1014,7 @@ sub     clean_marks
                         $start->delete; $end->delete; $count += 2;
                         }
                 }
-        foreach $end ($self->get_element_list(qr'mark-end$'))
+        foreach $end ($self->get_elements(qr'mark-end$'))
                 {
                 $tag = $end->get_tag;
                 $att = $tag =~ /bookmark/ ? 'text:name' : 'text:id';
@@ -1007,7 +1074,10 @@ sub     get_element_by_bookmark
 sub     get_paragraph_by_bookmark
         {
         my $self        = shift;
-        return $self->get_element_by_bookmark(tag => 'text:p');
+        my $name        = shift;
+        my %opt         = @_;
+        $opt{tag} = 'text:p';
+        return $self->get_element_by_bookmark($name, %opt);
         }
 
 sub     get_bookmark_text
@@ -1817,6 +1887,7 @@ sub     search
 sub     replace
         {
         my $self        = shift;
+        return $self->replace_element(@_) if caller() eq 'XML::Twig::Elt';
         my $expr        = shift;
         my $repl        = shift;
         my %opt         =
