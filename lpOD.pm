@@ -3,7 +3,7 @@
 # Authors: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
 #
 # This file is part of lpOD (see: http://lpod-project.org).
-# Lpod is free software; you can redistribute it and/or modify it under
+# lpOD is free software; you can redistribute it and/or modify it under
 # the terms of either:
 #
 # a) the GNU General Public License as published by the Free Software
@@ -27,8 +27,8 @@ use strict;
 #       The main module for the lpOD Project
 #-----------------------------------------------------------------------------
 package ODF::lpOD;
-our $VERSION                    =       "0.900";
-use constant PACKAGE_DATE       =>      "2010-12-21T00:13:16";
+our $VERSION                    =       "0.921";
+use constant PACKAGE_DATE       =>      "2010-12-23T14:02:37";
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Document;
@@ -49,6 +49,7 @@ BEGIN
         my $lpod_pm_path = $INC{'ODF/lpOD.pm'};
         $lpod_pm_path =~ s/\.pm$//;
         $ODF::lpOD::Common::INSTALLATION_PATH = $lpod_pm_path;
+        load_color_map;
         }
 
 #=============================================================================

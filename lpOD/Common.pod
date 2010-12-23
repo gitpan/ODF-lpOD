@@ -132,19 +132,79 @@ Example:
 The C<installation_path> method returns the path of the C<ODF::lpOD> module
 installation in the user's filesystem.
 
-=head3  Local encoding
+=head3  Color name translation
+
+Knowing that lpOD allows the user to specify color codes for various objects,
+some codes may be replaced by symbolic names. A few hundreds of symbolic names
+and the corresponding values are defined by default, according to a standard
+Xorg/RGB vocabulary. The user may add custom color names thanks to
+C<load_color_map()>, whose argument is the full path of a RGB text file whose
+format complies with the typical Xorg "rgb.txt".
+
+The C<unload_color_map()> removes every color name for the current process,
+while C<load_color_map()> without argument restores the default name/code
+mapping. C<load_color_map()> may be used repeatedly in order to cumulate
+several RGB files.
+
+Two explicit color translation functions are provided:
+
+=over
+
+=item
+
+C<color_code(name)> : returns the color code corresponding to the given color
+name, if known; ex: C<color_code('antique white') produces '#faebd7'; returns
+C<undef> if the name is unknown;
+
+=item
+
+C<color_name(code)> : returns a symbolic name, if any, corresponding to the
+given color code; ex: C<color_name('#faebd7') returns 'antique white'; returns
+C<undef> if no name is known for this code.
+
+=back
+
+Beware that different names may correspond to the same code, so at the end of
+the sequence below, C<$a> may differ from C<$b>:
+
+        $c = color_code($a);
+        $b = color_name($c);
+
+=head3  Character sets handling
+
+lpOD is (as soon as possible) locale- and platform- neutral, so its default
+input and output character set is always C<utf8> unless the user makes an
+explicit alternative selection.
 
 All the text/attribute oriented methods of the C<odf_element> may automatically
-convert the processed content from or to the local encoding of the user. The
-local encoding is C<utf8> by default. It may be get or set using the common
-C<get_local_encoding> or C<set_local_encoding>. The latter must be called with
-an encoding name that is supported by the Perl C<Encode> module (an alert is
-issued and nothing is changed if the given encoding is not supported).
+convert the processed content from or to the local character set of the user.
+The default character set is C<utf8>. If the user provides non-utf8 content,
+the input character set must be declared using the C<set_input_charset()>, that
+is a lpOD installation method (not a document method). Example:
 
-Example:
+        lpod->set_input_charset('iso-8859-1');
 
-        my $old_encoding = $lpod->get_local_encoding;
-        lpod->set_local_encoding('iso8859-1');
+If the user wants to get non-utf8 outputs from any content-extraction method,
+the output character set must be declared in a similar way through
+C<set_output_charset()>:
+
+        lpod->set_output_charset('iso-8859-1');
+
+Input and output charsets may be changed at any time, so the user may, for
+example, successively insert texts using various encodings (that could prove
+useful for document generation from heterogeneous web sources).
+
+Beware that the input and output charsets are not always the same. The user
+could want, for example, populate a document from non-utf8 web pages, and
+in the same session export some content from the same to document to local
+log files or the console, that may require C<utf8> or a another character set
+(depending of the user's locale).
+
+The currently active character sets may be checked using C<get_input_charset()>
+and C<get_output_charset()> (as methods of the C<lpod> pseudo-object).
+
+For the list of supported character sets, see the documentation of the Perl
+C<Encode> module.
 
 =head3  Warning information
 

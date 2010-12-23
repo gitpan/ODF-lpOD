@@ -407,6 +407,10 @@ content part of a document:
         $part = $doc->get_part(CONTENT);
         $xml = part->serialize(pretty => TRUE);
 
+Note that this XML export is not affected by the content encoding/decoding
+mechanism that works for user content, so it's character doesn't depend on
+the custom text output character set possibly selected through the
+C<set_output_charset()> method introduced in L<ODF::lpOD::Common>.
 
 =head3  store
 

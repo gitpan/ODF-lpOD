@@ -51,6 +51,11 @@ in rows, no cell is created as long as C<width> is less than C<1>);
 
 =item
 
+C<size>: specifies a length and a width (in this order) as a single string
+(the two values are comma-separated); may replace C<length> and C<width>;
+
+=item
+
 C<style>: the name of a table style, already existing or to be defined;
 
 =item

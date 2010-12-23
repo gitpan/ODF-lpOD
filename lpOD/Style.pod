@@ -177,6 +177,13 @@ for retrieval.
 Once selected, a style could be removed from the document through a standard
 level 0 element deletion method.
 
+Note: For some style properties that specify a I<color> (such as a background
+color, a font color, and so on), the color value may be provided as a symbolic
+name, such as "yellow", "navy blue" or "dark slate grey" instead of a numeric
+code. The allowed color names are those defined in standard Xorg RGB files.
+However, the user can add custom color names, thanks to a C<load_color_map()>
+utility, introduced in L<ODF::lpOD::Common>.
+
 =head1  Text styles
 
 A text style can be defined either to control the layout of a text container,
@@ -208,7 +215,7 @@ style (see below).
 
 The example hereafter creates a text style, so called "My Colored Text",
 using Times New Roman, 14-sized navy blue bold italic characters with
-a yellow background::
+a yellow background:
 
    $s = odf_create_style('text',
                         name            => 'MyColoredText',
@@ -1096,6 +1103,10 @@ C<portrait> or C<landscape> (default: C<portrait>);
 
 C<margin xxx> (where C<xxx> is C<left>, C<right>, C<top> or C<bottom>):
 to control the margins of the page;
+
+=item
+
+C<margin>, to specify the same width for all the margins;
 
 =item
 

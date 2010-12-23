@@ -3,7 +3,7 @@
 # Author: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
 #
 # This file is part of lpOD (see: http://lpod-project.org).
-# Lpod is free software; you can redistribute it and/or modify it under
+# lpOD is free software; you can redistribute it and/or modify it under
 # the terms of either:
 #
 # a) the GNU General Public License as published by the Free Software

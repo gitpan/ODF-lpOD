@@ -9,7 +9,7 @@
 # a) the GNU General Public License as published by the Free Software
 #    Foundation, either version 3 of the License, or (at your option)
 #    any later version.
-#    Lpod is distributed in the hope that it will be useful,
+#    lpOD is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
@@ -383,7 +383,7 @@ sub     get_cell
         return $col->get_cell($r);
         }
 
-sub	get_cells				#TOCHECK
+sub	get_cells
 	{
 	my $self	= shift;
 	my ($r1, $c1, $r2, $c2) = translate_range(@_);
@@ -546,7 +546,7 @@ sub     get_rows
         $start //= 0; $end //= $self->get_size() - 1;
         my @list = ();
 
-	if ($self->ro)					#TOCHECK
+	if ($self->ro)
 		{
 		my $row = $self->get_row($start);
 		my $n = $end - $start;
@@ -701,8 +701,8 @@ sub	set_default_cell_style
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Table;
 use base ('ODF::lpOD::RowGroup', 'ODF::lpOD::ColumnGroup');
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-12-16T20:20:32';
+our $VERSION    = '0.104';
+use constant PACKAGE_DATE => '2010-12-21T17:40:53';
 use ODF::lpOD::Common;
 #=============================================================================
 #--- constructor -------------------------------------------------------------
@@ -725,8 +725,13 @@ sub     create
                 @_
                 );
 
-        my $width       = $opt{width} // 0;
-        my $height      = $opt{length} // $opt{height} // 0;
+        my $width       = $opt{width};
+        my $height      = $opt{length} // $opt{height};
+	unless (defined $width && defined $height)
+		{
+		($height, $width) = input_2d_value($opt{size}, "");
+		}
+	$width  // 0; $height // 0;
         if ($width < 0 || $height < 0)
                 {
                 alert "Wrong table size ($height x $width)";
@@ -1210,7 +1215,7 @@ sub     get_cells
         $start //= 0; $end //= $self->get_width() - 1;
         my @list = ();
 	
-	if ($self->tro)					#TOCHECK
+	if ($self->tro)
 		{
 		my $cell = $self->get_cell($start);
 		my $n = $end - $start;

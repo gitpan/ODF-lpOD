@@ -3,7 +3,7 @@
 # Author: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
 #
 # This file is part of lpOD (see: http://lpod-project.org).
-# Lpod is free software; you can redistribute it and/or modify it under
+# lpOD is free software; you can redistribute it and/or modify it under
 # the terms of either:
 #
 # a) the GNU General Public License as published by the Free Software
@@ -1249,8 +1249,8 @@ sub	set_properties
 #=============================================================================
 package ODF::lpOD::PageLayout;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-12-19T23:52:05';
+our $VERSION    = '0.104';
+use constant PACKAGE_DATE => '2010-12-21T17:59:52';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1273,16 +1273,28 @@ sub	set_properties
         PROPERTY: foreach my $k (keys %opt)
                 {
                 my $a;
+                my $v = $opt{$k};
                 given ($k)
                         {
                         when ('size')
                                 {
-                                $self->set_size($opt{$k});
+                                $self->set_size($v);
                                 next PROPERTY;
                                 }
                         when (['height', 'width'])
                                 {
                                 $a = 'fo:page-' . $k;
+                                }
+                        when (['margin', 'margins'])
+                                {
+                                $pr->set_attributes
+                                        (
+                                        'fo:margin-top'    => $v,
+                                        'fo:margin-right'  => $v,
+                                        'fo:margin-bottom' => $v,
+                                        'fo:margin-left'   => $v
+                                        );
+                                next PROPERTY;
                                 }
                         when (/(margin|border|padding|background)/)
                                 {
@@ -1309,7 +1321,7 @@ sub	set_properties
                                 $a = $k;
                                 }
                         }
-                $pr->set_attribute($a => $opt{$k});
+                $pr->set_attribute($a => $v);
                 }
         return $pr->get_attributes;
 	}

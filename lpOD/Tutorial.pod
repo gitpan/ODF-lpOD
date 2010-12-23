@@ -24,13 +24,13 @@ features that are documented in L<ODF::lpOD::Document>.
 =head2  Loading documents and parts
 
 Before accessing to anything in a document, you have to create an
-C<odf_document> instance through the C<odf_get_document()> contructor with the
+C<odf_document> instance through the C<odf_get_document()> constructor with the
 path/filename as the only mandatory argument:
 
         my $doc = odf_get_document("olddoc.odt")
                 or die "Failed to load the document";
 
-In a real application, don't forget to check the returned value. If something
+In a real application, don't forget to check the return value. If something
 goes wrong for any reason (for example, if the specified file is not
 available or doesn't contain a consistent ODF document), C<odf_get_document>
 returns C<undef>.
@@ -78,11 +78,10 @@ contain, one or more I<elements>, and so on; as a consequence, each element,
 once selected, may become the context for further element searching or
 processing operations.
 
-The last instruction above directly returns a particular subspace of the
-C<CONTENT> document part, so-called the I<"document body">. This subspace
-contains or can contain the various objects that populate the document (text
-paragraphs, tables, images, lists, and so on). We can use it as the
-I<"context"> for subsequent operations regarding such objects.
+The I<"document body"> is the subspace that contains or can contain the
+various objects that populate the document content (text paragraphs, tables,
+images, lists, and so on). We can use it as the I<"context"> for subsequent
+operations regarding such objects.
 
 =head2  Saving a document
 
@@ -364,7 +363,7 @@ paragraph:
         $context->set_text("");
         $context->insert_element($p);
 
-The c<odf_create_paragraph()> constructor allows us to create a paragraph
+The C<odf_create_paragraph()> constructor allows us to create a paragraph
 and initialize it with a content and/or a style, thanks to appropriate options:
 
         $p = odf_create_paragraph(
@@ -403,7 +402,7 @@ before it:
         my $p = $context->get_paragraph(position => -1);
         $p->insert_element(
                 odf_create_paragraph(
-                        text    => "We are before the last pararaph",
+                        text    => "We are before the last paragraph",
                         style   => "Standard"
                         ),
                 position        => PREV_SIBLING
@@ -466,6 +465,35 @@ This example introduced C<get_paragraph()>. We'll see more details about the
 text element retrieval methods later. Just remember that this method, without
 any search parameter, selects the first paragraph of the calling context.
 
+The C<clone()> method is simple and efficient for element replication in the
+current process execution, but it's not the appropriate tool as soon as we
+want to I<export> a particular element for persistent storage or transmission
+through a network in order to reuse it later or in a remote location. Every
+C<odf_element>, including text elements, owns a C<serialize> method that
+returns the full XML description of itself and its whole content. This XML
+export (if stored or piped through any kind of transport service) may be used
+as is as the only argument of a subsequent call C<odf_create_element()>
+generic element constructor, that rebuilds a new element that is an exact
+replicate of the exported one (unless somebody has modified the XML string
+in the mean time, of course). In the example below, a paragraph XML export is
+stored in a file, then the export is loaded (supposedly within another
+process) and inserted as a new element in a document:
+
+        # exporting process
+        $xml = $p->serialize;
+        open(FH, '>', "paragraph.xml");
+        print FH $xml;
+        close FH;
+        
+        # importing process
+        open(FH, '<', "paragraph.xml");
+        $xml .= $_ while <$FH>;
+        close FH;
+        $p = odf_create_element($xml);
+
+After that, the imported element may be attached anywhere using
+C<insert_element()> or C<append_element()>.
+
 =head2  Inserting text content with headings
 
 A I<heading> is a special paragraph, whose purpose is to be used as a main or
@@ -505,6 +533,30 @@ paragraph:
 
 Note that we used arbitrary style names in this examples; such styles may not
 be available in your documents. Paragraph style creation is introduced later.
+
+=head1  Encoding issues
+
+In some situations, you could be faced with character encoding troubles when
+importing or exporting text content or attribute values.
+
+Remember that, by default, the character set of your applications is C<utf8>.
+However, for any reason, you may need to put on-utf8 content in documents.
+For example, if you capture some text from a web page whose character set is
+C<iso-8859-1> and directly push it in a document through a paragraph creation,
+non-ASCII accented letters will be misrepresented. This issue is very easy to
+fix (provided that the source character set is known and supported):
+
+        lpod->set_input_charset('iso-8859-1');
+
+Symmetrically, if you want to use the various lpOD content extraction methods
+in a non-utf8 environment, you can tell that to lpOD:
+
+        lpod->set_output_charset('iso-8859-15');
+
+Note that the input and output character sets may be controlled independently,
+and that you can change each of them several times in a program. To restore
+the default configuration, you may just use the same methods with 'utf8' as
+input or output character set.
 
 =head1  Retrieving text elements
 
@@ -722,6 +774,14 @@ pretty yellow background through the following instruction:
 
         $ps1->set_background(color => '#ffff00');
 
+Thanks to a color symbolic naming facility provided by lpOD, this instruction
+could be written in a more friendly way:
+
+        $ps1->set_background(color => 'yellow');
+
+However we'll not always know a recognized color name for every color (while
+a few hundreds are defined).
+
 Note that, due to inheritance, this new background color will affect both
 C<$ps1> and C<$ps2>.
 
@@ -764,11 +824,11 @@ In order to make this style useful, we have to provide some properties. As
 an example, we'll create this "BigText" style will set a 24pt bold blue font:
 
         $ts = odf_create_style(
-                        'text',
-                        name    => "BigText",
-                        size    => "24pt",
-                        weight  => "bold",
-                        color   => "#000080"
+                'text',
+                name    => "BigText",
+                size    => "24pt",
+                weight  => "bold",
+                color   => "navy blue"
                 );
 
 But how apply this style to one or many text segment ? There are two options.
@@ -800,7 +860,7 @@ style is "Standard":
                         size    => "24pt",
                         weight  => "bold",
                         style   => "italic",
-                        color   => "#000080"
+                        color   => "navy blue"
                         )                
                 );
         foreach $p ($doc->get_paragraphs(style => "Standard")) {
@@ -859,7 +919,7 @@ properties:
                 area    => 'text',
                 size    => "24pt",
                 weight  => "bold",
-                color   => "#000080"
+                color   => "navy blue"
                 );
 
 The C<area> parameter, whose value should be 'paragraph' or 'text' with a
@@ -1289,6 +1349,7 @@ table (or sheet) of the document, while the second on selects the last table:
         $t1 = $doc->get_body->get_table_by_position(0);
         $t2 = $doc->get_body->get_table_by_position(-1);
 
+Not that C<get_table()> is available as a shortcut 
 In the worst situations, you could retrieve a table according to a particular
 content:
 
@@ -1604,7 +1665,7 @@ blue border with a 1.25mm grey shadow:
                 border  => "1mm solid #000080",
                 shadow  => "#808080 1.25mm 1.25mm"               
                 );
-        $cs->set_background(color => "#ffff00");
+        $cs->set_background(color => "yellow");
 
 In this example, we introduced the C<set_background()> method, that is
 available with any lpOD rectangular object, like frames or cells. However,
@@ -1620,7 +1681,7 @@ same result as the previous one:
                 )->set_properties(
                         border                  => "1mm solid #000080",
                         shadow                  => "#808080 1.25mm 1.25mm",
-                        'background color'      => "#ffff00"
+                        'background color'      => "yellow"
                 );
 
 (Note that the C<'background color'> option could be written
@@ -1636,7 +1697,7 @@ area of a cell style, a more compact form is allowed:
                         name                    => "YellowBox"
                         border                  => "1mm solid #000080",
                         shadow                  => "#808080 1.25mm 1.25mm",
-                        'background color'      => "#ffff00"
+                        'background color'      => "yellow"
                         )
                 );
 
@@ -1658,7 +1719,7 @@ style:
                         name                    => "LightBlue"
                         )
                 )->set_background(
-                        color        => "#bfefff"
+                        color        => "light blue"
                 );
         $row = $table->get_row(6);
         $row->set_default_cell_style("LightBlue");
@@ -1718,7 +1779,7 @@ individual or bulk style importation (see L<ODF::lpOD::Style>).
 
 =head1  Inserting frames, images and boxes
 
-A frame is a generic rectangular are that may contain, for example, an image
+A frame is a generic rectangular area that may contain, for example, an image
 or a simple or complex text element.
 
 =head2  Inserting an image box
@@ -1731,9 +1792,7 @@ we assume that C<$doc> is a I<text> document.
 
         $context = $doc->get_body;
         $p = $context->append_element(odf_create_paragraph);
-        $p->append_element(
-                odf_create_image_frame("logo.png")
-                );
+        $p->append_element(odf_create_image_frame("logo.png"));
 
 This code sequence creates and appends a new paragraph without text, then
 appends a now image frame as the content of this paragraph. You can execute
@@ -1760,7 +1819,6 @@ a regular paragraph style:
                 );
         $p = $context->append_element(
                 odf_create_paragraph(style => "Centered")
-                        )
                 );
         $p->append_element(
                 odf_create_image_frame(
@@ -1901,7 +1959,7 @@ background and to center the text in the box:
                         'graphic',
                         name            => "TextBox",
                         fill            => 'solid',
-                        'fill color'    => '#00dd00',
+                        'fill color'    => 'pale green',
                         'textarea vertical align' => 'middle',
                         'textarea horizontal align' => 'center'
                         ),
@@ -1917,10 +1975,10 @@ litterals and/or ODF text elements (such as paragraphs) as arguments and
 puts all that stuff sequentially in the frame:
 
         $fr = odf_create_frame(
-                        style           => "TextBox",
-                        size            => "6cm, 5cm",
-                        position        => "4cm, 8cm",
-                        page            => 1
+                style           => "TextBox",
+                size            => "6cm, 5cm",
+                position        => "4cm, 8cm",
+                page            => 1
                 );
         $p = odf_create_paragraph(
                 text    => "Item 3",
@@ -1932,7 +1990,7 @@ puts all that stuff sequentially in the frame:
                 );
         $ps->set_properties(
                 area    => 'text',
-                color   => '#ff0000',
+                color   => 'red',
                 weight  => 'bold'
                 );
         $fr->set_text_box("Item 1", "Item 2", $p, "Item 4");
@@ -2103,16 +2161,13 @@ Then, say, remove any existing draw page in order (just to show the way):
 
 As any C<odf_element>, a draw page owns a C<delete()> method, that removes
 the page itself and its whole content. Issued from the document body element,
-C<get_draw_pages()> return all the existing pages as a list, so our
+C<get_draw_pages()> returns all the existing pages as a list, so our
 document is new empty, but its styles remain available.
 
 Let's create and append a new draw page:
 
         $page = $context->append_element(
-                odf_create_draw_page(
-                        "P1",
-                        name    => "The First One"
-                        )
+                odf_create_draw_page("P1", name => "The First One")
                 );
 
 Now a first page in present in our document. Note that the draw page
@@ -2142,11 +2197,11 @@ way as previously:
 Note that the calling context of C<append_element()> is now the I<draw page>,
 not the document body, because everything that may be displayed in a
 presentation document I<must> be enclosed in a draw page. The given
-C<position> parameter apply is, of course, relative to the area of the
-draw page. While the explicit use of a graphic style is not always required
-by every presentation viewer, it's recommended to provide it (or, as a
-propably better option, to reuse an external style library). The creation
-and registration of a graphic style works exactly like with text documents.
+C<position> parameter is, of course, relative to the area of the draw page.
+While the explicit use of a graphic style is not always required by every
+presentation viewer, it's recommended to provide it (or, as a propably better
+option, to reuse an external style library). The creation and registration of
+a graphic style work exactly like with text documents.
 
 Of course, you can/must include the image file in your ODF package using
 C<add_file()> as previously shown with another kind of document.
@@ -2176,7 +2231,7 @@ provides a solution to select this page anyway:
 
         $page = $context->get_draw_page_by_name("Introduction");
 
-And, if we know nothing but the sequential position in presentation order,
+And, if we know nothing but the sequential position in the presentation order,
 we can always select a page by position, like in this example which provides
 a name to the last page:
 

@@ -306,13 +306,8 @@ equivalent, knowing that the namespace prefix of a paragraph is C<'text'>:
         $style = $p->get_attribute('style name');
 
 The attribute values are returned in a character set that depends on the
-global configuration. The default character set is C<utf8>, but it may be
-changed at the application level using the following global lpOD configuration
-accessor:
-
-        lpod->set_local_encoding(new_encoding);
-
-(Any character set that is supported by the C<Encode> Perl module is allowed).
+global configuration. See L<ODF::lpOD::Common> for details about the character
+set handling.
 
 =head3  get_attributes
 
@@ -329,6 +324,10 @@ Returns the name of the style used by the calling element (this accessor makes
 sense for objects that may be displayed according to a layout). Returns
 C<undef> if no style is used.
 
+Note: if your style names contain non-ASCII characters and if your preferred
+output character set is not C<utf8>, see L<ODF::lpOD::Common> for details
+about character sets handling.
+
 =head3  get_text(recursive=false)
 
 Returns the text contents of the element as a string. By default this method is
@@ -340,14 +339,21 @@ end-user regards this text as a flat string). So, if the optional C<recursive>
 parameter is provided and set to C<TRUE>, then the method returns the
 concatenated contents of all the descendants of the given element.
 
-The encoding scheme is the same as for attribute values.
+In a default configuration, the character set of the output is C<utf8>. If
+that is not convenient for you, see the character set handling section in
+L<ODF::lpOD::Common>.
 
 =head3  serialize
 
 Returns an XML export of the calling element, allowing the lpOD applications to
 store and/or transmit particular pieces of documents, and not only full
 documents. The C<pretty> option is allowed, like with the C<serialize> method
-of C<odf_part> objects, described in L<ODF::lpOD::Document>.  
+of C<odf_part> objects, described in L<ODF::lpOD::Document>.
+
+Note that this XML export is not affected by the content encoding/decoding
+mechanism that works for user content, so it's character doesn't depend on
+the custom text output character set possibly selected through the
+C<set_output_charset()> method introduced in L<ODF::lpOD::Common>.
 
 =head3  set_attribute(attribute => value)
 
@@ -356,8 +362,8 @@ if it didn't exist. If the provided value is C<undef>, the attribute is
 deleted (if it didn't exist, nothing is done). The attribute name may be
 specified according to the same rules as with C<get_attribute>.
 
-The attribute value is provided in the user-selected character set, that is
-C<utf8> by default, but that may be changed (see C<get_text>).
+About the character set of the input valules, the same rules as with any text
+input apply; see the character set handling section in L<ODF::lpOD::Common>.
 
 =head3  set_attributes(attr_hash_ref)
 
@@ -376,6 +382,10 @@ Changes or sets the style name of the calling object. Caution: a lot of ODF
 elements should not have any style, so don't use this accessor unless you know
 that the calling object needs a style.
 
+Note: if your style names contain non-ASCII characters and if your preferred
+input character set is not C<utf8>, see L<ODF::lpOD::Common> for details
+about character sets handling.
+
 =head3  set_text(text_string)
 
 Sets the text content of the calling element, replacing any previous content.
@@ -384,8 +394,9 @@ Example:
         my $paragraph = $context->get_element('text:p', position => 15);
         $paragraph->set_text("The new content");
 
-The text may be provided in the user's local character set (see
-C<get_attribute> and C<get_text>).
+The character set of the provided string must comply to the currently active
+input character set (default is C<utf8>). See the character set handling
+section in L<ODF::lpOD::Common> if you get troubles about text encoding.
 
 If C<set_text> is called with an empty string, its effect is the same as
 C<clear>.

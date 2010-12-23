@@ -9,7 +9,7 @@
 # a) the GNU General Public License as published by the Free Software
 #    Foundation, either version 3 of the License, or (at your option)
 #    any later version.
-#    Lpod is distributed in the hope that it will be useful,
+#    lpOD is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.109';
-use constant PACKAGE_DATE       => '2010-12-17T23:40:00';
+our	$VERSION	        = '0.110';
+use constant PACKAGE_DATE       => '2010-12-23T08:48:53';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -95,7 +95,7 @@ our @EXPORT     = qw
         text_segment TEXT_SEGMENT
         
         input_conversion output_conversion search_string
-        get_local_encoding set_local_encoding
+        color_code color_name load_color_map unload_color_map
         is_numeric iso_date numeric_date check_odf_value odf_value
         file_parse file_type image_size input_2d_value
         alert not_implemented
@@ -239,8 +239,6 @@ our %ODF_TEMPLATE           =
         'drawing'       => 'drawing.odg'
         );
 
-our $LOCAL_ENCODING     = 'utf8';       # application local text encoding
-
 our $LINE_BREAK         = "\n";
 our $TAB_STOP           = "\t";
 
@@ -307,12 +305,15 @@ BEGIN   {
 
         *is_numeric             = *Scalar::Util::looks_like_number;
         *odf_value              = *check_odf_value;
+        
+        #initializations
+
         }
 
 #=== exported utilities ======================================================
 
 our     $DEBUG          = FALSE;
-
+        
 sub     alert
         {
         if ($DEBUG)
@@ -511,7 +512,7 @@ sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
 	return ($rownum, $colnum, @_);
 	}
 
-sub     translate_range				#TOCHECK
+sub     translate_range
         {
         my $arg = shift // return undef;
         $arg = shift if ref($arg) || $arg eq __PACKAGE__;
@@ -524,52 +525,72 @@ sub     translate_range				#TOCHECK
         return @r;
         }
 
-#-----------------------------------------------------------------------------
+#--- external character set conversion utilities -----------------------------
 
-our     $ENCODER        = Encode::find_encoding($LOCAL_ENCODING);
+our $INPUT_CHARSET      = 'utf8';
+our $OUTPUT_CHARSET     = 'utf8';
+our $INPUT_ENCODER      = Encode::find_encoding($INPUT_CHARSET);
+our $OUTPUT_ENCODER     = Encode::find_encoding($OUTPUT_CHARSET);
 
-sub     get_local_encoding
+sub	get_input_charset       { $INPUT_CHARSET  }
+
+sub     get_output_charset      { $OUTPUT_CHARSET }
+
+sub     set_input_charset
         {
-        return $LOCAL_ENCODING;
-        }
-
-sub     set_local_encoding
-        {
-        my $new_encoding = shift // "";
-        $new_encoding = shift if ($new_encoding eq lpod);
-        my $enc = Encode::find_encoding($new_encoding);
+        my $charset = shift // "";
+        $charset = shift if ($charset eq lpod);
+        my $enc = Encode::find_encoding($charset);
         unless ($enc)
                 {
-                alert("Unsupported encoding");
+                alert("Unsupported $charset input character set");
                 return FALSE;
                 }
-        $ENCODER = $enc;
-        $LOCAL_ENCODING = $new_encoding;
-        return $LOCAL_ENCODING;
+        $INPUT_ENCODER = $enc;
+        $INPUT_CHARSET = $charset;
+        return $INPUT_CHARSET;
+        }
+
+sub     set_output_charset
+        {
+        my $charset = shift // "";
+        $charset = shift if ($charset eq lpod);
+        my $enc = Encode::find_encoding($charset);
+        unless ($enc)
+                {
+                alert("Unsupported output character set");
+                return FALSE;
+                }
+        $OUTPUT_ENCODER = $enc;
+        $OUTPUT_CHARSET = $charset;
+        return $OUTPUT_CHARSET;
         }
 
 sub     input_conversion
         {
         my $text        = shift;
-        unless ($ENCODER)
+        return $text unless $INPUT_CHARSET;
+        
+        unless ($INPUT_ENCODER)
                 {
-                alert "Unsupported encoding";
+                alert "Unsupported input character conversion";
                 return $text;
                 }
-        return (defined $text) ? $ENCODER->decode($text)  : undef;
+        return (defined $text) ? $INPUT_ENCODER->decode($text)  : undef;
         }
 
 sub     output_conversion
         {
         my $text        = shift;
-        
-        unless ($ENCODER)
+        return $text unless $OUTPUT_CHARSET;
+
+        unless ($OUTPUT_ENCODER)
                 {
-                alert "Unsupported encoding";
+                alert "Unsupported output character conversion";
                 return $text;
                 }
-        return $text unless $LOCAL_ENCODING;
-        return (defined $text) ? $ENCODER->encode($text) : undef;
+        
+        return (defined $text) ? $OUTPUT_ENCODER->encode($text) : undef;
         }
 
 #--- ISO-9601 / internal date conversion -------------------------------------
@@ -688,6 +709,7 @@ sub     image_size
 sub	input_2d_value
 	{
         my $arg         = shift or return undef;
+        my $u           = shift // 'cm';
 	my ($x, $y);
         if (ref $arg)
                 {
@@ -705,11 +727,64 @@ sub	input_2d_value
 		        $x = $arg; $y = shift;
 		        }
 		}
-	$x ||= '0cm'; $y ||= '0cm';
-	$x .= 'cm' unless $x =~ /[a-zA-Z]$/;
-	$y .= 'cm' unless $y =~ /[a-zA-Z]$/;
+	$x ||= ('0' . $u); $y ||= ('0' . $u);
+	$x .= $u unless $x =~ /[a-zA-Z]$/;
+	$y .= $u unless $y =~ /[a-zA-Z]$/;
         return ($x, $y);
 	}        
+
+#--- symbolic color names handling -------------------------------------------
+
+our     %COLORCODE      = ();
+our     %COLORNAME      = ();
+
+sub	color_code
+	{
+	my $name        = shift         or return undef;
+        if ($name && ($name =~ /^#/))   { return $name }
+        return $COLORCODE{$name};
+	}
+
+sub     color_name
+        {
+        my $code        = shift         or return undef;
+        return $COLORNAME{lc $code};
+        }
+
+sub	load_color_map
+	{
+	my $filename = shift || (installation_path() . '/data/rgb.txt');
+	unless ( -e $filename && -r $filename )
+		{
+		warn "Color map file non existent or unreadable";
+		return FALSE;
+		}
+	my $r = open COLORS, "<", $filename;
+	unless ($r)
+		{
+		alert "Error opening $filename"; return FALSE;
+		}
+	while (my $line = <COLORS>)
+		{
+		$line =~ s/^\s*//; $line =~ s/\s*$//;
+		next unless $line =~ /^[0-9]/;
+		$line =~ /(\d*)\s*(\d*)\s*(\d*)\s*(.*)/;
+		my $name = $4;
+		$COLORCODE{$name} = sprintf("#%02x%02x%02x", $1, $2, $3)
+                                                if $name;
+		}
+	close COLORS;
+        %COLORNAME = reverse %COLORCODE;
+	return TRUE;
+	}
+
+sub	unload_color_map
+	{
+	my $self	= shift;
+	%COLORCODE      = ();
+        %COLORNAME      = ();
+        return TRUE;
+	}
 
 #-----------------------------------------------------------------------------
 

@@ -361,14 +361,9 @@ text editor.
 
 =head2  Using the documentation
 
-The detailed documentation is split into several manual chapters which are
-not necessarily linked to Perl packages.
-
-So the presently implemented features (or most of them) are described in the
-following manual pages
-For details about the main lpOD classes, look at the following manual pages,
-that cover a large part of the presently implemented features (that is a small
-part of the full lpOD scope):
+While L<ODF::lpOD::Tutorial> is a recommended first reading that may help
+to quickly gain a basic understanding and get started with lpOD, The
+reference documentation is split into the following manual chapters:
 
 =over
 

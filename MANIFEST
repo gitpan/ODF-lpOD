@@ -17,6 +17,7 @@ lpOD/templates/drawing.odg
 lpOD/templates/presentation.odp
 lpOD/templates/spreadsheet.ods
 lpOD/templates/text.odt
+lpOD/data/rgb.txt
 lpOD.pod
 lpOD/Document.pod
 lpOD/Element.pod

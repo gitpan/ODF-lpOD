@@ -9,7 +9,7 @@
 # a) the GNU General Public License as published by the Free Software
 #    Foundation, either version 3 of the License, or (at your option)
 #    any later version.
-#    Lpod is distributed in the hope that it will be useful,
+#    lpOD is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.112';
-use constant PACKAGE_DATE => '2010-12-18T16:11:07';
+our     $VERSION        = '0.113';
+use constant PACKAGE_DATE => '2010-12-22T18:59:17';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.32;
@@ -116,23 +116,47 @@ sub     create
         {
         my $data        = shift;
         my $element     = undef;
+        if (ref $data)
+                {
+                $data = odf_element->load_from_file($data);
+                }
                                 # remove leading and trailing spaces
         $data	=~ s/^\s+//;
-	$data	=~ s/\s+$//;
-	if ($data =~ /^<.*>$/)	# create element from XML string
-	        {
-	        $element = odf_element->parse($data, @_) or return undef;
-                bless $element, odf_element;
-                $element->set_classes;
-	        }
-	else
-	        {
-	        $element = odf_element->new($data, @_);
-	        }
+        $data	=~ s/\s+$//;
+        if ($data =~ /^</)	# create element from XML string
+                {
+                $element = odf_element->parse_xml($data, @_);
+                }
+        else
+                {
+                $element = odf_element->new($data, @_);
+                }
 	return $element;
         }
 
-#--------------------------------------------------------------------------
+sub	parse_xml
+	{
+	my $class	= shift;
+	my $element = odf_element->parse(@_) or return undef;
+        bless $element, $class;
+        $element->set_classes;
+        return $element;
+	}
+
+sub	load_from_file
+	{
+	my $self	= shift;
+	my $source      = shift;
+        my $data;
+        while (my $l = <$source>)
+                {
+                chomp $l;
+                $data .= $l if $l;
+                }
+        return $data;
+	}
+
+#-----------------------------------------------------------------------------
 
 sub     clone
         {
@@ -199,12 +223,9 @@ sub     set_classes
         my $self        = shift;
         foreach my $e ($self->descendants_or_self)
                 {
-                my $tag = $e->get_tag;
-                my $class = $CLASS{tag};
-                if ($class)
-                        {
-                        bless $e, $class;
-                        }
+                my $tag = $e->tag;
+                my $class = $CLASS{$tag} || odf_element;
+                bless $e, $class;
                 $e->set_class;
                 }
         }
@@ -213,13 +234,13 @@ sub     check_tag
         {
         my $self        = shift;
         my $new_tag     = shift;
-        my $old_tag     = $self->get_tag;
+        my $old_tag     = $self->tag;
         return $old_tag unless $new_tag;
         unless ($new_tag eq $old_tag)
                 {
                 $self->set_tag($new_tag);
                 }
-        return $self->get_tag;
+        return $self->tag;
         }
 
 sub     is
@@ -1359,6 +1380,10 @@ sub     set_attribute
         my $self        = shift;
         my $name        = $self->normalize_name(shift);
         my $value       = input_conversion(shift);
+        if ($name =~ /color$/)
+                {
+                $value = color_code($value);
+                }
 	return defined $value ?
                 $self->set_att($name, $value) : $self->del_attribute($name);
         }
