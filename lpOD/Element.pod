@@ -328,7 +328,7 @@ Note: if your style names contain non-ASCII characters and if your preferred
 output character set is not C<utf8>, see L<ODF::lpOD::Common> for details
 about character sets handling.
 
-=head3  get_text(recursive=false)
+=head3  get_text(recursive => FALSE)
 
 Returns the text contents of the element as a string. By default this method is
 not recursive (i.e. it just returns the own text of the element, not the text

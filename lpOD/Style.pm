@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Style;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.105';
-use constant PACKAGE_DATE => '2010-12-17T23:37:58';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:44:49';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -417,8 +417,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::TextStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-12-17T13:24:48';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:45:21';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -498,8 +498,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::ParagraphStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-12-19T23:18:48';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:45:38';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -574,8 +574,8 @@ sub	get_master_page
 #=============================================================================
 package ODF::lpOD::ListStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-12-07T12:21:12';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:45:54';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -682,8 +682,8 @@ sub	set_level_style
 #=============================================================================
 package ODF::lpOD::ListLevelStyle;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-12-07T14:15:46';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:46:13';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -777,8 +777,8 @@ sub     set_properties
 #=============================================================================
 package ODF::lpOD::OutlineStyle;
 use base 'ODF::lpOD::ListStyle';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-11-13T17:59:51';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:46:31';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -825,8 +825,8 @@ sub     set_level_style
 package ODF::lpOD::TableStyle;
 use base 'ODF::lpOD::Style';
 use strict;
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-12-16T18:57:19';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:46:47';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -944,8 +944,8 @@ sub	set_properties
 #=============================================================================
 package ODF::lpOD::ColumnStyle;
 use base 'ODF::lpOD::TableStyle';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-12-16T14:49:47';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:47:03';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -986,8 +986,8 @@ sub     set_properties
 #=============================================================================
 package ODF::lpOD::RowStyle;
 use base 'ODF::lpOD::TableStyle';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-16T21:15:25';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:47:18';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1005,8 +1005,8 @@ sub     set_properties
 #=============================================================================
 package ODF::lpOD::CellStyle;
 use base 'ODF::lpOD::TableStyle';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-17T16:57:25';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:47:35';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1049,8 +1049,8 @@ sub	set_data_style
 #=============================================================================
 package ODF::lpOD::NumberStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-12-18T17:09:47';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:47:54';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1106,8 +1106,8 @@ sub	families
 #=============================================================================
 package ODF::lpOD::MasterPage;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-13T17:36:26';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:48:11';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1200,8 +1200,8 @@ sub	set_next
 #=============================================================================
 package ODF::lpOD::PageEndStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-13T17:33:10';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:48:28';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1249,8 +1249,8 @@ sub	set_properties
 #=============================================================================
 package ODF::lpOD::PageLayout;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-12-21T17:59:52';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:48:43';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1421,8 +1421,8 @@ sub     set_size
 #=============================================================================
 package ODF::lpOD::PresentationPageLayout;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-13T21:17:09';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:48:59';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1468,8 +1468,8 @@ sub	get_placeholders
 #=============================================================================
 package ODF::lpOD::DrawingPageStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-13T12:49:25';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:49:14';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1482,8 +1482,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::GraphicStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-19T20:00:07';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:49:29';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1542,8 +1542,8 @@ sub	attribute_name
 #=============================================================================
 package ODF::lpOD::FontDeclaration;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-12-03T09:06:50';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:49:42';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 

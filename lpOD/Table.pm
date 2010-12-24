@@ -28,8 +28,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Matrix;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-16T20:14:27';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:41:31';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -127,8 +127,8 @@ sub     contains
 #=============================================================================
 package ODF::lpOD::ColumnGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-16T20:11:00';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:41:56';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -418,8 +418,8 @@ sub	set_default_cell_style
 #=============================================================================
 package ODF::lpOD::RowGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-16T20:13:13';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:42:14';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -701,8 +701,8 @@ sub	set_default_cell_style
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Table;
 use base ('ODF::lpOD::RowGroup', 'ODF::lpOD::ColumnGroup');
-our $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-12-21T17:40:53';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:42:32';
 use ODF::lpOD::Common;
 #=============================================================================
 #--- constructor -------------------------------------------------------------
@@ -838,8 +838,8 @@ sub	set_default_cell_style
 #=============================================================================
 package ODF::lpOD::TableElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-13T19:50:01';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:42:49';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -981,8 +981,8 @@ sub     get_position
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Column;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-16T19:43:55';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:43:05';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1114,8 +1114,8 @@ sub	get_cells
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Row;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-16T20:29:24';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:43:23';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1374,8 +1374,8 @@ sub     previous
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
 use base ('ODF::lpOD::Field', 'ODF::lpOD::TableElement');
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-12-15T10:02:26';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:43:41';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 

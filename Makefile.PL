@@ -1,7 +1,7 @@
 #-----------------------------------------------------------------------------
-# lpOD Perl - Packaging & installation - 2010-07-28
+# lpOD Perl - Packaging & installation - 2010-12-24T15:23:59
 #-----------------------------------------------------------------------------
-use 5.10.0;
+use 5.010_000;
 use ExtUtils::MakeMaker;
 use Getopt::Long;
 
@@ -75,7 +75,7 @@ WriteMakefile
 	'LICENSE'	=> 'GPL',
     	'PREREQ_PM'	=>
     		{
-		'XML::Twig'		=> '3.32',
+		'XML::Twig'		=> '3.34',
 		'Archive::Zip'		=> '1.30',
 		'File::Temp'		=> '0.12',
 		'File::Find'		=> '1.01',

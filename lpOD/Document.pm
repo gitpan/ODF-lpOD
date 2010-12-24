@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '0.110';
-use     constant PACKAGE_DATE => '2010-12-18T17:33:22';
+our     $VERSION    = '1.000';
+use     constant PACKAGE_DATE => '2010-12-24T13:50:21';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -876,8 +876,8 @@ sub	set_font_declaration
 
 #=============================================================================
 package ODF::lpOD::Container;
-our	$VERSION	= '0.103';
-use constant PACKAGE_DATE => '2010-07-19T08:27:59';
+our	$VERSION	= '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:50:41';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use Archive::Zip        1.30    qw ( :DEFAULT :CONSTANTS :ERROR_CODES );
@@ -1267,8 +1267,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '0.108';
-use constant PACKAGE_DATE => '2010-12-18T16:33:31';
+our     $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:50:57';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1619,8 +1619,8 @@ sub     get_change
 #=============================================================================
 package ODF::lpOD::StyleContainer;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-12-18T16:55:04';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:51:14';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1736,8 +1736,8 @@ sub	substitute_styles
 #=============================================================================
 package ODF::lpOD::Content;
 use base 'ODF::lpOD::StyleContainer';
-our $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-12-03T20:12:14';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:51:31';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1768,14 +1768,14 @@ sub     get_toc
 #=============================================================================
 package ODF::lpOD::Styles;
 use base 'ODF::lpOD::StyleContainer';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-12-03T20:11:57';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:51:47';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Meta;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.105';
-use constant PACKAGE_DATE => '2010-11-25T14:30:56';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:51:58';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2091,8 +2091,8 @@ sub     store
 #=============================================================================
 package ODF::lpOD::Settings;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-18T18:07:56';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:52:14';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2101,8 +2101,8 @@ sub     post_load       {}
 #=============================================================================
 package ODF::lpOD::Manifest;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-18T18:07:34';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:52:31';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 

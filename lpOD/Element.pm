@@ -27,11 +27,11 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '0.113';
-use constant PACKAGE_DATE => '2010-12-22T18:59:17';
+our     $VERSION        = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T15:24:50';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
-use XML::Twig           3.32;
+use XML::Twig           3.34;
 use base 'XML::Twig::Elt';
 #=== element classes =========================================================
 
@@ -1615,7 +1615,24 @@ sub     get_style
 sub     set_style
         {
         my $self        = shift;
-        return $self->set_attribute('style name', @_);
+        my $style       = shift;
+        my $name;
+        if (ref $style)
+                {
+                if ($style->isa(odf_style))
+                        {
+                        $name = $style->get_name;
+                        }
+                else
+                        {
+                        alert "Wrong style"; return undef;
+                        }
+                }
+        else
+                {
+                $name = $style;
+                }
+        return $self->set_attribute('style name' => $name);
         }
 
 sub     insert_element
@@ -1997,13 +2014,13 @@ sub     not_allowed
 #=============================================================================
 package ODF::lpOD::BibliographyMark;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-11T23:40:55';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:37:35';
 #=============================================================================
 package ODF::lpOD::Note;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-08-03T12:14:00';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:38:27';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2118,8 +2135,8 @@ sub     set_body
 #=============================================================================
 package ODF::lpOD::Annotation;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-08-03T12:22:19';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:38:56';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2247,8 +2264,8 @@ sub     get_text
 #=============================================================================
 package ODF::lpOD::ChangedRegion;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-08-12T11:59:34';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:39:17';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2345,8 +2362,8 @@ sub     get_insertion_marks
 #=============================================================================
 package ODF::lpOD::FileEntry;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-15T08:32:48';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:39:36';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 

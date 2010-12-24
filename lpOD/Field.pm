@@ -28,8 +28,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Field;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-13T17:07:05';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:58:33';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -181,8 +181,8 @@ sub     set_value
 #=============================================================================
 package ODF::lpOD::Variable;
 use base 'ODF::lpOD::Field';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-17T08:56:47';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:58:47';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -207,8 +207,8 @@ sub     get_text
 #=============================================================================
 package ODF::lpOD::UserVariable;
 use base 'ODF::lpOD::Variable';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-19T08:37:07';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:59:01';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -223,8 +223,8 @@ sub     create
 #=============================================================================
 package ODF::lpOD::SimpleVariable;
 use base 'ODF::lpOD::Variable';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-19T08:37:07';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:59:12';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -244,8 +244,8 @@ sub     get_value       {}
 #=============================================================================
 package ODF::lpOD::TextField;
 use base 'ODF::lpOD::Field';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-12-20T19:28:11';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:59:24';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 

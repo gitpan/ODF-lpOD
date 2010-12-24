@@ -24,8 +24,8 @@
 use     5.010_000;
 use	strict;
 package ODF::lpOD::Attributes;
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-24T09:04:26';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:57:50';
 #==============================================================================
 %ODF::lpOD::Connector::ATTRIBUTE =
 	(

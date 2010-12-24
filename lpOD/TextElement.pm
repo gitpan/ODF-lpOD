@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.104';
-use constant PACKAGE_DATE => '2010-12-20T19:47:14';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T12:44:28';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -61,7 +61,7 @@ sub     create
                 $e->set_attribute('is list header', 'true')
                                 if defined $opt{suppress_numbering};
                 }
-        $e->set_attribute('style name', $opt{style})
+        $e->set_style($opt{style})
                         if defined $opt{style};
         $e->set_text($opt{text})
                         if defined $opt{text};
@@ -772,8 +772,8 @@ sub	set_field
 #=============================================================================
 package ODF::lpOD::Paragraph;
 use base 'ODF::lpOD::TextElement';
-our $VERSION    = 0.1;
-use constant PACKAGE_DATE => '2010-06-06T16:55:20';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T12:52:27';
 use ODF::lpOD::Common;
 #--- constructor -------------------------------------------------------------
 
@@ -785,8 +785,8 @@ sub     create
 #=============================================================================
 package ODF::lpOD::Heading;
 use base 'ODF::lpOD::Paragraph';
-our $VERSION    = 0.1;
-use constant PACKAGE_DATE => '2010-06-17T23:44:03';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T12:52:48';
 use ODF::lpOD::Common;
 #--- constructor -------------------------------------------------------------
 

@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '0.110';
-use constant PACKAGE_DATE       => '2010-12-23T08:48:53';
+our	$VERSION	        = '1.000';
+use constant PACKAGE_DATE       => '2010-12-24T13:40:22';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;

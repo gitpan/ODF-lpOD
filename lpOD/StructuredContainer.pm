@@ -28,14 +28,14 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::StructuredContainer;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-11-21T18:22:59';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:53:15';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Section;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-06-24T21:30:36';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:53:28';
 use ODF::lpOD::Common;
 #=============================================================================
 #--- constructors ------------------------------------------------------------
@@ -98,8 +98,8 @@ sub     set_hyperlink
 #=============================================================================
 package ODF::lpOD::List;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-12-07T11:32:39';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:53:53';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -238,8 +238,8 @@ sub     set_header
 #=============================================================================
 package ODF::lpOD::DrawPage;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-07-06T13:24:20';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:54:08';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -271,8 +271,8 @@ sub     set_id
 #=============================================================================
 package ODF::lpOD::Shape;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.102';
-use constant PACKAGE_DATE => '2010-11-13T20:50:09';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:54:23';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -379,8 +379,8 @@ sub     get_text_style
 #=============================================================================
 package ODF::lpOD::Area;
 use base 'ODF::lpOD::Shape';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-13T20:46:34';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:54:40';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -397,8 +397,8 @@ sub     create
 #=============================================================================
 package ODF::lpOD::Rectangle;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-07-27T16:46:12';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:54:57';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -410,8 +410,8 @@ sub     create
 #=============================================================================
 package ODF::lpOD::Ellipse;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-07-27T16:46:29';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:55:10';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -423,8 +423,8 @@ sub     create
 #=============================================================================
 package ODF::lpOD::Vector;
 use base 'ODF::lpOD::Shape';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-13T20:29:38';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:55:22';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -496,8 +496,8 @@ sub     set_position
 #=============================================================================
 package ODF::lpOD::Line;
 use base 'ODF::lpOD::Vector';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-07-27T17:17:10';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:55:40';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -509,8 +509,8 @@ sub     create
 #=============================================================================
 package ODF::lpOD::Connector;
 use base 'ODF::lpOD::Vector';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-07-27T20:39:30';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:55:50';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -605,8 +605,8 @@ sub     get_type
 #=============================================================================
 package ODF::lpOD::Frame;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '0.103';
-use constant PACKAGE_DATE => '2010-07-27T17:25:45';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:56:05';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -724,8 +724,8 @@ sub     set_text_box
 #=============================================================================
 package ODF::lpOD::Image;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.100';
-use constant PACKAGE_DATE => '2010-11-23T11:57:22';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:56:20';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -793,8 +793,8 @@ sub     get_content
 #=============================================================================
 package ODF::lpOD::TOC;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '0.101';
-use constant PACKAGE_DATE => '2010-11-23T11:39:04';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2010-12-24T13:56:38';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
