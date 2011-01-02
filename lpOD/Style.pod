@@ -26,6 +26,12 @@ creation instruction looks like:
 The example above creates a named text style without any property. The
 properties are optionally passed as named parameters.
 
+Note that in order to be really available in a document, a style, once created,
+must be registered in this document using C<insert_style()>, that is a
+C<odf_document> method:
+
+   $doc->insert_style($s);
+
 Additional named parameters can be required according to the family. An optional
 C<parent> argument, whose value is the name of another common style of
 the same family (existing or to be created), can be provided, knowing that a
@@ -55,17 +61,38 @@ document. This element (or a clone of it) is available to be attached later
 to a document through a generic, document-based C<insert_style()> method.
 
 The C<insert_style()> method requires a style object as its only one mandatory
-argument. An optional boolean parameter whose name is C<default> is allowed;
-if provided and set to C<TRUE>, this parameter means that the style is inserted
-as a I<default style>. A default style is a style that automatically apply to
-elements whose style is not explicitly specified. A document can contain
-at most one default style for a style family, so any attachment of a default
-style replaces any existing default style of the same family.
+argument. It's return value is the style itself.
+
+Note: a style may be created "in place" by C<insert_style()> if the first
+argument is an array ref instead of an existing style element. The array ref
+must contain the arguments of C<odf_create_style()> in the same order. So the
+two instructions below (that create and register a text style whose font weight
+is bold) are equivalent:
+
+   $doc->insert_style(
+        odf_create_style('text', name => "MyText", weight => 'bold')
+        );
+   $doc->insert_style(['text', name => "MyText", weight => 'bold']);
+
+An optional boolean parameter whose name is C<default> is allowed with
+C<insert_style()>; if provided and set to C<TRUE>, this parameter means that
+the style is registered as a I<default style>. A default style is a style that
+automatically applies to elements whose style is not explicitly specified. A
+document can contain at most one default style for a style family, so any
+registration of a default style replaces any existing default style of the same
+family.
 
 All styles can't be used as default styles. Default styles are allowed
 for the following families: C<paragraph>, C<text>, C<section>, C<table>,
 C<table column>, C<table row>, C<table cell>, C<table page>, C<chart>,
 C<drawing page>, C<graphic>, C<presentation>, C<control> and C<ruby>.
+
+The following example creates a paragraph style with a C<align> property, then
+registers it as the default paragraph style of a document (meaning that, in
+this document, every paragraph without specified style will be justified):
+
+   $ps = odf_create_style('paragraph', align => 'justify');
+   $doc->insert_style($ps, default => TRUE);
 
 Some styles may have a I<class> property, that is an informative attribute, and
 that should not be confused with the I<family>. A family is an application-
@@ -80,7 +107,7 @@ this method tries to retrieve the default style for the given family, if any.
 The following example extracts a paragraph style, so-called "MyParagraph", from
 a document and attaches a clone of this style as a default style of another
 document; the old default paragraph style of the target document (if any) is
-automatically replaced::
+automatically replaced:
 
    $ps = $doc1->get_style('paragraph', 'MyParagraphStyle')->clone();
    $doc2->insert_style($ps, default => TRUE);
@@ -291,6 +318,16 @@ possible values are C<true> (meaning visible) C<none> (meaning hidden)
 or C<condition> (meaning that the text is to be visible or hidden
 according to a condition defined elsewhere).
 
+=item
+
+C<language>: to specify a language code (ex: 'de' for German, 'fr' for
+French);
+
+=item
+
+C<country>: to specify a country code (ex: 'DE' for Germany, 'FR' for
+France).
+
 =back
 
 A text style may have a background color, but not a background image.
@@ -351,10 +388,10 @@ element instead of a I<text> style element, provided that the given paragraph
 style contains a I<text> part; so the text part of the given paragraph style (and
 this part only) is used as the prototype.
 
-Among the creation option for style paragraphs, a C<master page> parameter
+Among the creation option for a paragraph style, a C<master page> parameter
 may be set in order to specify the style of the page where the paragraphs
-using the style will appear. A paragraph whose style has a master page is the
-first of a new page.
+using the style will appear. A paragraph whose style has a C<master page>
+option is the first of a new page.
 
 The API allows the user to set any attribute using its official name according
 to the ODF specification related to the paragraph formatting properties (§15.5).
@@ -904,15 +941,21 @@ namespace, the lpOD API automatically regards any property specified without
 namespace prefix as a "draw" property (i.e. the C<draw:blue> color correction
 property may be wrote C<blue> when used as a C<set_properties()> parameter).
 
+Among the exceptions, the C<wrap> and C<run through> options correspond to
+ODF attributes whose prefix is C<style>, while C<clip> stands for C<fo:clip>
+
 The following example creates a graphic style with 50% transparency, 10% green
-color adjustment and 5% luminance adjustment::
+color adjustment and 5% luminance adjustment, for frames that will appear in
+the background:
 
         $gs = odf_create_style(
                 'graphic',
                 name            => 'MyFilter',
                 'image opacity' => '50%',
                 green           => '10%',
-                luminance       => '5%'
+                luminance       => '5%',
+                wrap            => 'run-through',
+                'run through'   => 'background'
                 );
 
 =head1  Page styles
@@ -957,7 +1000,7 @@ A master page is created and retrieved the same way as other styles.
 To create a master page through the generic C<odf_create_style()> function,
 the family argument is C<master page> and it's followed by an arbitrary
 optional C<name> parameter, that may be provided later, but that is mandatory
-when the style is attached to a document using the odf_document based
+when the style is attached to a document using the C<odf_document> based
 C<insert_style()> method.
 
 A master page may, like other styles, have a display name distinct from its

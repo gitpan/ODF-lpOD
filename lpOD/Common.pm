@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.000';
-use constant PACKAGE_DATE       => '2010-12-24T13:40:22';
+our	$VERSION	        = '1.001';
+use constant PACKAGE_DATE       => '2010-12-31T16:10:32';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -89,6 +89,8 @@ our @EXPORT     = qw
         is_true is_false defined_false
         is_odf_datatype odf_boolean process_options
         alpha_to_num translate_coordinates translate_range
+        
+        xelt xtwig
         
         META CONTENT STYLES SETTINGS MANIFEST MIMETYPE
 
@@ -180,6 +182,14 @@ use constant
         odf_toc                 => 'ODF::lpOD::TOC'
         };
 
+#--- basic API shortcuts -----------------------------------------------------
+
+use constant
+        {
+        xelt                    => 'XML::Twig::Elt',
+        xtwig                   => 'XML::Twig'
+        };
+
 #--- lpOD common tools and parameters ----------------------------------------
 
 use constant
@@ -255,8 +265,8 @@ BEGIN   {
         *odf_new_document_from_template
                                 = *ODF::lpOD::Document::create_from_template;
         *odf_new_document_from_type
-                                = *ODF::lpOD::Document::create;
-        *odf_new_document       = *ODF::lpOD::Document::create;
+                                = *ODF::lpOD::Document::_create;
+        *odf_new_document       = *ODF::lpOD::Document::_create;
         *odf_get_container      = *ODF::lpOD::Container::get_from_uri;
         *odf_new_container_from_template
                                 = *ODF::lpOD::Container::create_from_template;
@@ -265,43 +275,43 @@ BEGIN   {
                                 = *ODF::lpOD::Container::create;
         *odf_get_xmlpart        = *ODF::lpOD::XMLPart::get;
         
-        *odf_create_element     = *ODF::lpOD::Element::create;
-        *odf_create_paragraph   = *ODF::lpOD::Paragraph::create;
-        *odf_create_heading     = *ODF::lpOD::Heading::create;
-        *odf_create_field       = *ODF::lpOD::Field::create;
+        *odf_create_element     = *ODF::lpOD::Element::_create;
+        *odf_create_paragraph   = *ODF::lpOD::Paragraph::_create;
+        *odf_create_heading     = *ODF::lpOD::Heading::_create;
+        *odf_create_field       = *ODF::lpOD::Field::_create;
         *odf_create_simple_variable
-                                = *ODF::lpOD::SimpleVariable::create;
+                                = *ODF::lpOD::SimpleVariable::_create;
         *odf_create_user_variable
-                                = *ODF::lpOD::UserVariable::create;
-        *odf_create_table       = *ODF::lpOD::Table::create;
-        *odf_create_row_group   = *ODF::lpOD::RowGroup::create;
+                                = *ODF::lpOD::UserVariable::_create;
+        *odf_create_table       = *ODF::lpOD::Table::_create;
+        *odf_create_row_group   = *ODF::lpOD::RowGroup::_create;
         *odf_create_column_group
-                                = *ODF::lpOD::ColumnGroup::create;
-        *odf_create_column      = *ODF::lpOD::Column::create;
-        *odf_create_row         = *ODF::lpOD::Row::create;
-        *odf_create_cell        = *ODF::lpOD::Cell::create;
-        *odf_create_section     = *ODF::lpOD::Section::create;
-        *odf_create_list        = *ODF::lpOD::List::create;
-        *odf_create_draw_page   = *ODF::lpOD::DrawPage::create;
-        *odf_create_shape       = *ODF::lpOD::Shape::create;
-        *odf_create_area        = *ODF::lpOD::Area::create;
-        *odf_create_rectangle   = *ODF::lpOD::Rectangle::create;
-        *odf_create_ellipse     = *ODF::lpOD::Ellipse::create;
-        *odf_create_vector      = *ODF::lpOD::Vector::create;
-        *odf_create_line        = *ODF::lpOD::Line::create;
-        *odf_create_connector   = *ODF::lpOD::Connector::create;
-        *odf_create_frame       = *ODF::lpOD::Frame::create;
-        *odf_create_image       = *ODF::lpOD::Image::create;
-        *odf_create_text_frame  = *ODF::lpOD::Frame::create_text;
-        *odf_create_image_frame = *ODF::lpOD::Frame::create_image;
-        *odf_create_note        = *ODF::lpOD::Note::create;
-        *odf_create_annotation  = *ODF::lpOD::Annotation::create;
+                                = *ODF::lpOD::ColumnGroup::_create;
+        *odf_create_column      = *ODF::lpOD::Column::_create;
+        *odf_create_row         = *ODF::lpOD::Row::_create;
+        *odf_create_cell        = *ODF::lpOD::Cell::_create;
+        *odf_create_section     = *ODF::lpOD::Section::_create;
+        *odf_create_list        = *ODF::lpOD::List::_create;
+        *odf_create_draw_page   = *ODF::lpOD::DrawPage::_create;
+        *odf_create_shape       = *ODF::lpOD::Shape::_create;
+        *odf_create_area        = *ODF::lpOD::Area::_create;
+        *odf_create_rectangle   = *ODF::lpOD::Rectangle::_create;
+        *odf_create_ellipse     = *ODF::lpOD::Ellipse::_create;
+        *odf_create_vector      = *ODF::lpOD::Vector::_create;
+        *odf_create_line        = *ODF::lpOD::Line::_create;
+        *odf_create_connector   = *ODF::lpOD::Connector::_create;
+        *odf_create_frame       = *ODF::lpOD::Frame::_create;
+        *odf_create_image       = *ODF::lpOD::Image::_create;
+        *odf_create_text_frame  = *ODF::lpOD::Frame::_create_text;
+        *odf_create_image_frame = *ODF::lpOD::Frame::_create_image;
+        *odf_create_note        = *ODF::lpOD::Note::_create;
+        *odf_create_annotation  = *ODF::lpOD::Annotation::_create;
         *odf_create_font_declaration
-                                = *ODF::lpOD::FontDeclaration::create;
-        *odf_create_style       = *ODF::lpOD::Style::create;
+                                = *ODF::lpOD::FontDeclaration::_create;
+        *odf_create_style       = *ODF::lpOD::Style::_create;
         *odf_classify_text_field
                                 = *ODF::lpOD::TextField::classify;
-        *odf_create_toc         = *ODF::lpOD::TOC::create;
+        *odf_create_toc         = *ODF::lpOD::TOC::_create;
 
         *is_numeric             = *Scalar::Util::looks_like_number;
         *odf_value              = *check_odf_value;
@@ -703,7 +713,7 @@ sub     image_size
         my ($w, $h) = Image::Size::imgsize($f);
         return undef    unless defined $w;
         $w .= 'pt'; $h .= 'pt';
-        return [ $w, $h ];
+        return [$w, $h];
         }
 
 sub	input_2d_value
@@ -730,7 +740,7 @@ sub	input_2d_value
 	$x ||= ('0' . $u); $y ||= ('0' . $u);
 	$x .= $u unless $x =~ /[a-zA-Z]$/;
 	$y .= $u unless $y =~ /[a-zA-Z]$/;
-        return ($x, $y);
+        return wantarray ? ($x, $y) : [$x, $y];
 	}        
 
 #--- symbolic color names handling -------------------------------------------
@@ -788,10 +798,7 @@ sub	unload_color_map
 
 #-----------------------------------------------------------------------------
 
-sub     installation_path
-        {
-        return $INSTALLATION_PATH;
-        }
+sub     installation_path       { $INSTALLATION_PATH }
 
 sub     template
         {

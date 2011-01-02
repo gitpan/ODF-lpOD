@@ -18,9 +18,9 @@ any number of list items. The list header, if defined, contains one or more
 paragraphs that are displayed before the list. A list item can contain
 paragraphs, headings, or lists. Its properties are C<style>, that is an
 appropriate list style, and C<continue numbering>, a boolean value that, if
-true, means that I<if the numbering style of the preceding list is the same as
+true, means that if the numbering style of the preceding list is the same as
 the current list, the number of the first list item in the current list is the
-number of the last item in the preceding list incremented by one>
+number of the last item in the preceding list incremented by one
 (default=false).
 
 A list is created using C<odf_create_list()>, then inserted using
@@ -50,7 +50,7 @@ inserted in place.
 By default, a new item is created empty. However, as a shortcut for the most
 common case, it's possible to directly create it with a text content. To do
 so, the text content must be provided through a C<text> parameter; an
-optional C<style> parameter, whose value is a regular paragraph style, may
+optional C<style> parameter, whose value is a regular paragraph style, may be
 provided too. The new item is then created with a single paragraph as content
 (that is the most typical situation).
 

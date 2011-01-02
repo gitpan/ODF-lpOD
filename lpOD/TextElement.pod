@@ -26,6 +26,9 @@ be created without explicit style, as long as the default paragraph style of the
 document is convenient for the application. The style and the text content may
 be set or changed later.
 
+Paragraphs are instances of the C<odf_paragraph> class, that is a short name
+for C<ODF::lpOD::Paragraph>.
+
 A paragraph is created (as a free element) using the C<odf_create_paragraph>
 function, with a C<text> and a C<style> optional parameters. It may be
 attached later in a context through the standard C<append_element> or
@@ -36,6 +39,20 @@ C<insert_element> method:
                 style   =>'TextBody'
                 );
         $context->append_element($p);
+
+C<odf_create_paragraph()> is an exported alias for the C<create> constructor
+of the C<odf_paragraph> class, so the three following instructions are
+equivalent:
+
+        $p = odf_create_paragraph(
+                text => "the text", style => "stylename"
+                );
+        $p = odf_paragraph->create(
+                text => "the text", style => "stylename"
+                );
+        $p = ODF::lpOD::Paragraph->create(
+                text => "the text", style => "stylename"
+                );
 
 A heading may be created in a similar way using C<odf_create_heading>.
 However, this constructor allows not only the C<text> and C<style> options,
@@ -51,7 +68,7 @@ i.e. the top level);
 =item
 
 C<restart numbering>, a boolean which, if true, indicates that the numbering
-  should be restarted at the current heading (default FALSE);
+should be restarted at the current heading (default FALSE);
 
 =item
 
@@ -86,6 +103,8 @@ whatever the sequence of previous headings:
                 'start value'           => 5,
                 'restart numbering'     => TRUE
                 );
+
+A heading is an instance of C<odf_heading> (alias C<ODF::lpOD::Heading>).
 
 =head2  Text element retrieval
 
@@ -235,7 +254,7 @@ A style span is created through the C<set_span> method  from the object that
 will contain the span. This object is a paragraph, a heading or an existing
 styling span. The method must be called with a C<style> named parameter whose
 value should be the name of any text style (common or automatic, existing or to
-be created in the same document). C<set_span> may uses a string or a regular
+be created in the same document). C<set_span> may use a string or a regular
 expression, which may match zero, one or several times the text content of
 the calling object, so the spans can apply repeatedly to every substring that
 matches. The string is provided through a C<filter> parameter. Alternatively,
@@ -254,12 +273,78 @@ at a given offset, C<$p> being the target paragraph:
         $p->set_span(filter => 'The lpOD Project', style => 'HighLight');
         $p->set_span(offset => 3, length => 5, style => 'HighLight');
 
+See L<ODF::lpOD::Style> for details about the text styles.
+
+The return value of C<set_span()> is the newly created text span object (if
+any). This object, whose class is C<odf_text-element> (alias
+C<ODF::lpOD::TextElement>) may be used as the context for a subsequent call
+of C<set_span()> (knowing that spans may be nested) or other markup insertion
+methods such as C<set_hyperlink()>, C<set_bookmark()>, and so on. The return
+value is C<undef> in case of failure.
+
+C<set_span()> may work repeatedly even if C<offset> is defined, if the
+C<repeat> option is set to C<TRUE>. So the instruction below applies the given
+text style to I<every> matching substring whose location is after the given
+offset:
+
+        $p->set_span(
+                filter  => 'lpOD',
+                style   => 'HighLight',
+                offset  => 15,
+                repeat  => TRUE
+                );
+
+Symmetrically, C<set_span()> will not work repeatedly if C<repeat> is
+explicitly set to C<FALSE>, even if C<offset> is not defined.
+
+If either C<offset> is not defined or C<repeat> is set to C<TRUE>,
+C<set_span()> returns the list of newly created text spans, or the first one
+only in scalar context.
+
+Note that C<set_span()> can't apply a style to a substring split over two or
+more I<text nodes>. For example, if the given C<filter> is "Open Document" and
+if there is a bookmark or any other markup element between "Open" and
+"Document", there is no possible match. For the same reason, there is no
+match if the substring is already split due to a previously defined span.
+
+To illustrate this last principle, the following instruction, that should
+create a span covering the whole content of the calling paragraph, will stop
+at the first visible or invisible internal markup, because ".*" means the
+whole content of a text node, not the whole content of the paragraph:
+
+        $p->set_span(filter => ".*", repeat => FALSE);
+
+The numeric C<offset> is not the only area restriction parameter. Thanks to
+the C<start mark> and/or C<end mark> options, this area may be delimited by
+previously existing markup elements. As an example, the following sequence
+applies a style to the whole text content between two bookmarks (supposedly
+existing in the paragraph):
+
+        $bm1 = $p->get_bookmark("BM1");
+        $bm2 = $p->get_bookmark("BM2");
+        $p->set_span(
+                filter          => ".*",
+                style           => "HighLight",
+                'start mark'    => $bm1,
+                'end mark'      => $bm2
+                );
+
+The given delimitation marks may be bookmarks, index marks, bibliography marks
+or any other elements (including previously existing text spans). If
+C<start mark> is set, C<end mark> is not mandatory and vice versa.
+
+If C<start mark> and C<offset> are provided, then the offset is counted from
+the position of the start mark.
+
 =head2  Text hyperlinks
 
-A hyperlink span is created through C<set_hyperlink>, which waits for the
-same positioning parameters (by regex or by offset and length). However,
-there is no style, and a C<url> parameter (whose value is any kind of path
-specification that is supported by the application) is required instead.
+A hyperlink span is created through C<set_hyperlink>, which allows the
+same positioning options as C<set_span()>.
+
+However, there is a C<url> parameter instead of a C<style> one. The value of
+C<url> is any kind of path specification that is supported by the end user's
+ODF viewer; this value is not checked.
+
 A hyperlink span can't contain any other span, while a style span can contain
 one or more spans. As a consequence, the only one way to provide a hyperlink
 span with a text style consists of embedding it in a style span.
@@ -284,7 +369,7 @@ context to create a hyperlink span that spreads over its whole content:
                 style   => 'Outstanding'
                 );
         $s->set_hyperlink(
-                offset  => 0,
+                filter  => ".*",
                 url     => 'http://www.lpod-project.org'
                 );
 
@@ -338,7 +423,13 @@ retrieve it later (with an interactive text processor or by program with lpOD or
 another ODF toolkit). It's probably the most frequent use of bookmarks. However,
 the API offers more sophisticated functionality.
 
-The offset can be explicitly provided by the user with a C<offset>
+Note that a large part of the positioning options allowed for bookmarks work
+with almost all the objects that may be inserted within a text content, such
+as I<index marks>, I<bibliography marks>, and others. So a basic knowledge of
+the C<set_bookmark()> positioning logic is recommended, even if you don't need
+to put bookmarks in your documents.
+
+The I<offset> can be explicitly provided by the user with a C<offset>
 parameter. Alternatively, the user can provide a regular expression using a
 C<before> or C<after> parameter, whose value is a search string (or a regex)
 so the bookmark is set immediately before or after the first substring that
@@ -355,13 +446,13 @@ C<offset> parameter may be set to C<'end'> instead of a numeric value.
 
 For performance reasons, the uniqueness of the given name is not checked. If
 needed, this check should be done by the applications, by calling
-C<get_bookmark()> (with the same name and from the root element) just
+C<get_bookmark()> (with the same name and from the I<root> element) just
 before C<set_bookmark()>; as long as C<get_bookmark()> returns a null value,
 the given bookmark name is not in use in the context.
 
 There is no need to specify the creation of a position bookmark;
 C<set_bookmark()> creates a position bookmark by default; an additional
-C<role> parameter is required for range bookmarks only, as introduced later.
+C<role> parameter is required for I<range bookmarks> only, as introduced later.
 
 The first instruction in the last example sets a bookmark before the first
 substring matching the given expression (here "xyz"), which is processed as a
@@ -1243,6 +1334,9 @@ a given string:
 
 More generally, C<set_field()> allows the same positioning options as
 C<set_bookmark()> for simple position bookmarks.
+
+In addition, C<set_field()> allows a C<search> (or C<replace>) parameter
+that specifies a substring that should be I<replaced> by the field.
 
 C<set_field()> returns the created ODF element in case of success, or null if
 (due to the given parameters and the content of the target container) the field

@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T12:44:28';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-30T17:23:17';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -37,10 +37,25 @@ BEGIN   {
         *set_link               = *set_hyperlink
         }
 
+#-----------------------------------------------------------------------------
+
+our     $RECURSIVE_EXPORT       = FALSE;
+
+sub     set_recursive_export
+        {
+        my $caller      = shift;
+        $RECURSIVE_EXPORT       = is_true(shift);
+        }
+
 #--- constructor -------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::TextElement->create(@_) }
+
+#-----------------------------------------------------------------------------
 
 sub     create
         {
+        my $caller      = shift;
         my %opt = process_options
                 (
                 tag     => undef,
@@ -48,9 +63,8 @@ sub     create
                 text    => undef,
                 @_
                 );
-
         my $tag = $opt{tag}; $tag = 'text:' . $tag unless $tag =~ /:/;
-        my $e = odf_element->new($tag) or return undef;
+        my $e = ODF::lpOD::Element->create($tag) or return undef;
         if ($tag eq 'text:h')
                 {
                 $e->set_attribute('outline level', $opt{level} // 1);
@@ -99,7 +113,7 @@ sub     set_tab_stop
 sub     split_content
         {
         my $self        = shift;
-        my %opt         =
+        my %opt         = process_options
                 (
                 tag             => undef,
                 search          => undef,
@@ -115,6 +129,8 @@ sub     split_content
                 alert "Conflicting search and length parameters";
                 return FALSE;
                 }
+        my $search      = $opt{search};
+        $opt{repeat} //= (defined $search && ! defined $opt{offset});
         if (is_true($opt{repeat}))
                 {
                 delete $opt{repeat};
@@ -131,117 +147,98 @@ sub     split_content
                         push @elts, $start;
                         }
                 while ($start);
-                return @elts;
+                return wantarray ? @elts : $elts[0];
                 }
         my $tag         = $self->normalize_name($opt{tag});
-        my $search      = $opt{search};
         if (defined $opt{start_mark} || defined $opt{end_mark})
                 {
                 $opt{offset} //= 0;
                 }
-        if (defined $search && ! defined $opt{offset})
+        my $position = $opt{offset} || 0;
+        if ($position eq 'end')
                 {
-                my $t = defined $opt{text} ?
-                        input_conversion($opt{text}) : undef;
-                my $attr =
-                        $self->input_convert_attributes($opt{attributes});
-                my $expr = input_conversion($search);
-                my @elts = $self->mark ("($expr)", $tag, $attr);
-                for (@elts)
-                        {
-                        $_->_set_text($t) if defined $t;
-                        $_->set_class;
-                        }
-                return @elts;
+                my $e = $self->append_element($tag);
+                $e->set_attributes($opt{attributes});
+                $e->set_text($opt{text});
+                $e->set_class;
+                return $e;
                 }
-        else
+        if ($position == 0 && ! defined $search)
                 {
-                my $position = $opt{offset} || 0;
-                if ($position eq 'end')
+                my $e = $self->insert_element($tag);
+                $e->set_attributes($opt{attributes});
+                $e->set_text($opt{text});
+                $e->set_class;
+                return $e;
+                }
+        my $range = $opt{length};
+        my %r = $self->search
+                        (
+                        $search,
+                        offset          => $position,
+                        range           => $range,
+                        backward        => $opt{backward},
+                        start_mark      => $opt{start_mark},
+                        end_mark        => $opt{end_mark}
+                        );
+        if (defined $r{segment})
+                {
+                my $e = ODF::lpOD::Element->create($tag);
+                unless ($opt{insert})
                         {
-                        my $e = $self->append_element($tag);
-                        $e->set_attributes($opt{attributes});
-                        $e->set_text($opt{text});
-                        $e->set_class;
-                        return $e;
-                        }
-                if ($position == 0 && ! defined $search)
-                        {
-                        my $e = $self->insert_element($tag);
-                        $e->set_attributes($opt{attributes});
-                        $e->set_text($opt{text});
-                        $e->set_class;
-                        return $e;
-                        }
-                my $range = $opt{length};
-                my %r = $self->search
-                                (
-                                $search,
-                                offset          => $position,
-                                range           => $range,
-                                backward        => $opt{backward},
-                                start_mark      => $opt{start_mark},
-                                end_mark        => $opt{end_mark}
-                                );
-                if (defined $r{segment})
-                        {
-                        my $e = odf_create_element($tag);
-                        unless ($opt{insert})
+                        my $t = $r{segment}->_get_text;
+                        $range = $r{end} - $r{offset}
+                                        if defined $search;
+                        if (defined $range)
                                 {
-                                my $t = $r{segment}->_get_text;
-                                $range = $r{end} - $r{offset}
-                                                if defined $search;
-                                if (defined $range)
-                                        {
-                                        substr($t, $r{offset}, $range, "")
-                                        }
-                                else
-                                        {
-                                        $t = substr($t, 0, $r{offset});
-                                        }
-                                $r{segment}->_set_text($t);
-                                $e->set_text($opt{text} // $r{match});
-                                if      (
-                                                (
-                                                defined $opt{offset}
-                                                        &&
-                                                $opt{offset} >= 0
-                                                )
-                                                ||
-                                                defined $search
-                                        )
-                                        {
-                                        $e->paste_within
-                                                ($r{segment}, $r{offset});
-                                        }
-                                else
-                                        {
-                                        if ($r{end} < 0)
-                                                {
-                                                $e->paste_within
-                                                        ($r{segment}, $r{end});
-                                                }
-                                        else
-                                                {
-                                                $e->paste_after($r{segment});
-                                                }
-                                        }
-
+                                substr($t, $r{offset}, $range, "")
                                 }
                         else
                                 {
-                                my $p = $opt{insert} eq 'after' ?
-                                        $r{end} : $r{offset};
-                                $e->paste_within($r{segment}, $p);
-                                $e->set_text($opt{text});
+                                $t = substr($t, 0, $r{offset});
+                                }
+                        $r{segment}->_set_text($t);
+                        $e->set_text($opt{text} // $r{match});
+                        if      (
+                                        (
+                                        defined $opt{offset}
+                                                &&
+                                        $opt{offset} >= 0
+                                        )
+                                        ||
+                                        defined $search
+                                )
+                                {
+                                $e->paste_within
+                                        ($r{segment}, $r{offset});
+                                }
+                        else
+                                {
+                                if ($r{end} < 0)
+                                        {
+                                        $e->paste_within
+                                                ($r{segment}, $r{end});
+                                        }
+                                else
+                                        {
+                                        $e->paste_after($r{segment});
+                                        }
                                 }
 
-                        $e->set_attributes($opt{attributes});
-                        $e->set_class;
-                        return $e;
                         }
+                else
+                        {
+                        my $p = $opt{insert} eq 'after' ?
+                                $r{end} : $r{offset};
+                        $e->paste_within($r{segment}, $p);
+                        $e->set_text($opt{text});
+                        }
+
+                $e->set_attributes($opt{attributes});
+                $e->set_class;
+                return $e;
                 }
-        return FALSE;
+        return undef;
         }
 
 #--- lpOD-specific bookmark setting ------------------------------------------
@@ -416,12 +413,13 @@ sub     get_text
         {
         my $self        = shift;
         my %opt         = @_;
+        $opt{recursive} //= $RECURSIVE_EXPORT;
         
         unless (is_true($opt{recursive}))
                 {
                 return $self->SUPER::get_text;
                 }
-        
+
         my $text        = undef;
         foreach my $node ($self->children)
                 {
@@ -465,6 +463,7 @@ sub     set_span
         $opt{search} = $opt{filter} if exists $opt{filter};  
         $opt{attributes} = { 'style name' => $opt{style} };
         delete @opt{qw(filter style)};
+        unless (defined $opt{length}) { $opt{search} //= ".*" }
         return $self->split_content(tag => 'span', %opt);
         }
 
@@ -510,6 +509,7 @@ sub     set_hyperlink
                 'visited style name'    => $opt{visited_style}
                 };
         delete @opt{qw(filter name title style visited_style)};
+        unless (defined $opt{length}) { $opt{search} //= ".*" }
         return $self->split_content(tag => 'a', %opt);
         }
 
@@ -705,6 +705,7 @@ sub	set_field
                 alert "Missing field type"; return undef;
                 }
 	my %opt         = process_options(@_);
+        $opt{search} //= $opt{replace}; delete $opt{replace};
         $type = 'user field get' if $type eq 'variable';
         if ($type =~ /^user field/)
                 {
@@ -772,27 +773,37 @@ sub	set_field
 #=============================================================================
 package ODF::lpOD::Paragraph;
 use base 'ODF::lpOD::TextElement';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T12:52:27';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:28:58';
 use ODF::lpOD::Common;
 #--- constructor -------------------------------------------------------------
 
+sub     _create { ODF::lpOD::Paragraph->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
-        return ODF::lpOD::TextElement::create(tag => 'p', @_);
+        my $caller      = shift;
+        return ODF::lpOD::TextElement->create(tag => 'p', @_);
         }
 
 #=============================================================================
 package ODF::lpOD::Heading;
 use base 'ODF::lpOD::Paragraph';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T12:52:48';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:30:12';
 use ODF::lpOD::Common;
 #--- constructor -------------------------------------------------------------
 
+sub     _create { ODF::lpOD::Heading->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
-        return ODF::lpOD::TextElement::create(tag => 'h', @_);
+        my $caller      = shift;
+        return ODF::lpOD::TextElement->create(tag => 'h', @_);
         }
 
 #--- attribute accessors -----------------------------------------------------

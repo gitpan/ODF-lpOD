@@ -28,8 +28,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Matrix;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:41:31';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:36:13';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -62,7 +62,7 @@ sub     set_group
         my $tag = ($type ~~ ['column', 'row']) ?
                         'table:table-' . $type . '-group'       :
                         'table:table-' . $type;
-        my $group = odf_element->new($tag);
+        my $group = ODF::lpOD::Element->create($tag);
         $group->paste_before($start);
         my @elts = (); my $e = $start;
         do      {
@@ -127,19 +127,27 @@ sub     contains
 #=============================================================================
 package ODF::lpOD::ColumnGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:41:56';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:37:47';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub     create { return odf_element->new('table:table-column-group', @_); }
+sub     _create		{ ODF::lpOD::ColumnGroup->create(@_) }
+
+#-----------------------------------------------------------------------------
+
+sub	create
+	{
+	my $caller	= shift;
+	return ODF::lpOD::Element->create('table:table-column-group', @_);
+	}
 
 #-----------------------------------------------------------------------------
 
 sub     all_columns
         {
         my $self        = shift;
-        return $self->descendants(odf_matrix->COLUMN_FILTER);
+        return $self->descendants(ODF::lpOD::Matrix->COLUMN_FILTER);
         }
 
 sub     first_column
@@ -147,9 +155,12 @@ sub     first_column
         my $self        = shift;
         my $elt = $self->first_child(qr'(column$|column-group)')
                                         or return undef;
-        if      ($elt->isa(odf_column))         { return $elt; }
-        elsif   ($elt->isa(odf_column_group))   { return $elt->first_column; }
-        else                                    { return undef; }
+        if      ($elt->isa('ODF::lpOD::Column'))
+					{ return $elt; }
+        elsif   ($elt->isa('ODF::lpOD::ColumnGroup'))
+					{ return $elt->first_column; }
+        else
+					{ return undef; }
         }
 
 sub     last_column
@@ -157,9 +168,12 @@ sub     last_column
         my $self        = shift;
         my $elt = $self->last_child(qr'(column$|column-group)')
                                         or return undef;
-        if      ($elt->isa(odf_column))         { return $elt; }
-        elsif   ($elt->isa(odf_column_group))   { return $elt->last_column; }
-        else                                    { return undef; }
+        if      ($elt->isa('ODF::lpOD::Column'))
+					{ return $elt; }
+        elsif   ($elt->isa('ODF::lpOD::ColumnGroup'))
+					{ return $elt->last_column; }
+        else
+					{ return undef; }
         }
 
 sub     get_column_count
@@ -203,7 +217,7 @@ sub     get_column
         my $position    = alpha_to_num(shift) || 0;
         my $width       = $self->get_column_count;
         my $max_w       = $self->get_attribute('#lpod:w');
-        my $filter      = odf_matrix->COLUMN_FILTER;
+        my $filter      = ODF::lpOD::Matrix->COLUMN_FILTER;
         if ($position < 0)
                 {
                 $position += $width;
@@ -281,8 +295,8 @@ sub     add_column
         my $expand      = $opt{expand};
         my $propagate   = $opt{propagate};
         my $position    = undef;
-        my $col_filter  = odf_matrix->COLUMN_FILTER;
-        my $row_filter  = odf_matrix->ROW_FILTER;
+        my $col_filter  = ODF::lpOD::Matrix->COLUMN_FILTER;
+        my $row_filter  = ODF::lpOD::Matrix->ROW_FILTER;
         if ($ref_elt)
                 {
                 if ($opt{before} && $opt{after})
@@ -293,7 +307,7 @@ sub     add_column
                 $position = $opt{before} ? 'before' : 'after';
                 $ref_elt = $self->get_column($ref_elt) unless ref $ref_elt;
                 unless  (
-                        $ref_elt->isa(odf_column)
+                        $ref_elt->isa('ODF::lpOD::Column')
                                 &&
                         $ref_elt->parent() == $self
                         )
@@ -309,11 +323,12 @@ sub     add_column
         unless ($ref_elt)
                 {
                 my $proto = $self->last_child($col_filter);
-                $elt = $proto ? $proto->copy() : odf_create_column(%opt);
+                $elt = $proto ?
+			$proto->clone() : ODF::lpOD::Column->create(%opt);
                 }
         else
                 {
-                $elt = $ref_elt->copy;
+                $elt = $ref_elt->clone;
                 }
         if ($ref_elt)
                 {
@@ -343,7 +358,7 @@ sub     add_column
                 {
                 my $context = $self;
                 my $hz_pos = $elt->get_position;
-                unless ($self->isa(odf_table))
+                unless ($self->isa('ODF::lpOD::Table'))
                         {
                         $context = $self->parent('table:table');
                         }
@@ -418,49 +433,63 @@ sub	set_default_cell_style
 #=============================================================================
 package ODF::lpOD::RowGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:42:14';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:39:18';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub     create { return odf_element->new('table:table-row-group', @_); }
+sub     _create  { ODF::lpOD::RowGroup->create(@_) }
+
+#-----------------------------------------------------------------------------
+
+sub	create
+	{
+	my $caller	= shift;
+	return ODF::lpOD::Element->create('table:table-row-group', @_);
+	}
 
 #-----------------------------------------------------------------------------
 
 sub     all_rows
         {
         my $self        = shift;
-        return $self->descendants(odf_matrix->ROW_FILTER);
+        return $self->descendants(ODF::lpOD::Matrix->ROW_FILTER);
         }
 
 sub     all_cells
         {
         my $self        = shift;
-        return $self->descendants(odf_matrix->CELL_FILTER);
+        return $self->descendants(ODF::lpOD::Matrix->CELL_FILTER);
         }
 
 sub     clean
         {
         my $self        = shift;
-        $_->clean() for $self->descendants(odf_matrix->ROW_FILTER);
+        $_->clean() for $self->descendants(ODF::lpOD::Matrix->ROW_FILTER);
         }
 
 sub     first_row
         {
         my $self        = shift;
         my $elt = $self->first_child(qr'(row$|row-group)') or return undef;
-        if      ($elt->isa(odf_row))            { return $elt; }
-        elsif   ($elt->isa(odf_row_group))      { return $elt->first_row; }
-        else                                    { return undef; }
+        if      ($elt->isa('ODF::lpOD::Row'))
+						{ return $elt; }
+        elsif   ($elt->isa('ODF::lpOD::RowGroup'))
+						{ return $elt->first_row; }
+        else
+						{ return undef; }
         }
 
 sub     last_row
         {
         my $self        = shift;
         my $elt = $self->last_child(qr'(row$|row-group)') or return undef;
-        if      ($elt->isa(odf_row))            { return $elt; }
-        elsif   ($elt->isa(odf_row_group))      { return $elt->last_row; }
-        else                                    { return undef; }
+        if      ($elt->isa('ODF::lpOD::Row'))
+						{ return $elt; }
+        elsif   ($elt->isa('ODF::lpOD::RowGroup'))
+						{ return $elt->last_row; }
+        else
+						{ return undef; }
         }
 
 sub     get_height
@@ -593,7 +622,7 @@ sub     add_row
                 $position = $opt{before} ? 'before' : 'after';
                 $ref_elt = $self->get_row($ref_elt) unless ref $ref_elt;
                 unless  (
-                        $ref_elt->isa(odf_row)
+                        $ref_elt->isa('ODF::lpOD::Row')
                                 &&
                         $ref_elt->parent() == $self
                         )
@@ -608,12 +637,13 @@ sub     add_row
         my $elt;
         unless ($ref_elt)
                 {
-                my $proto = $self->last_child(odf_matrix->ROW_FILTER);
-                $elt = $proto ? $proto->copy() : odf_create_row(%opt);
+                my $proto = $self->last_child(ODF::lpOD::Matrix->ROW_FILTER);
+                $elt = $proto ?
+			$proto->clone() : ODF::lpOD::Row->create(%opt);
                 }
         else
                 {
-                $elt = $ref_elt->copy;
+                $elt = $ref_elt->clone;
                 }
         if ($ref_elt)
                 {
@@ -701,14 +731,19 @@ sub	set_default_cell_style
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Table;
 use base ('ODF::lpOD::RowGroup', 'ODF::lpOD::ColumnGroup');
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:42:32';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:41:10';
 use ODF::lpOD::Common;
 #=============================================================================
 #--- constructor -------------------------------------------------------------
 
+sub	_create         { ODF::lpOD::Table->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
+	my $caller	= shift;
         my $name        = shift;
         unless ($name)
                 {
@@ -738,7 +773,7 @@ sub     create
                 return FALSE;
                 }
 
-        my $t = odf_element->new('table:table');
+        my $t = ODF::lpOD::Element->create('table:table');
         $t->set_attribute('name', $name);
         $t->set_attribute('style name', $opt{style});
         $t->set_attribute('protected', odf_boolean($opt{protected}));
@@ -838,8 +873,8 @@ sub	set_default_cell_style
 #=============================================================================
 package ODF::lpOD::TableElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:42:49';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-26T22:43:44';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -908,11 +943,11 @@ sub     get_repeated
         {
         my $self        = shift;
         my $attr;
-        if ($self->isa(odf_cell) or $self->isa(odf_column))
+        if ($self->isa('ODF::lpOD::Cell') or $self->isa('ODF::lpOD::Column'))
                 {
                 $attr = 'table:number-columns-repeated';
                 }
-        elsif ($self->isa(odf_row))
+        elsif ($self->isa('ODF::lpOD::Row'))
                 {
                 $attr = 'table:number-rows-repeated';
                 }
@@ -932,11 +967,11 @@ sub     set_repeated
         {
         my $self        = shift;
 	my $attr;
-        if ($self->isa(odf_cell) or $self->isa(odf_column))
+        if ($self->isa('ODF::lpOD::Cell') or $self->isa('ODF::lpOD::Column'))
                 {
                 $attr = 'table:number-columns-repeated';
                 }
-        elsif ($self->isa(odf_row))
+        elsif ($self->isa('ODF::lpOD::Row'))
                 {
                 $attr = 'table:number-rows-repeated';
                 }
@@ -981,20 +1016,26 @@ sub     get_position
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Column;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:43:05';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:43:09';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub	_create         { ODF::lpOD::Column->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+	my $caller	= shift;
         my %opt = process_options
                 (
                 style   => undef,
                 @_
                 );
 
-        my $col = odf_element->new('table:table-column') or return undef;
+        my $col = ODF::lpOD::Element->create('table:table-column')
+					or return undef;
         $col->set_attribute('style name', $opt{style})
                         if defined $opt{style};
 	$col->set_default_cell_style($opt{cell_style})
@@ -1013,7 +1054,7 @@ sub	get_length
 	{
 	my $self	= shift;
 	my $parent = $self->parent;
-	unless ($parent && $parent->isa(odf_row_group))
+	unless ($parent && $parent->isa('ODF::lpOD::RowGroup'))
 		{
 		alert "No defined length for a non attached column";
 		return undef;
@@ -1029,11 +1070,11 @@ sub     next
         my $elt = $self->next_elt($context, $filter);
         while ($elt)
                 {              
-                if      ($elt->isa(odf_column))
+                if      ($elt->isa('ODF::lpOD::Column'))
                         {
                         return $elt;
                         }
-                elsif   ($elt->isa(odf_column_group))
+                elsif   ($elt->isa('ODF::lpOD::ColumnGroup'))
                         {
                         my $n = $elt->first_column;
                         return $n if $n;
@@ -1047,15 +1088,15 @@ sub     previous
         {
         my $self        = shift;
         my $context     = shift || $self->table;
-        my $filter      = shift || odf_matrix->COLUMN_FILTER;
+        my $filter      = shift || ODF::lpOD::Matrix->COLUMN_FILTER;
         my $elt = $self->prev_elt($context, $filter);
         while ($elt)
                 {
-                if      ($elt->isa(odf_column))
+                if      ($elt->isa('ODF::lpOD::Column'))
                         {
                         return $elt;
                         }
-                elsif   ($elt->isa(odf_column_group))
+                elsif   ($elt->isa('ODF::lpOD::ColumnGroup'))
                         {
                         my $n = $elt->last_column();
                         return $n if $n;
@@ -1114,20 +1155,26 @@ sub	get_cells
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Row;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:43:23';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:43:44';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub	_create         { ODF::lpOD::Row->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+	my $caller	= shift;
         my %opt = process_options
                 (
                 style   => undef,
                 @_
                 );
 
-        my $row = odf_element->new('table:table-row') or return undef;
+        my $row = ODF::lpOD::Element->create('table:table-row')
+                        or return undef;
         $row->set_attribute('style name', $opt{style})
                         if defined $opt{style};
 	$row->set_default_cell_style($opt{cell_style})
@@ -1146,7 +1193,7 @@ sub     create
 sub     clean
         {
         my $self        = shift;
-        my $cell        = $self->last_child(odf_matrix->CELL_FILTER)
+        my $cell        = $self->last_child(ODF::lpOD::Matrix->CELL_FILTER)
                 or return undef;
         $cell->set_repeated(undef);
         }
@@ -1180,7 +1227,7 @@ sub     get_cell
                 alert "Cell position $position out of range";
                 return undef;
                 }
-        my $cell = $self->first_child(odf_matrix->CELL_FILTER)
+        my $cell = $self->first_child(ODF::lpOD::Matrix->CELL_FILTER)
                 or return undef;
 
 	my $p = $position;
@@ -1227,7 +1274,11 @@ sub     get_cells
 				push @list, $cell;
 				$r--; $n--;
 				}
-			$cell = $cell->next($self, odf_matrix->CELL_FILTER);
+			$cell = $cell->next
+					(
+					$self,
+					ODF::lpOD::Matrix->CELL_FILTER
+					);
 			}
 		}
 	else
@@ -1245,7 +1296,7 @@ sub     get_width
         {
         my $self        = shift;
         my $width       = 0;
-        my $cell        = $self->first_child(odf_matrix->CELL_FILTER);
+        my $cell        = $self->first_child(ODF::lpOD::Matrix->CELL_FILTER);
 	my $tbl		= $self->table;
         my $max_w       = $tbl ? $tbl->att('#lpod:w') : undef;
         while ($cell)
@@ -1276,7 +1327,7 @@ sub     add_cell
                         }
                 $position = $opt{before} ? 'before' : 'after';
                 unless  (
-                        $ref_elt->isa(odf_cell)
+                        $ref_elt->isa('ODF::lpOD::Cell')
                                 &&
                         $ref_elt->parent() == $self
                         )
@@ -1291,12 +1342,13 @@ sub     add_cell
         my $elt;
         unless ($ref_elt)
                 {
-                my $proto = $self->last_child(odf_matrix->CELL_FILTER);
-                $elt = $proto ? $proto->copy() : odf_create_cell(%opt);
+                my $proto = $self->last_child(ODF::lpOD::Matrix->CELL_FILTER);
+                $elt = $proto ?
+			$proto->clone() : ODF::lpOD::Cell->create(%opt);
                 }
         else
                 {
-                $elt = $ref_elt->copy;
+                $elt = $ref_elt->clone;
                 }
         if ($ref_elt)
                 {
@@ -1328,11 +1380,11 @@ sub     next
         my $elt = $self->next_elt($context, $filter);
         while ($elt)
                 {
-                if      ($elt->isa(odf_row))
+                if      ($elt->isa('ODF::lpOD::Row'))
                         {
                         return $elt;
                         }
-                elsif   ($elt->isa(odf_row_group))
+                elsif   ($elt->isa('ODF::lpOD::RowGroup'))
                         {
                         my $n = $elt->first_row;
                         return $n if $n;
@@ -1345,11 +1397,11 @@ sub     previous
         {
         my $self        = shift;
         my $context     = shift || $self->table;
-        my $filter      = shift || odf_matrix->ROW_FILTER;
+        my $filter      = shift || ODF::lpOD::Matrix->ROW_FILTER;
         my $elt = $self->prev_elt($context, $filter);
         while ($elt)
                 {
-                if      ($elt->isa(odf_row))
+                if      ($elt->isa('ODF::lpOD::Row'))
                         {
                         if ($elt->parent->is('table:table-header-rows'))
                                 {
@@ -1359,7 +1411,7 @@ sub     previous
                                 }
                         return $elt;
                         }
-                elsif   ($elt->isa(odf_row_group))
+                elsif   ($elt->isa('ODF::lpOD::RowGroup'))
                         {
                         my $n = $elt->last_row();
                         return $n if $n;
@@ -1374,8 +1426,8 @@ sub     previous
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
 use base ('ODF::lpOD::Field', 'ODF::lpOD::TableElement');
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:43:41';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:45:05';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1387,11 +1439,16 @@ BEGIN	{
 our     %ATTRIBUTE;
 #-----------------------------------------------------------------------------
 
-sub     create
-        {
-        my $cell = odf_create_field('table:table-cell', @_);
-        return $cell ? bless($cell, __PACKAGE__) : undef;
-        }
+sub     _create         { ODF::lpOD::Cell->create(@_) }
+
+#-----------------------------------------------------------------------------
+
+sub	create
+	{
+	my $caller	= shift;
+        my $cell = ODF::lpOD::Field->create('table:table-cell', @_);
+        return $cell ? bless($cell, __PACKAGE__) : undef;	
+	}
 
 #-----------------------------------------------------------------------------
 
@@ -1430,7 +1487,7 @@ sub     next
                 {
                 alert "Wrong context"; return FALSE;
                 }
-        return $self->next_elt($row, odf_matrix->CELL_FILTER);
+        return $self->next_elt($row, ODF::lpOD::Matrix->CELL_FILTER);
         }
 
 sub     previous
@@ -1441,7 +1498,7 @@ sub     previous
                 {
                 alert "Wrong context"; return FALSE;
                 }        
-        return $self->prev_elt($row, odf_matrix->CELL_FILTER);
+        return $self->prev_elt($row, ODF::lpOD::Matrix->CELL_FILTER);
         }
 
 sub     get_position
@@ -1483,7 +1540,10 @@ sub     set_text
                 );
         $self->cut_children;
         $self->append_element
-                (odf_create_paragraph(text => $text, style => $opt{style}));
+                (
+		ODF::lpOD::Paragraph->create
+			(text => $text, style => $opt{style})
+		);
         }
 
 sub     get_text
@@ -1504,7 +1564,7 @@ sub     set_content
         $self->clear;
         foreach my $elt (@_)
                 {
-                if (ref $elt && $elt->isa(odf_element))
+                if (ref $elt && $elt->isa('ODF::lpOD::Element'))
                         {
                         $self->append_element($elt);
                         }
@@ -1518,8 +1578,8 @@ sub     remove_span
         my $vspan = $self->get_attribute('number rows spanned') || 1;
         $self->del_attribute('number columns spanned');
         $self->del_attribute('number rows spanned');
-        my $row = $self->parent(odf_matrix->ROW_FILTER);
-        my $table = $self->parent(odf_matrix->TABLE_FILTER);
+        my $row = $self->parent(ODF::lpOD::Matrix->ROW_FILTER);
+        my $table = $self->parent(ODF::lpOD::Matrix->TABLE_FILTER);
         my $vpos = $row->get_position;
         my $hpos = $self->get_position;
 	my $vend = $vpos + $vspan - 1;
@@ -1562,8 +1622,8 @@ sub     set_span
         $self->remove_span;
 	$hspan	= $old_hspan unless $hspan;
 	$vspan	= $old_vspan unless $vspan;
-        my $row = $self->parent(odf_matrix->ROW_FILTER);
-        my $table = $self->parent(odf_matrix->TABLE_FILTER);
+        my $row = $self->parent(ODF::lpOD::Matrix->ROW_FILTER);
+        my $table = $self->parent(ODF::lpOD::Matrix->TABLE_FILTER);
         my $vpos = $row->get_position;
         my $hpos = $self->get_position;
 	my $vend = $vpos + $vspan - 1;

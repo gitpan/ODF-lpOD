@@ -30,6 +30,15 @@ path/filename as the only mandatory argument:
         my $doc = odf_get_document("olddoc.odt")
                 or die "Failed to load the document";
 
+Note that C<odf_get_document()> is a wrapper for the C<get()> method of the
+C<odf_document> class, and that the instruction above could be written as
+shown below:
+
+        my $doc = odf_document->get("olddoc.odt")
+                or die "Failed to load the document";
+
+However, the so-called C<uri> must be a path in the local file system.
+
 In a real application, don't forget to check the return value. If something
 goes wrong for any reason (for example, if the specified file is not
 available or doesn't contain a consistent ODF document), C<odf_get_document>
@@ -137,6 +146,10 @@ spreadsheet document:
 This constructor returns a C<odf_document>, just like C<odf_get_document()>.
 However, there is no associated source file, so when you want to C<save()> it
 you must provide the C<target> parameter.
+
+The same job could be done using another style:
+
+        my $doc = odf_document->create('spreadsheet');
 
 The example below could be a one-liner program that creates and saves a new
 empty ODF presentation:
@@ -334,6 +347,11 @@ Now we can create a paragraph with the C<odf_create_paragraph()> constructor:
 
         my $p = odf_create_paragraph;
 
+According to your personal programming style, you could prefer the following
+instruction, that is equivalent:
+
+        my $p = odf_paragraph->create;
+
 Then we can attach this paragraph (that is initially created "nowhere") at the
 place of our choice, that is the document body:
 
@@ -367,6 +385,13 @@ The C<odf_create_paragraph()> constructor allows us to create a paragraph
 and initialize it with a content and/or a style, thanks to appropriate options:
 
         $p = odf_create_paragraph(
+                text    => "Hello World !",
+                style   => "Standard"
+                );
+
+Using an alternative style, the same job could be done like that:
+
+        $p = odf_paragraph->create(
                 text    => "Hello World !",
                 style   => "Standard"
                 );
@@ -534,6 +559,9 @@ paragraph:
 Note that we used arbitrary style names in this examples; such styles may not
 be available in your documents. Paragraph style creation is introduced later.
 
+Remember (once for all) that every C<odf_create_xyz> constructor is an alias
+for the C<create()> class method or C<odf_xyz>.
+
 =head1  Encoding issues
 
 In some situations, you could be faced with character encoding troubles when
@@ -649,9 +677,8 @@ example could be continued like that:
                         }
                 }
 
-Remember that C<$p->isa(odf_paragraph)> is true when C<$p->isa(odf_heading)>
-is true, because C<odf_heading> is a subclass of C<odf_paragraph>. So the order
-of the tests can matter.
+Remember that C<odf_heading> is a subclass of C<odf_paragraph>, so the order
+of the C<if...elsif> tests matters.
 
 =head1  Styling text
 
@@ -680,9 +707,10 @@ Assuming that "Bordered" had never been defined for the current document, we
 have to create it and define its properties. We want to get a 0.5cm thick,
 dotted blue border line, separated from the content by a 0.5cm space.
 
-The generic style constructor is C<odf_create_style()>. It requires a style
-family identifier as its first argument, knowing that, say, a table style
-or an image style is not the same thing as a paragraph style. The style
+The generic style constructor is C<odf_create_style()> (that is an exported
+alias for the C<create> constructor of the C<odf_style> class). It requires a
+style family identifier as its first argument, knowing that, say, a table
+style or a graphic style is not the same thing as a paragraph style. The style
 family specifies the kind of objects that could use it. Because we want to
 create a style for a paragraph layout, the family selector is C<'paragraph'>.
 After the family selector, named parameters are allowed in order to describe
@@ -690,10 +718,10 @@ the style. The most important one is the C<name>, knowing that a style can't
 be included in a document without a unique name (the style identifier for the
 objects that use it).
 
-Once created, the style must be included in the document style set. To do so,
-you must use the document-based C<insert_style()> method (don't use
+Once created, the style must be registered in the document style set. To do
+so, you must use the document-based C<insert_style()> method (don't use
 C<insert_element()> for styles). The following instruction creates the new
-paragraph style and include it in the document:
+paragraph style and includes it in the document:
 
         $ps1 = $doc->insert_style(
                 odf_create_style('paragraph', name => 'Bordered')
@@ -707,9 +735,9 @@ may specify particular choices through optional parameters, described in
 L<ODF::lpOD::Style>, but you can safely ignore such details and work with the
 default lpOD behavior for a time.
 
-Note that c<insert_style()> returns the inserted style, so the application
-can keep it in order to invoke it later. The instruction above produces the
-same effect as the sequence below:
+Note that c<insert_style()> returns the inserted style element, so the
+application can keep it in order to invoke it later. The instruction above
+produces the same effect as the sequence below:
 
         $ps1 = odf_create_style('paragraph', name => 'Bordered');
         $doc->insert_style($ps1);
@@ -731,8 +759,14 @@ the document (if any). So we must create the style with the right definition:
 The C<border> option must be set with a 3-part value: the first one is the
 thickness, the second one is a keyword that specifies the style of line, and
 the third one is the RGB color code. Note that with ODF (like with other de
-facto standards) color codes are 6-digit hexadecimal values with a leading "#".
-In this example the blue value is "80" while the red and green are zero.
+facto standards) a color code is a 6-digit hexadecimal value prefixed by "#".
+In this example the blue value is "80" while the red and green are zero. Note
+that lpOD provides a C<color_code()> utility that can provide the color codes
+corresponding to a few hundreds of conventional color names, so the same
+C<border> specification could be written like that:
+
+        border  => '0.1cm dotted ' . color_code('navy blue')
+
 The C<padding> option specifies the gap between the border and the content.
 
 The "Bordered" style is OK. Now suppose that we want to display some paragraphs
@@ -779,8 +813,8 @@ could be written in a more friendly way:
 
         $ps1->set_background(color => 'yellow');
 
-However we'll not always know a recognized color name for every color (while
-a few hundreds are defined).
+Of course this last form works only if the needed color has a registered name
+and if you know it.
 
 Note that, due to inheritance, this new background color will affect both
 C<$ps1> and C<$ps2>.
@@ -805,7 +839,7 @@ demonstrated by the following example:
 
 The style name (in combination with the family name) is the key to select the
 style object in the document. We must select the object itself in order to
-chack or change its properties, to clone it and/or to export it from a
+check or change its properties, to clone it and/or to export it from a
 document to another document.
 
 =head2  Creating and using a text style
@@ -816,9 +850,13 @@ about character layout (mainly font-related properties) while paragraph styles
 are about alignment, background, borders, and so on.
 
 A text style may be created in a similar way as a paragraph style, just
-replacing 'paragraph' by 'text' as the family name:
+replacing 'paragraph' by 'text' as the family name, like in this example:
 
         $ts = odf_create_style('text', name => 'BigText');
+
+or this one (that is the same):
+
+        $ts = odf_style->create('text', name => 'BigText');
 
 In order to make this style useful, we have to provide some properties. As
 an example, we'll create this "BigText" style will set a 24pt bold blue font:
@@ -847,8 +885,8 @@ properties for the text of every paragraph whose style is "BorderedCentered".
 
 The second option consists of specifying a particular text span in a
 paragraph and to apply the text style for this segment only, not to the whole
-paragraph text, whatever the style of this paragraph style and its possible
-default text properties. This option requires the use of C<set_span()>. The
+paragraph text, whatever the style of this paragraph and its possible default
+text properties. This option requires the use of C<set_span()>. The
 (arbitrary) example below shows the way to create and register a text style,
 then to apply it to any "OpenDocument" substring found in any paragraph whose
 style is "Standard":

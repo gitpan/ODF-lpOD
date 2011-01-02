@@ -34,13 +34,18 @@ use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Section;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:53:28';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:47:10';
 use ODF::lpOD::Common;
 #=============================================================================
-#--- constructors ------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Section->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
+        my $caller      = shift;
         my $name        = shift;
         unless ($name)
                 {
@@ -59,7 +64,7 @@ sub     create
                 @_
                 );
 
-        my $s = odf_element->new('text:section');
+        my $s = ODF::lpOD::Element->create('text:section');
         if (defined $opt{url})
                 {
                 $s->set_source($opt{url});
@@ -98,15 +103,20 @@ sub     set_hyperlink
 #=============================================================================
 package ODF::lpOD::List;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:53:53';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:47:57';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::List->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+        my $caller      = shift;
         my %opt         = process_options(@_);
-        my $list = odf_element->new('text:list');
+        my $list = ODF::lpOD::Element->create('text:list');
         $list->set_style($opt{style});
         $list->set_id($opt{id});
         return $list;
@@ -187,11 +197,11 @@ sub     add_item
                 }
         else
                 {
-                $elt = odf_element->new('text:list-item');
+                $elt = ODF::lpOD::Element->create('text:list-item');
                 }
         if (defined $text || defined $style)
                 {
-                my $p = odf_create_paragraph
+                my $p = ODF::lpOD::Paragraph->create
                                 (text => $text, style => $style);
                 $p->paste_last_child($elt);
                 }
@@ -209,7 +219,7 @@ sub     add_item
                 {
                 while ($number > 1)
                         {
-                        my $cp = $elt->copy;
+                        my $cp = $elt->clone;
                         $cp->paste_after($elt);
                         push @items, $cp;
                         $number--;
@@ -224,12 +234,13 @@ sub     set_header
         my $self        = shift;
         my $h = $self->get_element('text:list-header');
         $h->delete if $h;
-        $h = odf_element->new('text:list-header');
+        $h = ODF::lpOD::Element->create('text:list-header');
         $h->paste_first_child($self);
         while (@_)
                 {
                 my $c = shift;
-                my $elt = ref $c ? $c : odf_create_paragraph(text => $c);
+                my $elt = ref $c ?
+                        $c : ODF::lpOD::Paragraph->create(text => $c);
                 $elt->paste_last_child($h);
                 }
         return $h;
@@ -238,20 +249,25 @@ sub     set_header
 #=============================================================================
 package ODF::lpOD::DrawPage;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:54:08';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:48:38';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::DrawPage->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+        my $caller      = shift;
         my $id          = shift;
         unless ($id)
                 {
                 alert "Missing draw page identifier"; return FALSE;
                 }
         my %opt         = @_;
-        my $dp = odf_element->new('draw:page');
+        my $dp = ODF::lpOD::Element->create('draw:page');
         $dp->set_id($id);
         $dp->set_name($opt{'name'});
         $dp->set_style($opt{style});
@@ -271,16 +287,21 @@ sub     set_id
 #=============================================================================
 package ODF::lpOD::Shape;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:54:23';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:49:18';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Shape->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+        my $caller      = shift;
         my %opt         = process_options(@_);
         my $tag = $opt{tag}; $tag = 'draw:' . $tag unless $tag =~ /:/;
-        my $f = odf_element->new($tag);
+        my $f = ODF::lpOD::Element->create($tag);
         $f->set_attribute('name' => $opt{name});
         $f->set_style($opt{style});
         $f->set_text_style($opt{text_style});
@@ -379,17 +400,22 @@ sub     get_text_style
 #=============================================================================
 package ODF::lpOD::Area;
 use base 'ODF::lpOD::Shape';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:54:40';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:50:05';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Area->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+        my $caller      = shift;
         my %opt         = @_;
         my $size        = $opt{size} // "1cm, 1cm";
         delete @opt {qw(start end size)};
-        my $a = odf_create_shape(%opt);
+        my $a = ODF::lpOD::Shape->create(%opt);
         $a->set_size($size)     if $a;
         return $a;
         }
@@ -397,44 +423,59 @@ sub     create
 #=============================================================================
 package ODF::lpOD::Rectangle;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:54:57';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:55:59';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Rectangle->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
-        my $r = odf_create_area(tag => 'rect', @_);
+        my $caller      = shift;
+        my $r = ODF::lpOD::Area->create(tag => 'rect', @_);
         }
 
 #=============================================================================
 package ODF::lpOD::Ellipse;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:55:10';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:56:09';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Ellipse->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
-        return odf_create_area(tag => 'ellipse', @_);
+        my $caller      = shift;
+        return ODF::lpOD::Area->create(tag => 'ellipse', @_);
         }
 
 #=============================================================================
 package ODF::lpOD::Vector;
 use base 'ODF::lpOD::Shape';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:55:22';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:56:38';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Vector->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+        my $caller      = shift;
         my %opt         = @_;
         my $start       = $opt{start};
         my $end         = $opt{end};
         delete @opt {qw(start end position size)};
-        my $v = odf_create_shape(%opt);
+        my $v = ODF::lpOD::Shape->create(%opt);
         $v->set_start_position($start);
         $v->set_end_position($end);
         return $v;
@@ -496,32 +537,42 @@ sub     set_position
 #=============================================================================
 package ODF::lpOD::Line;
 use base 'ODF::lpOD::Vector';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:55:40';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T18:15:40';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Line->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
-        return odf_create_vector(tag => 'line', @_);
+        my $caller      = shift;
+        return ODF::lpOD::Vector->create(tag => 'line', @_);
         }
 
 #=============================================================================
 package ODF::lpOD::Connector;
 use base 'ODF::lpOD::Vector';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:55:50';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:58:03';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Connector->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+        my $caller      = shift;
         my %opt         = process_options(@_);
         my $cs = $opt{connected_shapes};
         my $gp = $opt{glue_points};
         my $type = $opt{type};
         delete @opt{qw(connected_shapes glue_points type)};
-        my $connector = odf_create_vector(tag => 'connector', %opt);
+        my $connector = ODF::lpOD::Vector->create(tag => 'connector', %opt);
         $connector->set_connected_shapes($cs);
         $connector->set_glue_points($gp);
         $connector->set_type($type);
@@ -605,35 +656,57 @@ sub     get_type
 #=============================================================================
 package ODF::lpOD::Frame;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:56:05';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:58:47';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Frame->create(@_) }
+
+sub     _create_text
+        {
+        my $text        = shift;
+        return ODF::lpOD::Frame->create(text => $text, @_);
+        }
+
+sub     _create_image
+        {
+        my $link        = shift;
+        return ODF::lpOD::Frame->create(image => $link, @_);
+        }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
-        return odf_create_area(tag => 'frame', @_);
-        }
-
-sub     create_text
-        {
-        my $text        = shift;
-        my $frame       = create(@_)    or return FALSE;
-        $frame->set_text_box($text);
-        return $frame;
-        }
-
-sub     create_image
-        {
-        my $link        = shift;
-        my %opt         = @_;
-        unless ($opt{size})
+        my $caller      = shift;
+        my %opt         = process_options(@_);
+        $opt{tag} = 'frame';
+        my $fr;
+        if ($opt{image})
                 {
-                $opt{size} = image_size($link);
+                if ($opt{text})
+                        {
+                        alert   "image and text parameters "    .
+                                "are mutually exlusive";
+                        return undef;
+                        }
+                my $link = $opt{image}; delete $opt{image};
+                $opt{size} || image_size($link);
+                $fr = ODF::lpOD::Area->create(%opt) or return undef;
+                $fr->set_image($link);
                 }
-        my $frame       = create(%opt)    or return FALSE;
-        $frame->set_image($link);
-        return $frame;
+        elsif ($opt{text})        
+                {
+                my $text = $opt{text}; delete $opt{text};
+                $fr = ODF::lpOD::Area->create(%opt) or return undef;
+                $fr->set_text_box($text);
+                }
+        else
+                {
+                $fr = ODF::lpOD::Area->create(%opt);
+                }
+        return $fr;
         }
 
 #-----------------------------------------------------------------------------
@@ -714,8 +787,8 @@ sub     set_text_box
                         }
                 else
                         {
-                        odf_create_paragraph(text => $e)
-                                        ->paste_last_child($t);
+                        ODF::lpOD::Paragraph->create(text => $e)
+                                                ->paste_last_child($t);
                         }
                 }
         return $t;
@@ -724,15 +797,20 @@ sub     set_text_box
 #=============================================================================
 package ODF::lpOD::Image;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:56:20';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T23:04:28';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::Image->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+        my $caller      = shift;
         my %opt         = @_;
-        my $image       = odf_create_element('draw:image');
+        my $image       = ODF::lpOD::Element->create('draw:image');
         my $uri         = $opt{url} || $opt{uri};
         if ($uri)
                 {
@@ -774,7 +852,7 @@ sub     set_content
         my $bin =       $self->first_child('office:binary-data');
         unless ($bin)
                 {
-                $bin = odf_create_element('office:binary-data');
+                $bin = ODF::lpOD::Element->create('office:binary-data');
                 $bin->paste_last_child($self);
                 }
         my $content = shift;
@@ -793,8 +871,8 @@ sub     get_content
 #=============================================================================
 package ODF::lpOD::TOC;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:56:38';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T23:05:25';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -804,11 +882,16 @@ use constant TOC_TITLE_TEMPLATE     => 'text:index-title-template';
 
 #-----------------------------------------------------------------------------
 
+sub     _create  { ODF::lpOD::TOC->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
+        my $caller      = shift;
         my $name        = shift;
         my %opt         = process_options(@_);
-        my $toc = odf_element->new('text:table-of-content');
+        my $toc = ODF::lpOD::Element->create('text:table-of-content');
         $toc->set_name($name);
         $toc->set_style($opt{style});
         $toc->set_protected($opt{protected} // TRUE);

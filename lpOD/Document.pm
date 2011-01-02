@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '1.000';
-use     constant PACKAGE_DATE => '2010-12-24T13:50:21';
+our     $VERSION    = '1.001';
+use     constant PACKAGE_DATE => '2010-12-31T16:47:59';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -46,10 +46,7 @@ sub     get_from_uri
                 {
                 alert "Missing source"; return FALSE;
                 }
-        my $container = odf_get_container($resource);
-        return $container ?
-                odf_document->new(container => $container)       :
-                FALSE;
+        return ODF::lpOD::Document->new(@_, uri => $resource);
         }
 
 sub     create_from_template
@@ -60,36 +57,29 @@ sub     create_from_template
                 alert "Missing template"; return FALSE;
                 }
 
-        my $container = odf_new_container_from_template($resource);
-        return $container ?
-                odf_document->new(container => $container)       :
-                FALSE;
+        return ODF::lpOD::Document->new(@_, template => $resource);
         }
 
-sub     create
+sub     get
+        {
+        my $caller      = shift;
+        return ODF::lpOD::Document->new(uri => shift, @_);
+        }
+
+sub	create
+	{
+	my $caller      = shift;
+	return ODF::lpOD::Document->new(type => shift, @_);
+	}
+
+sub     _create
         {
         my $type        = shift;
         unless ($type)
                 {
                 alert "Missing document type"; return FALSE;
                 }
-        my $container = odf_new_container($type)
-                                or return FALSE;
-        my $doc = odf_document->new(container => $container)
-                                or return FALSE;
-        my $meta = $doc->get_part(META);
-        if ($meta)
-                {
-                my $d = iso_date;
-                $meta->set_creation_date($d);
-                $meta->set_modification_date($d);
-                $meta->set_editing_duration('PT00H00M00S');
-                $meta->set_generator(scalar lpod->info);
-                $meta->set_initial_creator();
-                $meta->set_creator();
-                $meta->set_editing_cycles(1);
-                }
-        return $doc;
+        return ODF::lpOD::Document->new(@_, type => $type);
         }
 
 #--- generic constructor & destructor ----------------------------------------
@@ -99,11 +89,39 @@ our $COUNT      = 0;
 sub     new
         {
         my $class       = shift;
-        my $self        =
-                {
-                @_
-                };
+        my $self        = { @_ };
         bless $self, $class;
+        $self->{uri} //= $self->{source}; delete $self->{source};
+        if ($self->{type})      # new document, type provided
+                {
+                my $template = ODF::lpOD::Common::template($self->{type})
+                                or return undef;
+                $self->{container} = ODF::lpOD::Container->new
+                                (template => $template) or return undef;
+                my $meta = $self->get_part(META);
+                if ($meta)
+                        {
+                        my $d = iso_date;
+                        $meta->set_creation_date($d);
+                        $meta->set_modification_date($d);
+                        $meta->set_editing_duration('PT00H00M00S');
+                        $meta->set_generator(scalar lpod->info);
+                        $meta->set_initial_creator();
+                        $meta->set_creator();
+                        $meta->set_editing_cycles(1);
+                        }
+                }
+        elsif ($self->{template})
+                {
+                $self->{container} = ODF::lpOD::Container->new
+                                (template => $self->{template})
+                                        or return undef;
+                }
+        elsif ($self->{uri})    # existing document, path provided
+                {
+                $self->{container} = ODF::lpOD::Container->new
+                                (uri => $self->{uri}) or return undef;
+                }
         $COUNT++;
         return $self;
         }
@@ -145,7 +163,11 @@ sub     get_xmlpart
 
         unless ($self->{$part_name})
                 {
-                my $xmlpart = odf_get_xmlpart($container, $part_name);
+                my $xmlpart = ODF::lpOD::XMLPart->new
+                                (
+                                container       => $container,
+                                part            => $part_name
+                                );
                 unless ($xmlpart)
                         {
                         alert "Unavailable part"; return FALSE;
@@ -282,11 +304,9 @@ sub     save
         my $container   = $self->get_container(warning => TRUE)
                                 or return FALSE;
         my %opt         = @_;
-        my $pretty;
-        if ($opt{pretty})
-                {
-                $pretty = $opt{pretty}; delete $opt{pretty};
-                }
+        $opt{pretty} //= $opt{indent};
+        my $pretty = $opt{pretty};
+        delete @opt{qw(pretty indent)};
         foreach my $part_name ($self->loaded_xmlparts)
                 {
                 next unless $part_name;
@@ -448,7 +468,7 @@ sub     get_styles
                 {
                 alert "Missing style family"; return undef;
                 }
-        if ($family ~~ odf_number_style->families)
+        if ($family ~~ ODF::lpOD::NumberStyle->families)
                 {
                 return $self->get_numeric_styles($family);
                 }
@@ -504,7 +524,7 @@ sub     check_stylename
                 alert "Missing style name and/or family";
                 return FALSE;
                 }
-        if ($self->get_style($name, $family))
+        if ($self->get_style($family, $name))
                 {
                 alert "Non unique style";
                 return FALSE;
@@ -636,7 +656,15 @@ sub     insert_style
         my $self        = shift;
         my $style       = shift;
         my $class       = ref $style;
-        unless ($class && $style->isa(odf_style))
+        if ($class)
+                {
+                if ($class eq 'ARRAY')
+                        {
+                        $style = ODF::lpOD::Style->create(@$style);
+                        $class = ref $style;
+                        }
+                }        
+        unless ($class && $style->isa('ODF::lpOD::Style'))
                 {
                 alert "Missing or wrong style element";
                 return FALSE;
@@ -694,11 +722,11 @@ sub     substitute_styles
         my $source;
         if (ref $from)
                 {
-                $source = $from if $from->isa(odf_document);
+                $source = $from if $from->isa('ODF::lpOD::Document');
                 }
         else
                 {
-                $source = odf_get_document($from);
+                $source = ODF::lpOD::Document->new(template => $from);
                 }
         unless ($source)
                 {
@@ -822,11 +850,11 @@ sub     set_variable
                 {
                 when ('user')
                         {
-                        $var = odf_create_user_variable(%opt);
+                        $var = ODF::lpOD::UserVariable::create(%opt);
                         }
                 when ('simple')
                         {
-                        $var = odf_create_simple_variable(%opt);
+                        $var = ODF::lpOD::SimpleVariable::create(%opt);
                         }
                 default
                         {
@@ -876,8 +904,8 @@ sub	set_font_declaration
 
 #=============================================================================
 package ODF::lpOD::Container;
-our	$VERSION	= '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:50:41';
+our	$VERSION	= '1.001';
+use constant PACKAGE_DATE => '2010-12-26T19:56:07';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use Archive::Zip        1.30    qw ( :DEFAULT :CONSTANTS :ERROR_CODES );
@@ -922,39 +950,21 @@ our     %COMPRESSION    =               # compression rule for some parts
 
 sub     get_from_uri
         {
-        return odf_container->new
-                (
-                uri             => shift,
-                read_only       => FALSE,
-                create          => FALSE,
-                @_
-                );
+        return ODF::lpOD::Container->new(uri => shift);
         }
 
 #-----------------------------------------------------------------------------
 
 sub     create_from_template
         {
-        return odf_container->new
-                (
-                uri             => shift,
-                read_only       => TRUE,
-                create          => FALSE,
-                @_
-                );
+        return ODF::lpOD::Container->new(template => shift);
         }
 
 #-----------------------------------------------------------------------------
 
 sub     create
         {
-        return odf_container->new
-                (
-                uri             => ODF::lpOD::Common::template(shift),
-                read_only       => TRUE,
-                create          => TRUE,
-                @_
-                )
+        return ODF::lpOD::Container->new(type => shift);
         }
 
 #=== undocumented part =======================================================
@@ -966,6 +976,7 @@ sub     new
         my $class       = shift;
         my $self        =
                 {
+                type            => undef,
                 uri             => undef,
                 read_only       => undef,
                 zip             => undef,
@@ -973,6 +984,24 @@ sub     new
                 stored          => {},
                 @_
                 };
+
+        if ($self->{type})
+                {
+                $self->{uri} = ODF::lpOD::Common::template($self->{type})
+                                or return undef;
+                $self->{read_only}      = TRUE;
+                $self->{create}         = TRUE;
+                }
+        elsif ($self->{template})
+                {
+                $self->{uri}            = $self->{template};
+                $self->{read_only}      = TRUE;
+                $self->{create}         = FALSE;
+                }
+        else
+                {
+                $self->{create}         = FALSE;
+                }
 
         my $source = $self->{uri};
         my $zip = defined $self->{zip} ?
@@ -1267,8 +1296,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:50:57';
+our     $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-30T08:55:13';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1285,22 +1314,22 @@ sub     class_of
         return ref $part if ref $part;
         given($part)
                 {
-                when (CONTENT)          { return odf_content   }
-                when (STYLES)           { return odf_styles    }
-                when (META)             { return odf_meta      }
-                when (SETTINGS)         { return odf_settings  }
-                when (MANIFEST)         { return odf_manifest  }
-                default                 { return undef         }
+                when (CONTENT)          { return 'ODF::lpOD::Content'   }
+                when (STYLES)           { return 'ODF::lpOD::Styles'    }
+                when (META)             { return 'ODF::lpOD::Meta'      }
+                when (SETTINGS)         { return 'ODF::lpOD::Settings'  }
+                when (MANIFEST)         { return 'ODF::lpOD::Manifest'  }
+                default                 { return undef                  }
                 }
         }
 
 our %CLASS      =
         (
-        content         => odf_content,
-        styles          => odf_styles,
-        meta            => odf_meta,
-        manifest        => odf_manifest,
-        settings        => odf_settings
+        content         => 'ODF::lpOD::Content',
+        styles          => 'ODF::lpOD::Styles',
+        meta            => 'ODF::lpOD::Meta',
+        manifest        => 'ODF::lpOD::Manifest',
+        settings        => 'ODF::lpOD::Settings'
         );
 
 sub     pre_load        {}
@@ -1315,7 +1344,7 @@ sub     post_load
 sub     get
         {
         my $container   = shift;
-        unless (ref $container && $container->isa(odf_container))
+        unless (ref $container && $container->isa('ODF::lpOD::Container'))
                 {
                 alert "Missing or not valid container";
                 return FALSE;
@@ -1326,7 +1355,7 @@ sub     get
                 alert "Missing or unknown document part";
                 return FALSE;
                 }
-        return odf_xmlpart->new
+        return ODF::lpOD::XMLPart->new
                 (
                 part            => $part_name,
                 container       => $container,
@@ -1349,7 +1378,7 @@ sub     new
                 part            => undef,
                 load            => TRUE,
                 update          => TRUE,
-                elt_class       => odf_element,
+                elt_class       => 'ODF::lpOD::Element',
                 twig            => undef,
                 context         => undef,
                 @_
@@ -1507,9 +1536,10 @@ sub     serialize
                 output          => undef,
                 @_
                 );
+        $opt{pretty} //= $opt{indent};
         $opt{pretty_print} = PRETTY_PRINT if is_true($opt{pretty});
         my $output = $opt{output};
-        delete @opt{qw(pretty output)};
+        delete @opt{qw(pretty output indent)};
         return (defined $output) ?
                 $self->{twig}->print($output, %opt)   :
                 $self->{twig}->sprint(%opt);
@@ -1619,8 +1649,8 @@ sub     get_change
 #=============================================================================
 package ODF::lpOD::StyleContainer;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:51:14';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-30T11:40:30';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1657,7 +1687,8 @@ sub	set_font_declaration
         return $self
                 ->get_root
                 ->set_child('office:font-face-decls')
-                ->insert_element(odf_create_font_declaration($name, %opt));
+                ->append_element
+                        (ODF::lpOD::FontDeclaration->create($name, %opt));
 	}
 
 sub	substitute_context
@@ -1695,11 +1726,11 @@ sub	substitute_styles
         my $source;
         if (ref $from)
                 {
-                $source = $from if $from->isa(odf_document);
+                $source = $from if $from->isa('ODF::lpOD::Document');
                 }
         else
                 {
-                $source = odf_get_document($from);
+                $source = ODF::lpOD::Document->new(template => $from);
                 }
         unless ($source)
                 {
@@ -2101,8 +2132,8 @@ sub     post_load       {}
 #=============================================================================
 package ODF::lpOD::Manifest;
 use base 'ODF::lpOD::XMLPart';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:52:31';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-30T08:34:26';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2157,7 +2188,7 @@ sub     set_entry
         my %opt         = @_;
         unless ($e)
                 {
-                $e = odf_create_element('manifest:file-entry');
+                $e = ODF::lpOD::Element->create('manifest:file-entry');
                 $e->set_attribute('full path' => $path);
                 $e->paste_last_child($self->{context});
                 }

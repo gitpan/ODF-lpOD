@@ -19,7 +19,7 @@ as C<odf_paragraph>, C<odf_table>, etc), then inserted somewhere is an document.
 However, in most cases, elements are either retrieved in the existing structure
 or implicitly created ad put in place as children of existing elements through
 various element-based C<set_xxx> methods (where "xxx" depends on the kind of
-newly created data). 
+newly created data).
 
 Among the C<odf_element> methods, we distinguish I<element> methods from
 I<context> methods, while both kinds of methods belong to C<odf_element>
@@ -37,15 +37,18 @@ the current one.
 =head3  odf_create_element(data)
 
 Creates an odf_element from a fragment of XML data or an arbitrary tag.
-If the given argument is valid XML, its parsed and the new element is
+If the given argument is valid XML, it's parsed and the new element is
 created accordingly, possibly with a complex structure. If the argument
-is a non-XML string, its regarded as a tag (possibly with a namespace
+is a non-XML string, it's regarded as a tag (possibly with a namespace
 prefix), and the new element is created internally without XML parsing. 
 
 The new element is not attached to a document; it's free for later use.
 
-C<odf_create_element> is an exported alias; it's implemented by
-C<ODF::lpOD::Element::create>.
+Note: C<odf_create_element()> is an alias for one of the following
+instructions, which are equivalent:
+
+        odf_element->create();
+        ODF::lpOD::Element->create();
 
 =head3  get_element(tag [options])
 
@@ -370,6 +373,14 @@ input apply; see the character set handling section in L<ODF::lpOD::Common>.
 Sets several attributes at a time. The attributes to change or create must be
 passed as a hash ref (like the hash ref returned by C<get_attributes>). The
 attribute names may be provided in simplified form like with C<set_attribute>.
+
+=head3  set_comment(text)
+
+Intended for debugging purposes, this method puts a XML comment I<before> the
+calling element. This comment produces a "<!--xyz-->" tag, where "xyz" is the
+given text, in the XML output if the document is later serialized. Beware that
+such comments are not always preserved if the document is changed by an office
+application software.
 
 =head3  set_tag(new_tag)
 

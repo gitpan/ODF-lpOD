@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               ODF-lpOD
-version:            1.000
+version:            1.100
 abstract:           ~
 author:
     - Jean-Marie Gouarne <jean-marie.gouarne@arsaperta.com>

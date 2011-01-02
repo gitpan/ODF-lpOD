@@ -28,14 +28,19 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Field;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:58:33';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:31:20';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create { ODF::lpOD::Field->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
-        my $tag = shift;
+        my $caller      = shift;
+        my $tag         = shift;
         unless ($tag)
                 {
                 alert "Missing element tag";
@@ -49,7 +54,7 @@ sub     create
                 @_
                 );
 
-        my $field = odf_element->new($tag);
+        my $field = ODF::lpOD::Element->create($tag);
         unless ($field)
                 {
                 alert "Field $tag creation failure";
@@ -207,33 +212,47 @@ sub     get_text
 #=============================================================================
 package ODF::lpOD::UserVariable;
 use base 'ODF::lpOD::Variable';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:59:01';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:34:47';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 sub     context_path            { CONTENT, '//text:user-field-decls' }
 
+sub     _create { ODF::lpOD::UserVariable->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
+        my $caller      = shift;
         return bless
-                odf_create_field('text:user-field-decl', @_), __PACKAGE__;
+                ODF::lpOD::Field->create('text:user-field-decl', @_),
+                __PACKAGE__;        
         }
 
 #=============================================================================
 package ODF::lpOD::SimpleVariable;
 use base 'ODF::lpOD::Variable';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:59:12';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:34:38';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 sub     context_path            { CONTENT, '//text:variable-decls' }
 
+#-----------------------------------------------------------------------------
+
+sub     _create { ODF::lpOD::SimpleVariable->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
+        my $caller      = shift;
         return bless
-                odf_create_field('text:variable-decl', @_), __PACKAGE__;
+                ODF::lpOD::Field->create('text:variable-decl', @_),
+                __PACKAGE__;
         }
 
 #-----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 =head1	NAME
 
-ODF::lpOD - Languages & platform for OpenDocument
+ODF::lpOD - An OpenDocument management interface
 
 =head1	SYNOPSIS
 

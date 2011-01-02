@@ -18,6 +18,7 @@ lpOD/templates/presentation.odp
 lpOD/templates/spreadsheet.ods
 lpOD/templates/text.odt
 lpOD/data/rgb.txt
+lpOD/data/oasis_odf_logo.png
 lpOD.pod
 lpOD/Document.pod
 lpOD/Element.pod
@@ -27,6 +28,6 @@ lpOD/StructuredContainer.pod
 lpOD/Style.pod
 lpOD/Common.pod
 lpOD/Tutorial.pod
-t/01w.t
-t/02r.t
+t/test01_write.t
+t/test02_read.t
 META.yml                                 Module meta-data (added by MakeMaker)

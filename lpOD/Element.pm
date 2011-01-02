@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T15:24:50';
+our     $VERSION        = '1.001';
+use constant PACKAGE_DATE => '2010-12-30T11:19:16';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -85,6 +85,7 @@ our %CLASS    =
 
 BEGIN
         {
+        *xe_new                         = *XML::Twig::Elt::new;
         *get_tag                        = *XML::Twig::Elt::tag;
         *get_tagname                    = *XML::Twig::Elt::tag;
         *del_attributes                 = *XML::Twig::Elt::del_atts;
@@ -106,43 +107,71 @@ BEGIN
         *get_index_mark_list            = *get_index_marks;
         *get_bibliography_mark_list     = *get_bibliography_marks;
         *get_table_list                 = *get_tables;
+        *get_draw_page_list             = *get_draw_pages;
         *get_part                       = *lpod_part;
         *get_document                   = *document;
         }
 
 #=== exported constructor ====================================================
 
-sub     create
+sub     _create  { ODF::lpOD::Element->new(@_) }
+
+#-----------------------------------------------------------------------------
+
+our $INIT_CALLBACK   = undef;
+
+sub     new
         {
+	my $caller	= shift;
+	my $class	= ref($caller) || $caller;
         my $data        = shift;
-        my $element     = undef;
-        if (ref $data)
+        my $element;
+        if (ref $data)          # load data from file
                 {
-                $data = odf_element->load_from_file($data);
+                $data = ODF::lpOD::Element->load_from_file($data);
                 }
                                 # remove leading and trailing spaces
         $data	=~ s/^\s+//;
         $data	=~ s/\s+$//;
         if ($data =~ /^</)	# create element from XML string
                 {
-                $element = odf_element->parse_xml($data, @_);
+                return ODF::lpOD::Element->parse_xml($data, @_);
                 }
-        else
+                # odf_element creation
+        $element     = $class->SUPER::new($data, @_);
+                # possible subclassing according to the tag
+        my $tag = $element->tag;
+        if ($CLASS{$tag})
                 {
-                $element = odf_element->new($data, @_);
+                bless $element, $CLASS{$tag};
                 }
-	return $element;
+        elsif ($tag =~ /^number:.*-style$/)
+                {
+                bless $element, 'ODF::lpOD::Style';
+                }
+                # optional user-defined post-constructor function
+        if ($INIT_CALLBACK && (caller() eq 'XML::Twig'))
+                {
+                &$INIT_CALLBACK($element);
+                }
+        return $element;
         }
 
-sub	parse_xml
-	{
-	my $class	= shift;
-	my $element = odf_element->parse(@_) or return undef;
+sub     create
+        {
+	my $caller	= shift;
+        my $tag         = shift;
+        my $element     = XML::Twig::Elt->new($tag, @_);
+        my $class = $CLASS{$tag};
+        $class ||= ($tag =~ /^number:.*-style$/) ?
+                        'ODF::lpOD::Style'      :
+                        'ODF::lpOD::Element';
         bless $element, $class;
-        $element->set_classes;
-        return $element;
-	}
+        return $element;        
+        }
 
+#-----------------------------------------------------------------------------
+        
 sub	load_from_file
 	{
 	my $self	= shift;
@@ -156,7 +185,26 @@ sub	load_from_file
         return $data;
 	}
 
-#-----------------------------------------------------------------------------
+sub	parse_xml
+	{
+        state $twig;
+        unless ($twig)
+                {
+                $twig = XML::Twig->new
+                                (
+                                elt_class       => 'ODF::lpOD::Element',
+                                output_encoding => TRUE,
+                                id              => $ODF::lpOD::Common::LPOD_ID
+                                );
+                $twig->set_output_encoding('UTF-8');
+                }
+	my $class	= shift;
+	$twig->safe_parse(@_) or return undef;
+        my $element = $twig->root;
+        bless $element, $class;
+        $element->set_classes;
+        return $element;
+	}
 
 sub     clone
         {
@@ -166,33 +214,7 @@ sub     clone
         return bless $elt, $class;
         }
 
-#=== common element methods ===============================================
-
-our $INIT_CALLBACK   = undef;
-
-sub     new
-        {
-	my $caller	= shift;
-	my $class	= ref($caller) || $caller;
-                # odf_element creation
-        my $element     = $class->SUPER::new(@_);
-                # possible subclassing according to the tag
-        my $tag = $element->tag;
-        if ($CLASS{$tag})
-                {
-                bless $element, $CLASS{$tag};
-                }
-        elsif ($tag =~ /^number:.*-style$/)
-                {
-                bless $element, odf_style;
-                }
-                # optional user-defined post-constructor function
-        if ($INIT_CALLBACK && (caller() eq 'XML::Twig'))
-                {
-                &$INIT_CALLBACK($element);
-                }
-        return $element;
-        }
+#-----------------------------------------------------------------------------
 
 sub     convert         { FALSE }
 sub     context_path    {}
@@ -202,7 +224,7 @@ sub     set_tag
         my $self        = shift;
         my $tag         = shift;
         $self->_set_tag($tag);
-        bless $self, $CLASS{$tag} || odf_element;
+        bless $self, $CLASS{$tag} || 'ODF::lpOD::Element';
         $self->set_class;
         return $tag;
         }
@@ -213,7 +235,7 @@ sub     set_class
         my $prefix = $self->ns_prefix;
         if ($prefix eq 'text')
                 {
-                odf_classify_text_field($self);
+                ODF::lpOD::TextField::classify($self);
                 }
         return $self;
         }
@@ -224,7 +246,7 @@ sub     set_classes
         foreach my $e ($self->descendants_or_self)
                 {
                 my $tag = $e->tag;
-                my $class = $CLASS{$tag} || odf_element;
+                my $class = $CLASS{$tag} || 'ODF::lpOD::Element';
                 bless $e, $class;
                 $e->set_class;
                 }
@@ -433,6 +455,9 @@ sub     normalize_name
         {
         my $self        = shift;
         my $name        = shift // return undef;
+        $name =~ s/^\s+//;
+        $name =~ s/\s+$//;
+        return $name if $name =~ /^</;
         $name .= ' name' if $name eq 'style';
         if ($name && ! ref $name)
                 {
@@ -810,7 +835,7 @@ sub	get_fields
         unless ($type)
                 {
                 my @elts;
-                for (odf_text_field->types)
+                for (ODF::lpOD::TextField->types)
                         {
                         push @elts, $self->get_fields($_);
                         }
@@ -1472,7 +1497,7 @@ sub     get_text
         my $self        = shift;
         my %opt         = (recursive => FALSE, @_);
         my $text        = undef;
-        if ($self->is_text)
+        unless ($self->is_element)
                 {
                 $text = $self->text;
                 }
@@ -1619,7 +1644,7 @@ sub     set_style
         my $name;
         if (ref $style)
                 {
-                if ($style->isa(odf_style))
+                if ($style->isa('ODF::lpOD::Style'))
                         {
                         $name = $style->get_name;
                         }
@@ -1645,7 +1670,7 @@ sub     insert_element
                         @_
                         );
 
-        my $new_elt = ref $tag ? $tag : odf_create_element($tag);
+        my $new_elt = ref $tag ? $tag : ODF::lpOD::Element->new($tag);
 
         if (defined $opt{after})
                 {
@@ -1695,6 +1720,19 @@ sub     append_element
         my $self        = shift;
         return $self->insert_element(shift, position => 'LAST_CHILD');
         }
+
+sub	set_comment
+	{
+	my $self	= shift;
+        unless ($self->parent)
+                {
+                alert "Not allowed in free element"; return undef;
+                }
+	my $text        = input_conversion(shift);
+        my $cmt = ODF::lpOD::Element->create('#COMMENT' => $text);
+        $cmt->paste_before($self);
+        return $cmt;
+	}
 
 sub     serialize
         {
@@ -2019,8 +2057,8 @@ use constant PACKAGE_DATE => '2010-12-24T13:37:35';
 #=============================================================================
 package ODF::lpOD::Note;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:38:27';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:11:12';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2030,8 +2068,14 @@ BEGIN   {
 
 #-----------------------------------------------------------------------------
 
+sub	_create  { ODF::lpOD::Note->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
+        my $caller      = shift;
+	my $class	= ref($caller) || $caller;
         my $id          = shift;
         unless ($id)
                 {
@@ -2043,7 +2087,7 @@ sub     create
                 class           => 'footnote',
                 @_
                 );
-        my $note = odf_create_element('text:note');
+        my $note = ODF::lpOD::Element->create('text:note');
         $note->set_id($id);
         $note->set_citation($opt{citation}, $opt{label});
         $note->{style}  = $opt{style};
@@ -2123,7 +2167,7 @@ sub     set_body
                         }
                 else
                         {
-                        my $p = odf_create_paragraph(
+                        my $p = ODF::lpOD::Paragraph::create(
                                 text => $arg, style => $self->{style}
                                 );
                         $p->paste_last_child($body);
@@ -2135,8 +2179,8 @@ sub     set_body
 #=============================================================================
 package ODF::lpOD::Annotation;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:38:56';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T22:11:29';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2147,10 +2191,15 @@ BEGIN   {
 
 #-----------------------------------------------------------------------------
 
+sub	_create  { ODF::lpOD::Annotation->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
+        my $caller      = shift;
         my %opt = @_;
-        my $a   = odf_create_element('office:annotation');
+        my $a   = ODF::lpOD::Element->create('office:annotation');
         $a->set_date($opt{date});
         $a->set_author($opt{author});
         $a->set_style($opt{style});
@@ -2228,7 +2277,7 @@ sub     set_content
                         }
                 else
                         {
-                        my $p = odf_create_paragraph(
+                        my $p = ODF::lpOD::Paragraph::create(
                                 text => $arg, style => $self->{style}
                                 );
                         $p->paste_last_child($self);

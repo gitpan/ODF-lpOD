@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Style;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:44:49';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2011-01-01T19:55:37';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -248,8 +248,8 @@ sub     make_default
                 my $ds = $self->clone; $self->delete;
                 my $f = $ds->get_family;
                 $ds->del_attributes;
-                $ds->set_tag('style:default-style');
-                $ds->set_family($f);
+                $ds->_set_tag('style:default-style');
+                $ds->set_attribute('style:family' => $f);
                 return $ds;
                 }
         else
@@ -261,8 +261,13 @@ sub     make_default
 
 #-----------------------------------------------------------------------------
 
+sub     _create  { ODF::lpOD::Style->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub	create
 	{
+        my $caller      = shift;
 	my $family      = shift;
         my %opt         = process_options(@_);
 	my $desc = $STYLE_DEF{$family};
@@ -291,7 +296,7 @@ sub	create
                 }
         else
                 {
-                $style = odf_create_element($tag);
+                $style = ODF::lpOD::Element->create($tag);
                 }
         $style->set_family($family);
 	bless $style, $desc->{class};
@@ -417,19 +422,22 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::TextStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:45:21';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2011-01-02T12:07:10';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 our %ATTR =
     (
-    font                            => 'style:font-name',
-    size                            => 'fo:font-size',
-    weight                          => 'fo:font-weight',
-    style                           => 'fo:font-style',
-    color                           => 'fo:color',
-    display                         => 'text:display'
+    font                => 'style:font-name',
+    size                => 'fo:font-size',
+    weight              => 'fo:font-weight',
+    style               => 'fo:font-style',
+    color               => 'fo:color',
+    country             => 'fo:country',
+    language            => 'fo:language',
+    background_color    => 'fo:background-color',
+    display             => 'text:display'
     );
 
 sub     initialize
@@ -574,8 +582,8 @@ sub	get_master_page
 #=============================================================================
 package ODF::lpOD::ListStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:45:54';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-31T11:53:23';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -638,14 +646,14 @@ sub	set_level_style
         my $e;
         if (defined $opt{clone})
                 {
-                $e = $opt{clone}->copy;
+                $e = $opt{clone}->clone;
                 my $old = $self->get_level_style($level);
                 $old && $old->delete;
                 $e->set_attribute(level => $level);
                 return $self->append_element($e);
                 }
         my $type = $opt{type} || 'number';
-        $e = ODF::lpOD::ListLevelStyle::create($type) or return FALSE;
+        $e = ODF::lpOD::ListLevelStyle->create($type) or return FALSE;
         given ($type)
                 {
                 when ('number')
@@ -682,8 +690,8 @@ sub	set_level_style
 #=============================================================================
 package ODF::lpOD::ListLevelStyle;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:46:13';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T23:13:48';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -699,8 +707,13 @@ our %PROP = reverse %ATTR;
 
 #-----------------------------------------------------------------------------
 
+sub     _create  { ODF::lpOD::ListLevelStyle->create(@_) }
+
+#-----------------------------------------------------------------------------
+
 sub     create
         {
+        my $caller      = shift;
         my $type        = shift;
         my $tag;
         given ($type)
@@ -718,7 +731,7 @@ sub     create
                         alert "Wrong list level type";
                         }
                 }
-        return $tag ? odf_create_element($tag) : undef;
+        return $tag ? ODF::lpOD::Element->create($tag) : undef;
         }
 
 sub     get_type
@@ -1249,8 +1262,8 @@ sub	set_properties
 #=============================================================================
 package ODF::lpOD::PageLayout;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:48:43';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2011-01-02T14:47:35';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1270,7 +1283,7 @@ sub	set_properties
 	my $self	= shift;
 	my %opt         = @_;
         my $pr = $self->set_child('page layout properties');
-        PROPERTY: foreach my $k (keys %opt)
+        foreach my $k (keys %opt)
                 {
                 my $a;
                 my $v = $opt{$k};
@@ -1279,7 +1292,7 @@ sub	set_properties
                         when ('size')
                                 {
                                 $self->set_size($v);
-                                next PROPERTY;
+                                next;
                                 }
                         when (['height', 'width'])
                                 {
@@ -1294,7 +1307,18 @@ sub	set_properties
                                         'fo:margin-bottom' => $v,
                                         'fo:margin-left'   => $v
                                         );
-                                next PROPERTY;
+                                next;
+                                }
+                        when (['border', 'borders'])
+                                {
+                                $pr->set_attributes
+                                        (
+                                        'fo:border-top'    => $v,
+                                        'fo:border-right'  => $v,
+                                        'fo:border-bottom' => $v,
+                                        'fo:border-left'   => $v
+                                        );
+                                next;                                
                                 }
                         when (/(margin|border|padding|background)/)
                                 {
@@ -1451,7 +1475,7 @@ sub	set_placeholder
                 }
 	my $ph = ref $shape ?
                 $shape                                          :
-                odf_create_element('presentation:placeholder');
+                ODF::lpOD::Element->create('presentation:placeholder');
         $ph->set_attribute(object => $shape);
         my %opt         = @_;
         $ph->set_size($opt{size});
@@ -1482,8 +1506,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::GraphicStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:49:29';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-27T16:16:45';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1492,14 +1516,14 @@ sub	initialize
 	my $self	= shift;
         my %opt         =
 		(
-		'fo:clip'			=> 'rect(0cm 0cm 0cm 0cm)',
+		'clip'			        => 'rect(0cm 0cm 0cm 0cm)',
 		'style:vertical-rel'		=> 'paragraph',
 		'style:horizontal-rel'		=> 'paragraph',
 		'style:vertical-pos'		=> 'from-top',
 		'style:horizontal-pos'		=> 'from-left',
-		'draw:color-mode'		=> 'standard',
-                'draw:fill'                     => 'none',
-                'draw:stroke'                   => 'none',
+		'color-mode'		        => 'standard',
+                'fill'                          => 'none',
+                'stroke'                        => 'none',
                 @_
 		);
 
@@ -1523,7 +1547,7 @@ sub	attribute_name
         my $prefix;
         given ($p)
                 {
-                when (/(pos$|rel$)/)
+                when (/(pos$|rel$|wrap$|run)/)
                         {
                         $prefix = 'style';        
                         }
@@ -1542,13 +1566,18 @@ sub	attribute_name
 #=============================================================================
 package ODF::lpOD::FontDeclaration;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:49:42';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2010-12-29T23:17:13';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     _create  { ODF::lpOD::FontDeclaration->create(@_) }
+
 #-----------------------------------------------------------------------------
 
 sub     create
         {
+        my $caller      = shift;
         my $name        = shift;
         my %opt         =
                 (
@@ -1559,7 +1588,7 @@ sub     create
                 {
                 alert "Missing font name"; return FALSE;
                 }
-        my $fd = odf_create_element('style:font-face');
+        my $fd = ODF::lpOD::Element->create('style:font-face');
         $fd->set_name($name);
         $fd->set_attribute('svg:font-family' => $opt{family});
         delete $opt{family};
