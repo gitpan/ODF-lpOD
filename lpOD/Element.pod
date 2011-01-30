@@ -6,7 +6,7 @@ ODF::lpOD::Element - Common features available with any ODF element
 
 This manual page describes the C<odf_element> class.
 
-C<odf_element> is implemented in the C<ODF::lpOD::Element> package.
+C<odf_element> is an alias for C<ODF::lpOD::Element> package.
 
 Every XML element (loaded from an existing ODF document or created by any
 lpOD-based application) is a C<odf_element>. This class is the base class
@@ -39,7 +39,7 @@ the current one.
 Creates an odf_element from a fragment of XML data or an arbitrary tag.
 If the given argument is valid XML, it's parsed and the new element is
 created accordingly, possibly with a complex structure. If the argument
-is a non-XML string, it's regarded as a tag (possibly with a namespace
+is a non-XML string, it's regarded as a tag (possibly with a name space
 prefix), and the new element is created internally without XML parsing. 
 
 The new element is not attached to a document; it's free for later use.
@@ -60,7 +60,7 @@ include all the elements whose tags match the expression.
 
 For example, the following instruction (assuming C<$context> is a previously
 retrieved element) returns the first element that is either a paragraph or a
-heading (konwing that the correspondig tags are C<text:p> and C<text:h>):
+heading (knowing that the corresponding tags are C<text:p> and C<text:h>):
 
         my $text_element = $context->get_element(qr'text:(p|h)'); 
 
@@ -85,7 +85,7 @@ C<value>: the value of the selection attribute.
 
 =item
 
-C<content>: a search string (or a regex) restricting the search space to the
+C<content>: a search string (or a regexp) restricting the search space to the
 elements with matching content.
 
 =back
@@ -106,7 +106,7 @@ C<get_element> method of C<odf_element>.>
 =head3  get_elements(tag)
 
 Returns the full list of elements matching the given tag, whose tags match
-the given regex.
+the given regexp.
 
 The C<attribute> and C<value> options are allowed in order to restrict the
 search.
@@ -297,13 +297,13 @@ C<get_attribute> below.
 =head3  get_attribute(name)
 
 Returns the string value of the attribute having this name. The argument may
-be the exact XML name of the attribute. However, if a name without namespace
+be the exact XML name of the attribute. However, if a name without name space
 prefix is provided, the prefix is automatically supposed to be the same as the
 prefix of the context element. In addition, any white space or underscore
 character in the given name is interpreted as a "-". As a consequence, some
 attributes may be designated without care of the exact XML syntax. As an
 example, assuming C<$p> is a paragraph, the two instructions below are
-equivalent, knowing that the namespace prefix of a paragraph is C<'text'>:
+equivalent, knowing that the name space prefix of a paragraph is C<'text'>:
 
         $style = $p->get_attribute('text:style-name');
         $style = $p->get_attribute('style name');
@@ -319,7 +319,7 @@ the full XML names of the attributes.
 
 =head3  get_tag
 
-Returns the XML tag of the element with its namespace prefix.
+Returns the XML tag of the element with its name space prefix.
 
 =head2  get_style
 
@@ -335,7 +335,7 @@ about character sets handling.
 
 Returns the text contents of the element as a string. By default this method is
 not recursive (i.e. it just returns the own text of the element, not the text
-belonging to children and descendant elements). Such behaviour is not convenient
+belonging to children and descendant elements). Such behavior is not convenient
 for every possible use case (for example, the text of a paragraph may be partly
 or entirely split among several low level text containers, while a typical
 end-user regards this text as a flat string). So, if the optional C<recursive>
@@ -365,7 +365,7 @@ if it didn't exist. If the provided value is C<undef>, the attribute is
 deleted (if it didn't exist, nothing is done). The attribute name may be
 specified according to the same rules as with C<get_attribute>.
 
-About the character set of the input valules, the same rules as with any text
+About the character set of the input values, the same rules as with any text
 input apply; see the character set handling section in L<ODF::lpOD::Common>.
 
 =head3  set_attributes(attr_hash_ref)
@@ -411,7 +411,31 @@ section in L<ODF::lpOD::Common> if you get troubles about text encoding.
 
 If C<set_text> is called with an empty string, its effect is the same as
 C<clear>.
-    
+
+=head1  Custom element classes
+
+The C<ODF::lpOD::Element> package provides a C<associate_tag> class method
+allowing developers to create custom subclasses and associate them to
+particular elements. The code example below defines C<CustomParagraph> as a
+subclass of C<odf_pragraph> (introduced in L<ODF::lpOD::TextElement>) and
+specifies that every C<text:p> XML element must be mapped to this new
+class instead of C<ODF::lpOD::Paragraph>:
+
+        package CustomParagraph;
+        use ODF::lpOD;
+        use base 'ODF::lpOD::Paragraph';
+        __PACKAGE_->associate_tag('text:p');
+        
+        sub custom_method {
+                #...
+        }
+        
+        1;
+
+This extensibility mechanism must be used very cautiously if the specified tag
+is already associated with a lpOD class, knowing that a wrongly overriden
+method could produce destructive side effects.
+
 =head1	COPYRIGHT & LICENSE
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.

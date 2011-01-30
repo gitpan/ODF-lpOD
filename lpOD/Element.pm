@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '1.001';
-use constant PACKAGE_DATE => '2010-12-30T11:19:16';
+our     $VERSION        = '1.002';
+use constant PACKAGE_DATE => '2011-01-30T18:19:31';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -80,6 +80,14 @@ our %CLASS    =
         'style:footer-style'            => odf_page_end_style,
         'text:table-of-content'         => odf_toc
         );
+
+sub     get_class_map   { %CLASS }
+sub     associate_tag
+        {
+        my $caller = shift;
+        my $class = ref($caller) || $caller;
+        $CLASS{$_} = $class for @_;
+        }
 
 #=== aliases and initialization ==============================================
 
@@ -519,7 +527,7 @@ sub     ro
         my $ro          = shift;
         unless (defined $ro)
                 {
-                return $self->att('#lpod:ro');
+                return $self->att('#lpod:ro') // FALSE;
                 }
         elsif (is_true($ro))
                 {
@@ -855,6 +863,12 @@ sub	get_table
                 $self->get_table_by_name($arg, @_);
 	}
 
+sub	get_parent_table
+	{
+	my $self	= shift;
+	return $self->parent('table:table');
+	}
+
 sub     get_tables
         {
         my $self        = shift;
@@ -1122,7 +1136,7 @@ sub     get_paragraph_by_bookmark
         my $self        = shift;
         my $name        = shift;
         my %opt         = @_;
-        $opt{tag} = 'text:p';
+        $opt{tag} = qr'text:(p|h)';
         return $self->get_element_by_bookmark($name, %opt);
         }
 
@@ -1287,6 +1301,12 @@ sub     get_sections
         return $self->get_elements('text:section', @_);
         }
 
+sub	get_parent_section
+	{
+	my $self	= shift;
+	return $self->parent('text:section');
+	}
+
 #--- frame & draw page retrieval ---------------------------------------------
 
 sub     get_shape
@@ -1343,6 +1363,12 @@ sub     get_frame
         {
         my $self = shift; return $self->get_shape('frame', @_);
         }
+
+sub	get_parent_frame
+	{
+	my $self	= shift;
+	return $self->parent('draw:frame');
+	}
 
 sub     get_frames
         {

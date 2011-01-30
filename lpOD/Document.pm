@@ -1,6 +1,6 @@
 # Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
 #
-# Authors: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
+# Author: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
 #
 # This file is part of lpOD (see: http://lpod-project.org).
 # lpOD is free software; you can redistribute it and/or modify it under
@@ -27,12 +27,13 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '1.001';
-use     constant PACKAGE_DATE => '2010-12-31T16:47:59';
+our     $VERSION    = '1.002';
+use     constant PACKAGE_DATE => '2011-01-27T13:52:18';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN   {
+        *forget         = *DESTROY;
         *container      = *get_container;
         *add_part       = *add_file;
         }
@@ -84,8 +85,6 @@ sub     _create
 
 #--- generic constructor & destructor ----------------------------------------
 
-our $COUNT      = 0;
-
 sub     new
         {
         my $class       = shift;
@@ -122,13 +121,21 @@ sub     new
                 $self->{container} = ODF::lpOD::Container->new
                                 (uri => $self->{uri}) or return undef;
                 }
-        $COUNT++;
         return $self;
         }
 
 sub     DESTROY
         {
-        $COUNT--;
+        my $self        = shift;
+        foreach my $part_name ($self->loaded_xmlparts)
+                {
+                next unless $part_name && $self->{$part_name};
+                $self->{$part_name}->forget;
+                delete $self->{$part_name};
+                }
+        delete $self->{xmlparts};
+        $self->{container} && $self->{container}->DESTROY;
+        $self = {};
         }
 
 #--- XML part detection ------------------------------------------------------
@@ -739,7 +746,7 @@ sub     substitute_styles
                 $count += $part->substitute_styles($source, %opt);
                 }
 
-        $source->DESTROY unless ref $from;
+        $source->forget unless ref $from;
         return $count;
         }
 
@@ -904,14 +911,15 @@ sub	set_font_declaration
 
 #=============================================================================
 package ODF::lpOD::Container;
-our	$VERSION	= '1.001';
-use constant PACKAGE_DATE => '2010-12-26T19:56:07';
+our	$VERSION	= '1.002';
+use constant PACKAGE_DATE => '2011-01-27T13:57:32';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use Archive::Zip        1.30    qw ( :DEFAULT :CONSTANTS :ERROR_CODES );
 #=============================================================================
 
 BEGIN   {
+        *forget                 = *DESTROY;
         *get_parts              = *parts;
         *add_part               = *add_file;
         }
@@ -967,9 +975,7 @@ sub     create
         return ODF::lpOD::Container->new(type => shift);
         }
 
-#=== undocumented part =======================================================
-our     $COUNT  = 0;
-#-----------------------------------------------------------------------------
+#=============================================================================
 
 sub     new
         {
@@ -1031,7 +1037,6 @@ sub     new
 
         $self->{zip} = $zip;
         bless $self, $class;
-        $COUNT++;
         return $self;
         }
 
@@ -1042,8 +1047,6 @@ sub     DESTROY
         my $self        = shift;
         undef $self->{zip};
         $self = {};
-        $COUNT--;
-        return TRUE;
         }
 
 #-----------------------------------------------------------------------------
@@ -1137,15 +1140,7 @@ sub     raw_del_part
         return TRUE;
         }
 
-#=== documented methods ======================================================
-
-sub     clone
-        {
-        my $self        = shift;
-        return not_implemented($self, 'clone');
-        }
-
-#-----------------------------------------------------------------------------
+#=============================================================================
 
 sub     set_part
         {
@@ -1296,12 +1291,13 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-30T08:55:13';
+our     $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-01-27T13:49:00';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN   {
+        *forget                 = *DESTROY;
         *get_container          = *container;
         *get_document           = *document;
         *root                   = *get_root;
@@ -1363,10 +1359,7 @@ sub     get
                 );
         }
 
-#=== private part ============================================================
-
-our $COUNT              = 0;
-
+#=============================================================================
 #--- constructor and associated utilities ------------------------------------
 
 sub     new
@@ -1409,8 +1402,6 @@ sub     new
                         return FALSE;
                         }
                 }
-
-        $COUNT++;
         return $self;
         }
 
@@ -1466,13 +1457,13 @@ sub     DESTROY
         my $self        = shift;
         $self->{context} &&
                 $self->{context}->del_att($ODF::lpOD::Common::LPOD_PART);
+        $self->{context} && $self->{context}->delete;
         delete $self->{context};
         $self->{twig} && $self->{twig}->dispose;
         delete $self->{twig};
         delete $self->{container};
         delete $self->{part};
         $self = {};
-        $COUNT--;
         }
 
 #--- basic individual node selection -----------------------------------------
@@ -1760,7 +1751,7 @@ sub	substitute_styles
                         ($source, '//office:font-face-decls');
                 }
 
-        $source->DESTROY unless ref $from;
+        $source->forget unless ref $from;
         return $count;
 	}
 

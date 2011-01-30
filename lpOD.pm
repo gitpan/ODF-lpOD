@@ -1,6 +1,6 @@
 # Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
 #
-# Authors: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
+# Author: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
 #
 # This file is part of lpOD (see: http://lpod-project.org).
 # lpOD is free software; you can redistribute it and/or modify it under
@@ -27,8 +27,8 @@ use strict;
 #       The main module for the lpOD Project
 #-----------------------------------------------------------------------------
 package ODF::lpOD;
-our $VERSION                    =       "1.100";
-use constant PACKAGE_DATE       =>      "2011-01-02T15:26:50";
+our $VERSION                    =       "1.105";
+use constant PACKAGE_DATE       =>      "2011-01-30T18:48:43";
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Document;

@@ -99,8 +99,8 @@ document structure. Right contexts are, for example, the document body (in a
 spreadsheet or text document), a section (in a text document) or a table cell
 (knowing that the ODF standard allows nested tables).>
 
-The style of a table may be retrieved at any time using the generic
-C<get_style> and C<set_style> accessors.
+The style of a table may be retrieved or changed at any time using the generic
+C<get_style()> and C<set_style()> accessors.
 
 A table may be retrieved in a document according to its unique name using
 the context-based C<get_table_by_name> with the name as argument. It may
@@ -116,6 +116,21 @@ In addition, it's possible to retrieve a table according to its content,
 through C<get_table_by_content>; this method returns the first table (in
 the order of the document) whose text content matches the given argument,
 which is regarded as a regular expression.
+
+In addition, an application can get all the tables of a given context using
+the C<get_tables()> method, without argument.
+
+An application may retrieve a table from any element that belong to it, thanks
+to the C<get_parent_table()> method. This method returns C<undef> if the
+calling element is not in a table. Knowing that a paragraph may be included
+in a table cell and that a table cell indirectly belongs to a table, the
+following sequence selects a paragraph matching a given expression and, if the
+paragraph belongs to a table, displays the table name:
+
+    $p = $context->get_paragraph(content => "xyz");
+    die "Content not found\n" unless $p;
+    $t = $p->get_parent_table;
+    say $t ? $t->get_name : "Not in a table";
 
 =head1  Table content retrieval
 
@@ -152,7 +167,7 @@ ODF element.
 
 The full set of row and column objects may be selected using the table-based
 C<get_rows()> and C<get_columns()> methods. By default these methods
-return repectively the full list of rows or columns. They can be restricted to
+return respectively the full list of rows or columns. They can be restricted to
 a specified range of rows or columns. The restriction may be expressed through
 two numeric, zero-based arguments indicating the positions of the first and the
 last item of the range. Alternatively, the range may be specified using a more
@@ -181,6 +196,34 @@ previous example:
 
         $r = $t->get_row(1);
         $c = $r->get_cell(1);
+
+A column-based C<get_cell()> method is provided, too, but it's much less
+efficient. In addition, the column-based C<get_cell()> may fail with a
+warning when used in I<read optimize> mode (see below).
+
+A row set may be selected according to the content of a specified column,
+thanks to C<get_rows_by_index()>. The following example selects all the rows
+(if any) where the 'C' cell (i.e. the cell at the 3rd position) contains
+"XYZ":
+
+        @rows = $table->get_rows_by_index(C => "XYZ");
+
+Note that this method allows an alternative syntax; the column may be
+specified by its numeric (zero-based) position:
+
+        @rows = $table->get_rows_by_index(2, "XYZ");
+
+The first argument (or the key in hash notation) specifies the "index" (i.e.
+the column that must match a given condition) while the second argument is
+the search value. The result set is selected according to a smart match.
+
+Alternatively, C<get_row_by_index()> returns the first matching row, like
+C<get_rows_by_index()> in scalar context.
+
+Remember that there is no real index in a spreadsheet table; this method
+mimics the use of an arbitrary column as the "key" to select a data set,
+but the underlying mechanism is not a database engine; the rows are scanned
+sequentially, so take care of possible performance issues with large tables.
 
 =head1  Cell range selection
 
@@ -222,6 +265,9 @@ cells of the ODF table (not copies); the Perl table just maps an ODF table
 area, and any cell property change made through this Perl table affects the
 underlying ODF cell.
 
+A column-based version of C<get_cells()> is available, too, but it should be
+avoided with large tables, and it may explicitly fail in C<read optimize> mode.
+
 =head1  Row and column customization
 
 The objects returned by C<get_row> and C<get_column> can be customized
@@ -244,7 +290,9 @@ are C<'visible'>, C<'collapse'> and C<'filter'>.
 
 The style may be get or set using C<get_style> or C<set_style>.
 
-=head1  Table expansion
+=head1  Table expansion and shrinking
+
+=head2  Row and column insertion
 
 A table may be expanded vertically and horizontally, using its C<add_row> and
 C<add_column> methods.
@@ -266,29 +314,85 @@ result (assuming C<$t> is a previously selected or created table):
         $t->add_row(number => 1, after => -1);
         $t->add_row();
 
+The instruction below creates new rows at the beginning of the table:
+
+        $t->add_row(number => 4, before => 0);
+
 The inserted rows are initialized as clones of the row used as the reference
 through the C<after> or C<before> or of the last existing row if the new
 row in appended at the end. So the new rows (and their cells) inherit the same
 style and content as an existing one.
 
+However, a few options allow the applications to override this default
+behavior:
+
+=over
+
+=item
+
+C<empty>, if set to C<TRUE>, specifies that the new cells will be created
+without content and without data type;
+
+=item
+
+C<style> allows to specify a particular style for the new row; if this
+parameter is provided but set to C<undef>, the new rows are created without
+style (i.e. they take neither the style of the cloned row nor any other
+style);
+
+=item
+
+C<cell style> allows to specify a particular style for every cell in the new
+rows; if this parameter is provided but set to C<undef>, the cells of the new
+rows are created without style.
+
+=back
+
 The C<add_column> method does the same thing with columns as C<add_row>
-for rows. However, because the cells belong to rows, it works according to a
-very different logic. C<add_column> inserts new column objects (clones of an
-existing column), then it goes through all the rows and inserts new cells
-(cloning the cell located at the reference position) in each one.
+for rows, and allows the same options. However, because the cells belong to
+rows, it works according to a very different logic. C<add_column> inserts new
+column objects (clones of an existing column), then it goes through all the
+rows and inserts new cells (cloning the cell located at the reference
+position) in each one.
 
 Of course, it's possible to use C<insert_element> in order to insert a row,
 a column or a cell externally created (or copied from an other table from
 another document), provided that the user carefully checks the consistency of
-the resulting contruct. As an example, the following sequence appends a copy
+the resulting construct. As an example, the following sequence appends a copy
 of the first row of C<$t1> after the 5th row of C<$t2>:
 
    $to_be_inserted = $t1->get_row(0)->clone;
    $t2->insert_element($to_be_inserted, after => $t2->get_row(5));
 
 While a table may be expanded vertically using C<add_row>, each row may be
-expanded using the C<odf_row> C<add_cell> method whose parameters and behaviour
+expanded using the C<odf_row> C<add_cell> method whose parameters and behavior
 are the same as the table-based C<add_row> method.
+
+=head2  Row and column deletion
+
+Rows and columns may be individually deleted using C<delete_row()> and
+C<delete_column()>, respectively. The required argument for these methods is
+the row or column position in the table, i.e. the same as C<get_row()> or
+C<get_column()>.
+
+The common C<delete()> method may be used from a previously selected row or
+column object. So, the two snippets below are equivalent:
+
+        # with delete_row
+        $table->delete_row($row_number);
+        
+        # without delete_row
+        $row = $table->get_row($row_number);
+        $row->delete;
+
+Knowing that table cells are contained in row, removing a row automatically
+removes the corresponding cells. The internal logic of C<delete_column()>,
+that removes the cells of the deleted column, behaves as if the cells were
+contained in the columns, too. However, it's possible to delete a column
+without deleting the corresponding cells. To do so, a C<propagate> option must
+be provided and set to C<FALSE>. Such option may put the table in an
+inconsistent state, so it should be used for very special purposes only (such
+as cleaning an inconsistent table).
 
 =head1  Row and column group handling
 
@@ -396,6 +500,14 @@ content elements in a single instruction using C<set_content>; this last cell
 method takes a list of arbitrary ODF elements and appends them (in the given
 order) as the new content.
 
+The generic C<group()> method may be used to grab a list of paragraphs in order
+to move them in the cell. As an example, the following instruction moves all
+the paragraphs containing a given substring in a given cell:
+
+    $table->get_cell("B4")->group(
+        $doc->get_body->get_paragraphs(content => "XYZ")
+        );
+
 The C<get_content> cell method returns all the content elements as a list.
 For the simplest cases, the cell-based C<get_text> method directly returns
 the text content as a flat string, without any structural information and
@@ -419,7 +531,8 @@ with text cells, knowing that the default type is C<'string'>);
 =item
 
 C<value>: the numeric computable value of the cell, used when the C<type> is
-defined;
+defined (for a string cell, C<get_value> and C<set_value> are equivalents
+of C<get_text> and C<set_text>);
 
 =item
 
@@ -429,7 +542,7 @@ USD), used when the C<type> is C<'currency'>;
 =item
 
 C<formula>: a calculation formula whose result is a computable value (the
-grammar and syntax of the formula is application-specific and not ckecked
+grammar and syntax of the formula is application-specific and not checked
 by the lpOD API (it's stored as flat text and not interpreted);
 
 =item
@@ -443,7 +556,72 @@ If C<set_currency> is used with a non-null value, then the C<type> of the
 cell is automatically set to C<'currency'>. If C<set_type> forces a type that
 is not C<'currency'>, then the cell currency is unset.
 
-=head1 Cell span expansion
+=head1  Special cell value extractors
+
+Two access methods are available to directly get the value(s) of one ore more
+specified cells, without explicit access to the cell objects. These accessors
+are not syntactic sugar only; they may allow better performances in some
+situations.
+
+=head2  Individual cell value extraction
+
+An application may directly get the value of a specified cell without previous
+selection of the cell object. As an example, the two following instructions
+produce the same result:
+
+        $value = $table->get_cell($row, $column)->get_value;
+        $value = $table->get_cell_value($row, $column);
+
+=head2  Data set extraction or aggregate computation
+
+Alongside the C<get_cells()> method, a C<get_cell_values()> method allows the
+user to get either value lists or basic value aggregates. This method requires
+a regular cell data type as its first argument, followed by a cell range
+specification according to the same logic as C<get_cells()>. The cells whose
+data type is not the given type are ignored. As an example, the following
+example creates a value list whose content comes from all the C<currency>
+cells of the "E2:G10" range:
+
+        @values = $table->get_cell_values('currency', 'E2:G10');
+
+The allowed types are C<string>, C<date>, C<time>, C<float>, C<currency>, and
+C<boolean>. However, a special C<all> indicator may be used as first argument
+instead of a regular data type; if so, all the non-empty cells are selected.
+
+In the resulting 2D list, C<undef> values occupy the places of non-matching
+or empty cells, in order to provide a consistent mapping of the corresponding
+table area.
+
+C<get_cell_values()> may be used as a I<row> or I<column> method. The most
+efficient one is the row-based version. Both return a one-dimension list,
+without null value (the non-matching and empty cells are ignored). So the
+instruction below produces a list of all the C<currency> amounts found between
+(and including) the 3rd and the 8th cells of the 4th row of a table:
+
+        $row = $table->get_row(3);
+        @amounts = $row->get_cell_values('currency', 'C:H');
+
+C<get_cell_values()>, when used in scalar context, returns a small array ref
+whose item 0 is the number of non-empty cells matching the given type in the
+range, and whose the following items depend on the data type. The two
+following positions are the min and the max values for every type but
+C<boolean>; for booleans, they respectively contain the number of true values
+and the number of false values. For the C<string> type, the min and the max
+are selected by default according to the standard Perl C<cmp> string
+comparison function (that is not always convenient for international character
+sets), but the user may provide a custom function (whose external behavior
+must comply with C<cmp>, i.e. whose possible results are -1, 0, 1). An
+additional item, containing the arithmetic sum, is provided at the last
+position for the C<float>, C<currency> and C<percentage> types only. As an
+example, the following code displays the count, the min, the max and the sum
+of the C<float> cells in the "E2:G10" range:
+
+        $r = $table->get_cell_values('float', 'E2:G10');
+        say "I found $r->[0] values";
+        say "...from $r->[1] to $r->[2]";
+        say "...and the grand total is $r->[3]";
+
+=head1  Cell span expansion
 
 A cell may be expanded in so it covers one or more adjacent columns and/or rows.
 The cell-based C<set_span()> method allows the user to control this expansion.
@@ -511,6 +689,30 @@ words, when a cell belongs to the intersection of a row group and a column
 group, it may be accessed faster from the table or the row group than from the
 column group.
 
+=head2  Selecting cell values instead of cells
+
+Each time an application needs to get cells in order to extract their values
+without update, the special C<get_cell_value()> and C<get_cell_values()>
+methods should be preferred.
+
+As an example, the two following instructions produce the same result but the
+second one is more efficient in a large table:
+
+        $value = $table->get_cell($row, $column)->get_value;
+        $value = $table->get_cell_value($row, $column);
+
+Similarly, the two following snippets produce the same result set but the
+second one is more efficient (and not only code-saving) than the first
+one in a large spreadsheet:
+
+        # first form
+        @values = ();
+        push @values, scalar $_->get_value
+                for $row->get_cells($start, $end);
+        
+        # second form
+        @values = $row->get_cell_values($start, $end);
+
 =head2  Mapping ODF tables with Perl lists
 
 Thanks to C<get_cells()>, you can easily associate a Perl table to a selected
@@ -520,7 +722,7 @@ a 2D Perl list that maps the "B4:Z50" area in a given table:
         my @cells = $table->get_cells("B4:Z50");
 
 While C<get_cells()> is a costly method, it provides an array of pre-selected
-cells. Beware that C<get_cells()> return the cells themselves, not copies, so,
+cells. Beware that C<get_cells()> returns the cells themselves, not copies, so,
 after the instruction above, C<$cells[0][0]> is the "B4" cell of the ODF table,
 while C<$cells[-1][-1]> is the "Z50" cell, and so on. As a consequence, the
 2 instructions below are functionally equivalent, but the second one in much
@@ -529,14 +731,14 @@ faster because there is no need to look for the cell in the XML data structure:
         $text = $table->get_cell("C5")->get_text;
         $text = $cells[1][1]->get_text;
 
-Using such a mapping doesn't significanty improve the overall performances,
+Using such a mapping doesn't significantly improve the overall performances,
 but it allows the applications to execute the slow job once for all, then
 provide a good interactivity. However, be careful about very large areas:
-using C<get_cells()> to load hundreds of thousands of cells may be practically
-too slow to be practical. In addition, the mapping is no longer accurate
-as soon as the structure of the underlying table is changed due to row/column
-insertions or deletions. For read-only access, have a look at the "read
-optimized" option (introduced below) that could help.
+using C<get_cells()> to load hundreds of thousands of cells is too slow to be
+practical. In addition, the mapping is no longer accurate as soon as the
+structure of the underlying table is changed due to row/column insertions or
+deletions. For read-only access, have a look at the "read optimized" option
+(introduced below) that could help.
 
 =head2  Working area limitation
 
@@ -577,7 +779,7 @@ or reduced at will.
 The working area restriction may be removed using C<set_working_area()>
 without argument.
 
-=head2  Read-only declaration
+=head2  Read-optimization
 
 As soon as an object is selected using any official table component selector
 (such as C<get_cell()>, C<get_row()>, and so on), lpOD acts by default as if
@@ -600,8 +802,12 @@ unpredictable results as soon as you make updates in read optimized mode.
 This optimization option is useful for large table area scans, particularly
 with very sparse tables (i.e. tables where significant cells are separated
 by large empty areas). On the other hand, it's not efficient, and at worst may
-increase the response time, for individual access to a cell. So don't use it
-without testing.
+increase the response time, for individual access to a cell. In addition, it's
+completely useless with small tables as well as with I<dense> tables (i.e.
+tables without large empty areas and without large sequences of identical
+objects). So don't use it without testing. In some cases, the read-optimize
+mode inhibits the column-based cell retrieval methods, while it may improve
+the response times of table- and row-based retrieval methods.
 
 Note that you can switch this mode off and restore the default behavior at
 any time. You just have to recall C<read_optimize()> with C<FALSE> as argument.
@@ -616,10 +822,18 @@ However, there is a possible trap, illustrated by the next (wrong) example:
         $cell->set_value(1234);
 
 In this sequence, we selected a cell while the table was in "read optimized"
-mode, then we cancelled this mode and executed an update. The result is not
-predictable (it will be sometimes right, sometimes wrong). The rule is: never
-update an object selected in read optimized mode. Before any update, we must
-select the object in normal mode.
+mode, then we canceled this mode and executed an update. The result is not
+predictable (it will be sometimes right, sometimes wrong). The general
+principle is: avoid updating an object selected in read optimized mode.
+However, there is an important exception: a cell that was selected in read-
+optimized mode may be safely updated if (and only if) its differs from the
+two neighbour cells and if it's belong to a row that differs (by at least one
+cell) from the two neighbour rows. These conditions are almost always met with
+tables whose one of the columns contains identifiers and each of the other
+columns displays data of various types and formats.
+
+On the other hand, the read optimize flag is useless with methods that return
+values and not objects (i.e. C<get_cell_value>, C<get_cell_values>).
 
 =head1	COPYRIGHT & LICENSE
 

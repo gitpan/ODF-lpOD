@@ -46,7 +46,7 @@ instruction below returns C<TRUE> and the second one returns C<FALSE>:
 =head3  odf_value(value, type)
 
 Converts the given value according to the given type (which must be a regular
-ODF datatype), and checks it if the value is already in ODF format.
+ODF data type), and checks it if the value is already in ODF format.
 
 The following example formats the current system date so the result may be
 used as the value of a date field in a document:
@@ -56,7 +56,7 @@ used as the value of a date field in a document:
 This function returns C<undef> if the given value is not compatible with the
 given type.
 
-I<Note: this function doesn't work for any type in the present developement
+I<Note: this function doesn't work for any type in the present development
 version.>
 
 =head3  iso_date(time)
@@ -112,7 +112,7 @@ type is not supported by C<Image::Size>.
 
 The return value (if defined) is an array ref of 2 strings (the width and the
 height), each one containing a numeric value and terminated by "pt". This array
-ref may be directly used as the value of any size-related parameter of argument
+ref may be directly used as the value of any size-related parameter or argument
 in the lpOD API.
 
 =head1  General configuration
@@ -122,7 +122,7 @@ some configuration parameters.
 
 =head3  Installation information
 
-The C<info> method returns some informations about the current lpOD
+The C<info> method returns some information about the current lpOD
 installation, as a string in scalar context, or as a hash in array context.
 
 Example:
@@ -130,7 +130,7 @@ Example:
         say scalar lpod->info;
 
 The C<installation_path> method returns the path of the C<ODF::lpOD> module
-installation in the user's filesystem.
+installation in the user's file system.
 
 =head3  Color name translation
 

@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# lpOD Perl - Packaging & installation - 2010-12-29T21:57:14
+# lpOD Perl - Packaging & installation - 2011-01-05T08:38:47
 #-----------------------------------------------------------------------------
 use 5.010_000;
 use strict;
@@ -32,6 +32,7 @@ GetOptions
 	'date=s'	=> \(my $dist_date	= default_date),
 	'author=s'	=> \(my $author		= default_author),
 	'build'		=> \(my $build		= undef),
+	'prompt!'	=> \(my $prompt		= 1)
 	);
 
 #-----------------------------------------------------------------------------
@@ -40,14 +41,25 @@ if ($build)
 	{
 	require File::Copy;
 
-	my $ok = "N";
-	do	{
-		$version	= prompt("Version number ?", $version);
-		$dist_date	= prompt("Distribution date ?", $dist_date);
-		$author		= prompt("Distribution author ?", $author);
-		$ok		= prompt("OK ? (Y/N)", "Y");
+	if ($prompt)
+		{
+		my $ok = "N";
+		do  {
+		    $version	= prompt("Version number ?", $version);
+		    $dist_date	= prompt("Build date ?", $dist_date);
+		    $author	= prompt("Packager ?", $author);
+		    $ok		= prompt("OK ? (Y/N)", "Y");
+		    }
+		    until (uc($ok) eq "Y")
 		}
-		until (uc($ok) eq "Y");
+	else
+		{
+		say for (
+			"Version number : $version",
+			"Build date : $dist_date",
+			"Packager : $author"
+			);
+		}
 
 	File::Copy::copy("lpOD.pm", "lpOD.bak");
 	open    LPOD, 	"<", "lpOD.pm";
@@ -75,6 +87,7 @@ WriteMakefile
 	(
     	'NAME'		=> 'ODF::lpOD',
 	'VERSION'	=> $version,
+	'ABSTRACT_FROM'	=> 'lpOD.pod',
     	'AUTHOR'	=> $author,
 	'LICENSE'	=> 'GPL',
     	'PREREQ_PM'	=>

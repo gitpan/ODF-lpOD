@@ -1,9 +1,17 @@
+ODF::lpOD
+
+This module is an Open Document management interface. It allows the users to
+create or transform office documents, or to extract data from them. It can
+handle documents which comply with the Open Document Format international
+standard (ODF). It may handle text documents (ODT), spreadsheet documents
+(ODS), as well as presentation (ODP) or drawing documents (ODG).
+
+ODF::lpOD is the Perl implementation of the lpOD Project.
+
 lpOD Project -- Languages & Platforms OpenDocument
 
-http://lpod-project.org/
+http://lpod-project.org
 
 Architect: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
 
 Coordinator: Luis Belmar-Letelier <luis@itaapy.com>
-
-This is the Perl implementation

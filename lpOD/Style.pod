@@ -6,7 +6,7 @@ ODF::lpOD::Style - Styles management
 
 A style controls the formatting and/or layout properties of a family of
 content objects. It's identified by its own name and its family.
-In the lpOD API, the family has a larger acception than in the OpenDocument
+In the lpOD API, the family has a larger acceptance than in the OpenDocument
 specification. In the underlying XML, the family is indicated sometimes
 by the value of an explicit C<style:family> attribute, and sometimes by the
 XML tag of the style element itself.
@@ -43,7 +43,7 @@ of the same family, through a C<clone> option, knowing that C<clone> and
 C<parent> are mutually exclusive options. The code example below produces two
 text styles whose properties are the same as "MyTextStyleName", but the first
 one will be affected by later changes of the base style while the second one
-is independant:
+is independent:
 
    odf_create_style('text', name => 'NewStyle1', parent => 'MyTextStyleName');
    $proto = doc->get_style('text', 'MyTextStyleName');
@@ -113,7 +113,7 @@ automatically replaced:
    $doc2->insert_style($ps, default => TRUE);
 
 While a style is identified by name and family, it owns one or more sets of
-properties. A style property is a particular layout or formatting behaviour.
+properties. A style property is a particular layout or formatting behavior.
 The API provides a generic C<set_properties()> method which allows the user to
 set these properties, while C<get_properties()> returns the existing properties
 as an associative array.
@@ -128,7 +128,7 @@ C<get_properties()>.
 
 Some styles allow the applications to specify a I<background>. Such a background
 is sometimes characterized by the RGB, 3-bytes hexadecimal code of an arbitrary
-color, with a leading "#". However some styles allow the use of backround image
+color, with a leading "#". However some styles allow the use of background image
 instead of or in combination with a color. In order to deal with these
 possibilities, a C<set_background()> is provided; this method (which works
 with some style objects only) is used with a C<color> and/or a C<url> named
@@ -344,7 +344,7 @@ properties as a regular text style. The rules are defined by the §15.4 of the
 OASIS 1.1 ODF specification, and the API provides the same property shortcuts as
 for a text style creation. Practically, this text part defines the default text
 style that apply to the text content of the paragraph; any property in this part
-may be overriden as soon as one or more text spans with explicit styles are
+may be overridden as soon as one or more text spans with explicit styles are
 defined inside the paragraphs.
 
 The creation of a full-featured paragraph style takes two steps. The first one
@@ -475,7 +475,7 @@ legal values are C<page>, C<column>, C<auto>.
 
 =back
 
-A pararaph style may have a background color or image.
+A paragraph style may have a background color or image.
 
 =head1  Font declarations
 
@@ -535,7 +535,7 @@ or cloned as any other C<odf_element>.
 =head1  List family
 
 A list style is a set of styles that control the formatting properties of
-the list items at every hierachical level. As a consequence, a list style
+the list items at every hierarchical level. As a consequence, a list style
 is a named container including a particular style definition for each level;
 in other words a list style is a set of list level styles.
 
@@ -570,7 +570,7 @@ content is an external image.
 A C<number> list level type means that any affected list item will be marked
 with a leading computed number such as "1", "i", "(a)", or any auto-
 incremented value, whose formatting will be controlled according to other
-list level style properties (or to the default behaviour of the viewer for
+list level style properties (or to the default behavior of the viewer for
 ordered lists). With the C<number> type, its possible to provide C<prefix>
 and/or C<suffix> options, which provide strings to be displayed before and
 after the number. Other optional parameters are:
@@ -624,7 +624,7 @@ C<set_level_style()> parameters. These properties are:
 
 =item
 
-C<space before>: the ident level, i.e. the space before the number for all
+C<space before>: the indent level, i.e. the space before the number for all
 paragraphs at this level;
 
 =item
@@ -781,7 +781,7 @@ According to the example above, the default numbering scheme for level 1
 headings will be "(E)", "(F)", "(G)", and so on.
 
 Attributes and properties which are not explicitly supported through predefined
-parameter names in the present version of the API could always be set hrough
+parameter names in the present version of the API could always be set through
 the element-oriented methods of the level 0 API, knowing that
 C<get_level_style()> returns a regular element.
 
@@ -817,7 +817,7 @@ control the margins of the table separately;
 
 =item
 
-C<align>: to specifiy the table alignment scheme, with C<left>, C<right>,
+C<align>: to specify the table alignment scheme, with C<left>, C<right>,
 C<center>, C<margins> as possible values;
 
 =item
@@ -881,7 +881,7 @@ The C<set_background()> method is allowed (with C<color> or C<uri>).
 A column style is created using C<odf_create_style()> with C<table column> as
 the family. It may be customized using C<set_properties()>.
 
-The most necessary property is C<width>, wich may be an absolute width (i.e.
+The most necessary property is C<width>, which may be an absolute width (i.e.
 a string containing the number and the length unit), a relative length (i.e.
 a string containing a number followed by a star), or both (comma-separated).
 See §15.9.1 in the ODF specification for details about the relative widths.
@@ -919,7 +919,7 @@ A graphic style apply to frames, i.e. to image or text box containers.
 
 It controls the way the content is displayed. Knowing that a frame may
 include text and/or graphics, a graphic style may own B<graphic>, B<paragraph>
-and/or B<text> properties, so its full definition mya require three distinct
+and/or B<text> properties, so its full definition may require three distinct
 areas.
 
 A graphic style may be created through the generic C<odf_create_style()>
@@ -937,8 +937,8 @@ style (see above).
 
 The B<graphic> properties must be provided according to the ODF specification.
 However, knowing that the most part of them belong to the ODF drawing ("draw")
-namespace, the lpOD API automatically regards any property specified without
-namespace prefix as a "draw" property (i.e. the C<draw:blue> color correction
+name space, the lpOD API automatically regards any property specified without
+name space prefix as a "draw" property (i.e. the C<draw:blue> color correction
 property may be wrote C<blue> when used as a C<set_properties()> parameter).
 
 Among the exceptions, the C<wrap> and C<run through> options correspond to
@@ -978,7 +978,7 @@ referred to through page breaks. For example, each time a forced page break is
 inserted, it's possible to specify the master page of the following page. In
 addition, any master page may own a property that tells what should be the
 master page to use after the current page (for example, a "Right page" style
-may de defined in order to ensure that any page using it will be followed by
+may be defined in order to ensure that any page using it will be followed by
 a page that will use a "Left page" style and vice-versa).
 
 Master page objects (and the corresponding I<page layouts>) apply to
@@ -1175,7 +1175,7 @@ a background color or a background image.
 A page layout object may have a header and/or a footer extension, respectively
 set using C<set_header()> and/or C<set_footer()>. These methods, when used
 with a page layout object, allow the applications to extend the page layout in
-order to specify layout informations that control the header and the footer of
+order to specify layout information that control the header and the footer of
 the master page(s) that use the page layout. Of course, the layout properties
 are not the same as the content properties. Knowing that headers and footers
 may have different margins and borders than the page body, C<set_header()> and

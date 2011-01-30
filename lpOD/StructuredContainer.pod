@@ -34,7 +34,7 @@ so these paragraphs are immediately incorporated in the new list header. Note
 that every use of C<set_header()> replaces any existing header by a new one.
 
 Regular list items are created in place (like the optional list header) using
-C<add_item()> wich creates one or more new items and inserts them at a
+C<add_item()> which creates one or more new items and inserts them at a
 position which depends on optional parameters, according to the same kind
 of logic than the table-based C<add_row()> method. Without any argument, a
 single item is appended at end of the list. An optional C<before> named
@@ -127,6 +127,44 @@ pasted thanks to the common C<clone> method.)
 A section may be retrieved using C<get_section()> with the unique name of the
 needed section as argument, while C<get_sections()> returns all the
 sections (if any) of the context.
+
+A section may be retrieved from any element of its direct or indirect content,
+thanks to the C<get_parent_section()> method. This method returns C<undef> if
+the calling element is not included in a section. As an example, the example
+below selects the first paragraph whose text matches a given expression in
+the whole document content, then displays the section name if this paragraph
+belongs to a section:
+
+   $p = $doc->get_body->get_paragraph(content => "xyz")
+      or die "No matching paragraph\n";
+   $section = $p->get_parent_section;
+   say $section ? $section->get_name : "Not in a section";
+
+An existing section may be used as the context for any element retrieval,
+update, creation or deletion. As examples, the following sequence appends a
+new paragraph to a supposedly existing section:
+
+   $section = $context->get_section("My Section");
+   $section->append_element(
+      odf_create_paragraph(text => "Section end")
+      );
+
+Thanks to the C<group()> method, it's possible to move a set of existing
+elements into a section. As an example, the example below grabs all the
+tables of a given document and moves them in a newly created section:
+
+   my $context = $doc->get_body;
+   my $section = $context->append_element(
+      odf_create_section("Tables")
+      );
+   $section->group($context->get_tables);
+
+Note that C<group()> is a generic C<odf_element> method that could be used to
+move anything into anything. However, this method is not recommended with
+elements other than sections, unless the user have a good knowledge of the ODF
+semantics. While a section can host a large variety of content elements, other
+objects have much more restrictive composition rules, and inappropriate
+groupings may result in severe inconsistencies.
 
 =head1  Draw pages
 
@@ -312,7 +350,7 @@ may be later used to insert additional content;
 C<set_image()>, which creates an image element that will cover the whole
 area of the frame (the parameters are the same as with C<odf_create_image()>
 introduced later); alternatively, if C<set_image()> is called with an
-existing ODF image element as argument, this element is incoporated as is
+existing ODF image element as argument, this element is incorporated as is
 without creation; C<set_image()> returns the new (or newly inserted) ODF
 image element.
 
@@ -348,7 +386,7 @@ or external image resource.
 
 If the C<size> parameter is not set, lpOD attempts to set it to the original
 image size if C<Image::Size> is installed in your environment, if the given
-resource is a readable image file in the local filesystem, and if the image
+resource is a readable image file in the local file system, and if the image
 type is supported by C<Image::Size>.
 
 =head1  Drawing shapes
@@ -584,7 +622,7 @@ C<get_name()> and C<set_name()> to get or set the internal unique name;
 =item
 
 C<get_title()> and C<set_title()> to get or change the display TOC title;
-with C<set_title()>, the first argumentis the text of the title, and a
+with C<set_title()>, the first argument is the text of the title, and a
 C<style> named parameter is allowed to specify a paragraph style for the title;
 
 =item

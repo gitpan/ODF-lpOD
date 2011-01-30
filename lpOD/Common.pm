@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.001';
-use constant PACKAGE_DATE       => '2010-12-31T16:10:32';
+our	$VERSION	        = '1.002';
+use constant PACKAGE_DATE       => '2011-01-10T19:33:39';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -201,6 +201,10 @@ use constant
 #--- ODF data types ----------------------------------------------------------
 
 our @DATA_TYPES = qw(string float currency percentage date time boolean);
+
+#--- default string comparison function --------------------------------------
+
+our $COMPARE = sub { shift cmp shift };
 
 #=== common parameters =======================================================
 
@@ -415,20 +419,12 @@ sub     is_odf_datatype
 sub     check_odf_value
         {
         my $value       = shift;
+        return undef unless defined $value;
         my $type        = shift;
         given ($type)
                 {
-                when (undef)
-                        {
-                        $type = 'string'; $value //= "";
-                        }
-                when ('string')
-                        {
-                        $value //= "";
-                        }
                 when (['float', 'currency', 'percentage'])
                         {
-                        $value //= 0;
                         $value = undef unless is_numeric($value);
                         }
                 when ('boolean')
@@ -455,14 +451,6 @@ sub     check_odf_value
                                                 iso_date($num) : undef;
                                 }
                         }
-                when ('time')
-                        {
-                        # check not implemented
-                        }
-                default
-                        {
-                        # unknown type : no translation
-                        }
                 }
         return $value;
         }
@@ -488,10 +476,9 @@ sub     alpha_to_num
         unless ($alpha =~ /^[A-Z]*$/)
                 {
                 return $arg if $alpha =~ /^[0-9\-]*$/;
-                alert "Wrong alpha value $arg: digits not allowed";
+                alert "Wrong alpha value $arg";
                 return undef;
                 }
-
         my @asplit = split('', $alpha);
         my $num = 0;
         foreach my $p (@asplit)
@@ -506,7 +493,16 @@ sub     alpha_to_num
 sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
 	{
 	my $arg	= shift // return undef;
-        $arg = shift if ref($arg) || $arg eq __PACKAGE__;
+        my $ra = ref $arg;
+        if ($ra)
+                {
+                if ($ra eq 'ARRAY')     { return @$arg }
+                else                    { shift }
+                }
+        elsif ($arg eq __PACKAGE__)
+                {
+                shift
+                }
 	return ($arg, @_) unless defined $arg;
 	my $coord = uc $arg;
 	return ($arg, @_) unless $coord =~ /[A-Z]/;
@@ -515,11 +511,17 @@ sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
 	$coord	=~ /(^[A-Z]*)(\d*)/;
 	my $c	= $1;
 	my $r	= $2;
-	return ($arg, @_) unless ($c && $r);
-
-	my $rownum = $r - 1;
-	my $colnum = alpha_to_num($c);
-	return ($rownum, $colnum, @_);
+	return ($arg, @_) unless $c;
+        my $colnum = alpha_to_num($c);
+        if (defined $r and $r gt "")
+                {
+                $r--;
+                return ($r, $colnum, @_);
+                }
+        else
+                {
+                return ($colnum, @_);
+                }
 	}
 
 sub     translate_range
@@ -766,7 +768,8 @@ sub	load_color_map
 	my $filename = shift || (installation_path() . '/data/rgb.txt');
 	unless ( -e $filename && -r $filename )
 		{
-		warn "Color map file non existent or unreadable";
+		warn "Color map file non existent or unreadable"
+                                if $DEBUG;
 		return FALSE;
 		}
 	my $r = open COLORS, "<", $filename;

@@ -5,7 +5,7 @@ ODF::lpOD::Tutorial - A few basic recipes about lpOD
 =head1	DESCRIPTION
 
 This tutorial is intended to provide the user with a basic understanding
-of the lpOD toolset through simple examples that execute various operations
+of the lpOD tool set through simple examples that execute various operations
 in documents. It's not a reference manual; it's just intended to introduce
 the big picture and allow the user to get started and produce something before
 going through the man pages for details. The features described here are only
@@ -28,7 +28,7 @@ C<odf_document> instance through the C<odf_get_document()> constructor with the
 path/filename as the only mandatory argument:
 
         my $doc = odf_get_document("olddoc.odt")
-                or die "Failed to load the document";
+                or die "Failed to load the document\n";
 
 Note that C<odf_get_document()> is a wrapper for the C<get()> method of the
 C<odf_document> class, and that the instruction above could be written as
@@ -36,8 +36,6 @@ shown below:
 
         my $doc = odf_document->get("olddoc.odt")
                 or die "Failed to load the document";
-
-However, the so-called C<uri> must be a path in the local file system.
 
 In a real application, don't forget to check the return value. If something
 goes wrong for any reason (for example, if the specified file is not
@@ -74,7 +72,7 @@ synonym of:
 
 With lpOD, it's often question of I<context>. Almost every operation is
 executed through a method whose calling object is the I<context>. The document
-(from a programmatic point of view) looks like a russian doll; it's the top
+(from a programmatic point of view) looks like a Russian doll; it's the top
 level of a hierarchy of I<contexts>. It contains I<parts>, that are level 2
 contexts. A part contains a main I<element>, so-called I<root>. The I<root> is
 the top of a hierarchy of I<elements>. Every element, including the I<root>,
@@ -156,18 +154,31 @@ empty ODF presentation:
 
         odf_new_document('presentation')->save(target => "demo.odp");
 
+=head2  Leaving a document
+
+When your application no longer needs to do anything with a previously loaded
+or created document, no particular action is required. However, in a process
+that handles multiple successive documents, it's B<strongly recommended> to
+execute an explicit call of an instance destructor, namely the C<forget()>
+method, for each document that is no longer used:
+
+        $doc->forget;
+
+Unless this explicit instruction, you could be faced with significant memory
+leaks.
+
 =head1  Playing with document metadata
 
 An office document owns a set of so-called "metadata". Metadata is "data about
 the document". For the end user, it may be got (and sometimes changed)
-through the "File/Properties" submenu of a typical desktop software. lpOD
+through the "File/Properties" sub menu of a typical desktop software. lpOD
 allows the programmer to select, read or write any piece of metadata.
 
 =head2  Pre-defined metadata
 
 A document may contain some global metadata. The most commonly used ones are
 the I<title>, the I<subject>, the I<description>, the I<creation date>, the
-I<modification date>, the I<creator>, and others. All this data belongs to the
+I<modification date>, the I<creator>, and others. All these data belong to the
 C<META> document part. We can get access to any of them through the C<META>
 context. Note that the C<META> document part is directly usable as the context
 for metadata access, so we don't need to look for a particular I<body> element
@@ -205,7 +216,7 @@ C<set_initial_creator()> that allows the programmer to change the date and
 the author's name of the initial version, that is generally not allowed with
 an interactive graphical editing software.
 
-A piece of metadata whose datatype is I<date> should be locale-neutral; it's
+A piece of metadata whose data type is I<date> should be locale-neutral; it's
 stored according to the ISO-8601 format. It's returned as is by the read
 accessors. However, the write accessors allow the user to provide a numeric
 date (that is automatically converted). In addition, lpOD provides a
@@ -222,7 +233,7 @@ Assuming that C<$meta> is the result of a previous call to C<get_part(META)>,
 an instruction like C<$meta->get_keywords()> returns the full list of existing
 keywords. In scalar context, this list is produced as a single comma-separated
 string. In list context, C<get_keywords()> returns one item by keyword. So the
-following examples exports the keywords as a concatenated string, then in
+following instructions export the keywords as a concatenated string, then in
 separate lines:
 
         say scalar $meta->get_keywords;
@@ -231,7 +242,7 @@ separate lines:
 Thanks to C<check_keyword()>, that returns C<TRUE> if and only if a given
 keyword is present, the following script displays the name of every ODF
 document (i.e. every file whose name is like "*.od?") in the current directory
-that whose metadata includes a keyword provided through the command line:
+whose metadata include a keyword provided through the command line:
 
         foreach my $file (glob "*.od?") {
                 say "$file is OK !" if
@@ -252,7 +263,7 @@ Of course it's possible to add a new keyword:
 
 Besides the standard common document metadata, lpOD allows the user to get or
 set custom, so called I<user defined> metadata, through C<get_user_fields()>
-and C<set_user_fields()>. The user defined metadata looks like a 3-column table
+and C<set_user_fields()>. The user defined metadata look like a 3-column table
 whose properties are I<name>, I<value>, and I<type>.
 
 C<get_user_fields()> returns a list whose each item is 3-element a hash ref
@@ -288,7 +299,7 @@ a list of hash refs with the same structure:
 
 As you can see, the C<type> has not been provided for every field in this last
 example, because the default type is C<string>, that is convenient for our
-"Auhor" and "Organization" fields.
+"Author" and "Organization" fields.
 
 Of course, it's possible to set an individual custom value using
 C<set_user_field()>, with a simpler syntax. This setter requires a field name,
@@ -301,10 +312,10 @@ a value, and optionally a data type (default is C<string>), as shown below:
 =head1  Inserting text
 
 We'll have a look at some basic text component handling. Doing so we'll
-discover some features that are not text-specific and that introduces more
+discover some features that are not text-specific and that introduce more
 general aspects of the lpOD element management logic.
 
-Beware: the present chapter is not excusively about I<text documents>. In
+Beware: the present chapter is not exclusively about I<text documents>. In
 any ODF file, the I<paragraph> is the basic text container. For example, the
 visible text content of any table cell is made of paragraphs, so a typical
 spreadsheet document (that is a set of tables) contains a lot of paragraphs.
@@ -399,7 +410,7 @@ Using an alternative style, the same job could be done like that:
 The C<style> option requires the name of a paragraph style (that is, or will
 be, defined elsewhere). We'll have a look to text styles in another recipe.
 You can create text element without explicit style name as long as the default
-presentation of your favourite viewing/editing software is convenient for you.
+presentation of your favorite viewing/editing software is convenient for you.
 
 Of course it's possible to change the text and/or the style later using
 C<set_text()> and/or C<set_style()>. However these optional parameters allow
@@ -451,7 +462,7 @@ previous example:
         my $p = $context->get_paragraph(position => -1);
         $context->insert_element(
                 odf_create_paragraph(
-                        text    => "We are before the last pararaph",
+                        text    => "We are before the last paragraph",
                         style   => "Standard"
                         ),
                 before  => $p
@@ -497,7 +508,7 @@ through a network in order to reuse it later or in a remote location. Every
 C<odf_element>, including text elements, owns a C<serialize> method that
 returns the full XML description of itself and its whole content. This XML
 export (if stored or piped through any kind of transport service) may be used
-as is as the only argument of a subsequent call C<odf_create_element()>
+later as the only argument of a subsequent call C<odf_create_element()>
 generic element constructor, that rebuilds a new element that is an exact
 replicate of the exported one (unless somebody has modified the XML string
 in the mean time, of course). In the example below, a paragraph XML export is
@@ -506,18 +517,19 @@ process) and inserted as a new element in a document:
 
         # exporting process
         $xml = $p->serialize;
-        open(FH, '>', "paragraph.xml");
+        open(FH, '>:utf8', "paragraph.xml");
         print FH $xml;
         close FH;
         
         # importing process
-        open(FH, '<', "paragraph.xml");
+        open(FH, '<:utf8', "paragraph.xml");
         $xml .= $_ while <$FH>;
         close FH;
         $p = odf_create_element($xml);
 
 After that, the imported element may be attached anywhere using
-C<insert_element()> or C<append_element()>.
+C<insert_element()> or C<append_element()>. (Note that it's strongly
+recommended to handle the XML exports in C<utf8> mode.)
 
 =head2  Inserting text content with headings
 
@@ -568,7 +580,7 @@ In some situations, you could be faced with character encoding troubles when
 importing or exporting text content or attribute values.
 
 Remember that, by default, the character set of your applications is C<utf8>.
-However, for any reason, you may need to put on-utf8 content in documents.
+However, for any reason, you may need to put non-utf8 content in documents.
 For example, if you capture some text from a web page whose character set is
 C<iso-8859-1> and directly push it in a document through a paragraph creation,
 non-ASCII accented letters will be misrepresented. This issue is very easy to
@@ -591,7 +603,7 @@ input or output character set.
 Any existing text element may be looked for and selected according to various
 criteria.
 
-The most straightfoward is the position in the document sequence. The
+The most straightforward is the position in the document sequence. The
 instruction hereafter retrieves the 3rd paragraph of the document:
 
         $p = $doc->get_body->get_paragraph(position => 2);
@@ -606,7 +618,7 @@ very last paragraph of the document:
 Our search context is always, up to now, the whole document body. Remember that
 this context may be anything more restrictive (such as a particular section, if
 any). Generally speaking, the search context may be any element that can
-directly or indirectly contain text paragraphs. W'll see some of these high
+directly or indirectly contain text paragraphs. We'll see some of these high
 level structured containers later.
 
 A paragraph may be searched according to other criteria than its position in
@@ -910,7 +922,7 @@ style is "Standard":
 
 C<set_span()> requires a C<style> parameter (that should be the name of a text
 style, existing or to be created). In this example the C<filter> option (whose
-value may be a string or a regex) specifies that the given style must apply to
+value may be a string or a regexp) specifies that the given style must apply to
 any text span that matches. But other search and positioning options are
 allowed; see the "Text spans" section in L<ODF::lpOD::TextElement> for details.
 
@@ -1199,12 +1211,12 @@ created like that:
 If this style (after registration in a document through C<insert_style()>) is
 used by a list, all the level 1 items will be numbered according to a sequence
 like "1. ", "2. ", "3. ", and so on. In addition, we can provide
-C<set_level_style()> with a C<style> option whose value should ne the name
+C<set_level_style()> with a C<style> option whose value should be the name
 of a I<text> style (like "BigText", to reuse the text style that we created
 in a previous section). This option allows us to control the character layout
 of the item label (font, size, etc).
 
-On the other hand, if we create a level 2 sublist (i.e. a new list contained in
+On the other hand, if we create a level 2 sub-list (i.e. a new list contained in
 an item of the main list), it will not be affected because we defined a level 1
 style only. But it's not too late to define a level 2 item style linked to the
 same "MyNumberedStyle" list style. The following instruction specifies a level
@@ -1220,7 +1232,7 @@ same "MyNumberedStyle" list style. The following instruction specifies a level
 
 The C<prefix> and C<suffix> options allow us to specify characters strings
 (including multiple spaces) before and after the item label. However, we can
-control more precisely the label spacing and aligment through extended list
+control more precisely the label spacing and alignment through extended list
 level style I<properties> which can be set using the level style based
 C<set_properties()> method. The example below defines a list level style with
 the same options as above and additional properties:
@@ -1312,7 +1324,7 @@ set of styles: the table itself has a style, and every individual column, row
 and cell may have its own style. In addition, the text content of any cell is
 made of one or more paragraphs, each one associated with a paragraph style. As
 a consequence, the layout of a single table may depend on dozens of styles.
-If you need to create tables, we encourage you to use the GUI of your favourite
+If you need to create tables, we encourage you to use the GUI of your favorite
 office software in order to create template documents containing tables with
 the appropriate layout, then to reuse these tables instead of consuming the
 most part of your programming time in cosmetic stuff.
@@ -1354,7 +1366,7 @@ The new columns/rows are initialized with the same content and layout as the
 previous last column/row (you can change them later).
 
 We can insert columns or rows somewhere within the table, not only at the
-end. To do so, we just have to specify a position. The next insctruction
+end. To do so, we just have to specify a position. The next instruction
 inserts 4 new rows I<before> the third existing row (knowing that the number
 of the first row is zero):
 
@@ -1387,7 +1399,9 @@ table (or sheet) of the document, while the second on selects the last table:
         $t1 = $doc->get_body->get_table_by_position(0);
         $t2 = $doc->get_body->get_table_by_position(-1);
 
-Not that C<get_table()> is available as a shortcut 
+Note that C<get_table()> is available as a shortcut for
+C<get_table_by_name()>.
+
 In the worst situations, you could retrieve a table according to a particular
 content:
 
@@ -1411,6 +1425,10 @@ The C<get_size()> method returns the number of rows and the number of columns:
         ($h, $w) = $context->get_table("MyTable")->get_size;
         say "This table contains $h row and $w columns";
 
+Note that there is no such method as C<set_size()>; a table may be expanded
+or reduced by explicit row or column insertion or deletion, using methods
+introduced later.
+
 While C<get_name()> returns the present name of the table, C<set_name()>
 changes it:
 
@@ -1426,7 +1444,12 @@ spreadsheet ("*.ods") document in the current directory:
                         $table->set_protected(TRUE);
                         }
                 $doc->save;
+                $doc->forget;
                 }
+
+Note that in this example (that could have to run against a lot of documents)
+an explicit C<forget()> destructor call it issued for each processed instance
+in order to avoid memory leaks.
 
 If a table is locked with a lost protection key, you can easily remove such
 protection:
@@ -1448,13 +1471,14 @@ office software (but, of course, you can unlock it using lpOD or any tool that
 can directly update ODF files).
 
 Note that with OpenOffice.org such protection works for spreadsheets but
-not for tables included in text documents.
+not for tables included in text documents. And, of course, lpOD can't get
+any access to contents stored with a real cryptographic protection.
 
 =head2  Individual cell access, read and update
 
 A table, once selected, allows individual cell selection by coordinates thanks
 to C<get_cell()>. This method allows numeric or alphanumeric representation of
-the coordinates, so the two instuctions below are equivalent whatever the
+the coordinates, so the two instructions below are equivalent whatever the
 document type (i.e. the alphanumeric, "spreadsheet-like" notation works with
 tables that belong, for example, to text documents as well):
 
@@ -1474,8 +1498,8 @@ method allowing to get its content as flat text:
 
         say "The cell contains " . $table->get_cell("B4")->get_text;
 
-We could can get or set the text content of a table cell using C<get_text()>
-or C<set_text()>. But doing so we just use the cell as a text container, while
+We can get or set the text content of a table cell using C<get_text()> or
+C<set_text()>. But doing so we just use the cell as a text container, while
 it may be a typed data container. If, for example, the data type of a given
 cell is C<float> or C<currency>, the computable, internally stored value of
 the cell may differ from its text representation. This value, if any, may be
@@ -1502,7 +1526,7 @@ document:
             }
         say "Found $amount in $count numeric cells";
 
-This introductive tutorial is not focused on performances. However some code
+This introductory tutorial is not focused on performances. However some code
 optimization is not useless with large spreadsheets. In the last examples,
 we get each individual cell from the context of a table, with 2D coordinates.
 it's interesting to know that cells are contained in rows, while rows are
@@ -1532,7 +1556,7 @@ the last example as shown:
 
 We added loop labels for clarity. In addition, we appended C<or last> after
 C<get_cell($j)> in the inner loop, in order to avoid a crash and directly go
-th the next table row if there is no cell at the current C<$j> position. Why
+to the next table row if there is no cell at the current C<$j> position. Why
 such a precaution, knowing that we can't iterate beyond C<$w>, that is the
 table width ? Practically, C<get_size()> returns the number of rows and the
 number of cells of the I<largest row> and in some (dirty and hopefully
@@ -1543,6 +1567,107 @@ If you are faced with performance issues, look at the appropriate section
 in L<ODF::lpOD::Table>. But please don't regard lpOD as a VLDB management
 system, and don't hope an instant response when you launch a full scan of
 a table including millions of cells.
+
+In many situations, the user may want to get the value of an individual cells
+or the values of cell ranges, without updating the cells. As long as there is
+no update, the application doesn't need to get the cell object; it just need
+the value, that may be extracted using C<get_cell_value()>. So, the two
+instructions below produce the same result, but the second one may be more
+efficient in a very large table:
+
+        $value = $table->get_cell($i, $j)->get_value;
+        $value = $table->get_cell_value($i, $j);
+
+This method is available with tables, columns and rows; its more efficient
+version is row-based.
+
+The example below shows the way to extract the value of the bottom right cell
+of the first table in every text document of a given file list:
+
+        my $sum = 0;
+        my $count = 0;
+        foreach my $filename (glob('*.odt')) {
+                my $doc = odf_get_document($filename);
+                $sum += $doc    ->get_body
+                                ->get_table_by_position(0)
+                                ->get_cell_value(-1, -1);
+                $doc->forget;
+                $count++;
+                }
+        say "The grand total is $sum in $count documents";
+
+We assume that all the C<*.odt> files in the current directory are regular
+ODF documents containing one or more tables, and where the last cell of the
+last row of the first table is numeric and not empty. Of course a real
+application should do some checks and handle exceptions.
+
+The C<get_cell_values()> method allows the user to extract a value list from
+all the cells corresponding to a specified data type in a specified range. So,
+the instruction below returns all the C<float> values from cell 'C' to cell
+'X':
+
+        @values = $row->get_cell_values('float', 'C:X');
+
+The first argument of C<get_cell_values()> is a ODF data type (C<string>,
+C<float>, C<currency>, etc). The second one is either an alphanumeric,
+spreadsheet-like cell range specification, or the numeric (zero-based)
+position of the first cell; of course if the second argument is numeric a
+third argument, specifying the numeric position of the last cell, is required.
+The result is a list containing only the defined values matching the given
+type (empty cells and cells whose data type doesn' match are ignored), so the
+length of the list may be less than the specified cell range.
+
+This method may be used from rows, columns, or tables. See L<ODF::lpOD::Table>
+for more information about its possible behavior in each context.
+
+When C<get_cell_values()> is used in scalar context with the C<float>,
+C<currency>, or C<percentage> data type, it returns an array ref whose items
+are (in this order), the number of non-empty matching cells, the minimum,
+the maximum and the sum. So the sequence below provides the average amount of
+the C<currency> cells belonging to the 'E2:G10' range:
+
+        $r = $table->get_cell_values('float', 'E2:G10');
+        unless ($r->[0])
+                {
+                warn "No value !\n"; $average = undef;
+                }
+        else
+                {
+                $average = $r->[3] / $r->[0];
+                }
+
+Note that C<get_cell_values()> may be used without type restriction; to do so,
+the user must provide C<'all'> as first argument instead of a data type. See
+L<ODF::lpOD::Table> for details regarding the behavior of this method when,
+due to the data type, the sum doesn't make sense.
+
+=head2  Selecting rows according to the content of a column
+
+"What is the price of the product XYZ ?", that could be reworded as "What
+contains the cell 'H' in the row where the cell 'B' contains XYZ ?",
+assuming that, in a spreadsheet, the 2nd cell (column 'B') is occupied by
+a product ID while the 8th cell (column 'H') contains the price, could be
+answered like that:
+
+        $row = $table->get_row_by_index(B => 'XYZ');
+        if ($row) {
+                $price = $row->get_cell('H')->get_value;
+        } else {
+                alert "Product XYZ not found";
+        }
+
+We could select all the rows whose a specified cell matches a given expression
+or numeric value:
+
+        @rows = $table->get_rows_by_index(FF => 'John');
+
+C<get_row_by_index()> and C<get_rows_by_index()> take a column number or
+alphabetical identifier as first argument, and a search value as second
+argument (allowing a hash syntax). It allows the user to regard a specified
+column as it was an "index" for row selection. Beware that the search value,
+if the data type of the "index" column is C<string> or C<date>, is processed
+as a regexp; so "Johnny", "Johnnie" and "Johnson" will match if the search
+string is "John".
 
 =head2  Table layout
 
@@ -1628,7 +1753,7 @@ widths is 1000, the respective column width will be 500/1000, 200/1000, and
 I<relative> values ? The explanation is probably a bit complicated, but some
 ODF applications prefer multiple digit figures.
 
-The systematic use of C<set_properties()> in this example could be ommitted,
+The systematic use of C<set_properties()> in this example could be omitted,
 knowing that the two following examples are equivalent:
 
         # ex 1
@@ -1666,7 +1791,7 @@ column to the appropriate style. Like many other objects, a column owns a
 C<set_style()> method, and we can select any column by a letter ("A", "B"...).
 We deliberately chose column style names that differ by the last letter only,
 and this last letter is the corresponding column letter, so the loop below
-links each columns to its style:
+links each column to its style:
 
         $table->get_column($_)->set_style("Column$_") for ('A'..'C');
 
@@ -1810,9 +1935,9 @@ don't work). So the best option consists of reusing number formats, previously
 registered in the document by your office software.
 
 Before leaving this section, remember that the styling is the most complicated
-issue for any application that build tables from scratch or that imports
+issue for any application that builds tables from scratch or that imports
 tables from other documents, because a single table may directly or indirectly
-depend on dozens of styles. However, lpOD provides you with some facilites for
+depend on dozens of styles. However, lpOD provides you with some facilities for
 individual or bulk style importation (see L<ODF::lpOD::Style>).
 
 =head1  Inserting frames, images and boxes
@@ -1824,8 +1949,8 @@ or a simple or complex text element.
 
 As a quick practical exercise, let's choose a small image file in a popular
 format such as I<PNG>, I<JPEG>, I<BMP> (not limitatively) available in our
-local filesystem, and try the following example (where you can replace the
-given filename by the full path of your real image file). In this example,
+local file system, and try the following example (where you can replace the
+given file name by the full path of your real image file). In this example,
 we assume that C<$doc> is a I<text> document.
 
         $context = $doc->get_body;
@@ -1885,7 +2010,7 @@ the following instruction could be right:
                 );
 
 However, a few more work is needed, because this frame has no style.
-The way the coordinates are interpeted depends on some properties of the
+The way the coordinates are interpreted depends on some properties of the
 associated graphic style. So we'll get a better result with the following
 snippet:
 
@@ -1934,7 +2059,7 @@ set in I<common> styles.
 
 Just a minute before leaving the image frames. Up to now we just inserted
 an image available as an I<external> resource through a file path/name. The
-image should be properly embedded in the document as long as you lauch you
+image should be properly embedded in the document as long as you launch you
 ODF text processor from the same location. But the image resource will no
 longer be reachable if the document is viewed elsewhere. So it could be
 useful to include the image in the physical ODF file. To do so, you may use
@@ -2004,12 +2129,12 @@ background and to center the text in the box:
                 automatic => TRUE
                 );
 
-Note that we introduced the text box creation with a litteral text content
+Note that we introduced the text box creation with a literal text content
 as the first argument. However, we can fill a text frame with more than a
 single line of text. As usual, TIMTOWTDI. One of them consists of creating
 a basic, empty non-specialized frame, then filling it with a list of text
 elements using C<set_text_box()>. This last method takes a list of text
-litterals and/or ODF text elements (such as paragraphs) as arguments and
+literals and/or ODF text elements (such as paragraphs) as arguments and
 puts all that stuff sequentially in the frame:
 
         $fr = odf_create_frame(
@@ -2038,7 +2163,7 @@ puts all that stuff sequentially in the frame:
 Here we create a frame and a paragraph (with its own style); then we turn
 the frame as a text box with C<set_text_box()> and, in the same time, we
 put a mixed list of items (one of them is our paragraph, the others are
-litterals) in this box.
+literals) in this box.
 
 The main documentation about frames is in L<ODF::lpOD::StructuredContainer>.
 
@@ -2122,7 +2247,7 @@ environment (ex: C<date>), from the general document metadata
 variable.
 
 This first example, assuming that the calling object is a previously selected
-paragraph, the following instruction inserts a the filename at the default
+paragraph, the following instruction inserts a the file name at the default
 position, i.e. the beginning of the paragraph:
 
         $p->set_field('file name');
@@ -2172,7 +2297,7 @@ be updated at any time:
 If a user-defined variable is updated, all the linked fields are updated
 accordingly when the document is displayed by an ODF viewer.
 
-For other informations about the fields and variables, see
+For other more information about the fields and variables, see
 L<ODF::lpOD::TextElement>.
 
 =head1  A few words about presentations and draw pages
@@ -2237,7 +2362,7 @@ not the document body, because everything that may be displayed in a
 presentation document I<must> be enclosed in a draw page. The given
 C<position> parameter is, of course, relative to the area of the draw page.
 While the explicit use of a graphic style is not always required by every
-presentation viewer, it's recommended to provide it (or, as a propably better
+presentation viewer, it's recommended to provide it (or, as a probably better
 option, to reuse an external style library). The creation and registration of
 a graphic style work exactly like with text documents.
 
@@ -2253,7 +2378,7 @@ clearly not the top priority of lpOD.
 
 In a typical long running conference, we often use pages that are replicates
 of other pages with small variants. Its very easy with lpOD to copy an
-existing page, change some details (including og course the name and the
+existing page, change some details (including of course the name and the
 identifier), and insert the copy somewhere. As an illustration, the
 following sequence takes a copy of a page whose ID is "P1", changes its ID
 and name, then appends it at the end of the presentation:
@@ -2274,4 +2399,3 @@ we can always select a page by position, like in this example which provides
 a name to the last page:
 
         $context->get_draw_page_by_position(-1)->set_name("The End");
-

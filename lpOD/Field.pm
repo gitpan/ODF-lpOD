@@ -28,8 +28,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Field;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:31:20';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-01-09T15:03:28';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -96,13 +96,25 @@ sub     set_type
         {
         my $self        = shift;
         my $type        = shift;
-        unless ($type && $type ~~ @ODF::lpOD::Common::DATA_TYPES)
+        given ($type)
                 {
-                alert "Missing or wrong data type";
-                return FALSE;
+                when (undef)
+                        {
+                        $self->del_attribute('office:value-type');
+                        $self->del_attribute('office:currency');
+                        }
+                when ([@ODF::lpOD::Common::DATA_TYPES])
+                        {
+                        $self->set_att('office:value-type', $type);
+                        $self->del_attribute('office:currency')
+                                        unless $type eq 'currency';
+                        }
+                default
+                        {
+                        alert "Wrong data type"; $type = FALSE;
+                        }
                 }
-        $self->del_attribute('office:currency') unless $type eq 'currency';
-        return $self->set_att('office:value-type', $type);
+        return $type;
         }
 
 sub     get_currency
@@ -123,33 +135,36 @@ sub     get_value
         {
         my $self        = shift;
         my $type        = $self->get_type();
+        my $value;
         given ($type)
                 {
                 when ('string')
                         {
-                        return $self->get_text;
+                        $value = $self->get_text;
                         }
                 when (['date', 'time'])
                         {
                         my $attr = 'office:' . $type . '-value';
-                        return $self->att($attr);
+                        $value = $self->att($attr);
                         }
                 when (['float', 'currency', 'percentage'])
                         {
-                        return $self->att('office:value');
+                        $value = $self->att('office:value');
                         }
                 when ('boolean')
                         {
                         my $v = $self->att('office:boolean-value');
-                        return defined $v ? is_true($v) : undef;
+                        $value = defined $v ? is_true($v) : undef;
                         }
                 }
+        return wantarray ? ($value, $type) : $value;
         }
 
 sub     set_value
         {
         my $self        = shift;
         my $value       = shift;
+        return undef unless defined $value;
         my $type        = $self->get_type();
 
         my $v = check_odf_value($value, $type);

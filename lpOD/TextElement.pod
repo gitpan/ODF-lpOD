@@ -131,7 +131,7 @@ heading than the first one of the given context;
 
 =item
 
-C<content>: a search string (or a regex) restricting the search space to the
+C<content>: a search string (or a regexp) restricting the search space to the
 headings with matching content.
 
 =back
@@ -164,7 +164,7 @@ the search to paragraphs using a given style. The example below returns the
 
 =head3  get_paragraphs
 
-Without argument, returns all the paragraphs in the context. Restictions are
+Without argument, returns all the paragraphs in the context. Restrictions are
 possible using the same options as C<get_paragraph> without, of course, the
 C<position> option.
 
@@ -431,7 +431,7 @@ to put bookmarks in your documents.
 
 The I<offset> can be explicitly provided by the user with a C<offset>
 parameter. Alternatively, the user can provide a regular expression using a
-C<before> or C<after> parameter, whose value is a search string (or a regex)
+C<before> or C<after> parameter, whose value is a search string (or a regexp)
 so the bookmark is set immediately before or after the first substring that
 matches the expression. The code below illustrates these possibilities:
 
@@ -475,6 +475,7 @@ is a hash ref of attribute/value pairs (like with C<set_attributes()>).
 
 A bookmark can be retrieved by its unique name using C<get_bookmark()> from
 any element (including the root context).
+
 The ODF element that contains the bookmark then can be obtained as the parent of
 the bookmark element, using the C<get_parent()> method from the retrieved
 bookmark. Alternatively, C<get_element_by_bookmark()>, whose argument is a
@@ -489,10 +490,35 @@ In the following example, the first instruction returns the text container
 (whatever its type, paragraph, heading or text span) where the bookmark is
 located, while the second one returns the paragraph or the heading that
 ultimately contains the bookmark (note that in many situations both will return
-the same element)::
+the same element):
 
         $element = $context->get_element_by_bookmark("BM1");
         $element = $context->get_paragraph_by_bookmark("BM1");
+
+C<get_element_by_bookmark()> may be used with a C<tag> option that specifies
+either the XML tag of the needed element, or a regexp that represents several
+possible elements. This feature is intended for users who have some knowledge
+of the OpenDocument XML vocabulary. If C<tag> is provided,
+C<get_element_by_bookmark()> returns the first element that directly or
+indirectly contains the bookmark, if any. For example, the instruction below
+returns the I<section> that contains the specified bookmark, knowing that
+C<text:section> is the standard tag for a section:
+
+        $section = $context->get_element_by_bookmark(
+                "BM1", tag => 'text:section'
+                );
+
+The next example (using a regexp) returns the nearest object that contains the
+bookmark and whose tag ends by "cell" or by "frame", practically meaning a
+I<table cell> or a I<draw frame>, whose respective tags are C<table:table-cell>
+and C<draw:frame>:
+
+        $object = $context->get_element_by_bookmark(
+                "BM1", tag => qr'cell$|frame$'
+                );
+
+The return value is C<undef> if the bookmark is not found in the context or if
+it's not contained in a matching tag.
 
 The C<remove_bookmark()> method may be used from any context above the
 container or the target bookmark, including the document root, in order to
@@ -500,7 +526,7 @@ delete a bookmark whatever its container. The only required parameter is the
 bookmark name.
 
 A range bookmark is an identified text range which can spread across paragraph
-frontiers. It's a named content area, not dependant of the document tree
+frontiers. It's a named content area, not dependent of the document tree
 structure. It starts somewhere in a paragraph and stops somewhere in the same
 paragraph or in a following one. Technically, it's a pair of special position
 bookmarks, so called bookmark start and bookmark end, owning the same name.
@@ -544,7 +570,7 @@ full content of a single paragraph::
 A range bookmark may be entirely contained in the same paragraph. As a
 consequence, it's possible to create it with a single call of
 C<set_bookmark()>, with parameters that make sense for such a situation. If a
-C<content> parameter, whose value is a regex, is provided instead of the
+C<content> parameter, whose value is a regexp, is provided instead of the
 C<before> or C<after> option, the given expression is regarded as covering
 the whole text content to be enclosed by the bookmark, and this content is
 supposed to be entirely included in the calling paragraph. So the range bookmark
@@ -918,7 +944,7 @@ be an automatic sequence number;
 =item
 
 C<body>: the content of the note, provided either as a list of one or more
-previously created ODF content elements (preferently paragraphs), or as an
+previously created ODF content elements (preferentially paragraphs), or as an
 already available note body element (produced, for example, by cloning the
 body of another note);
 
@@ -1077,7 +1103,7 @@ parameter is omitted, the current system date applies by default;
 C<author>: the name of the author of the annotation (which may be an
 arbitrary application-provided string); if this parameter is omitted, lpOD
 tries to set it to the user name of the process owner and, if such an
-information is not available in the runtime environment, the annotation
+information is not available in the run time environment, the annotation
 is created with an empty string as the author name (not recommended);
 
 =item
@@ -1352,7 +1378,7 @@ returns all the page number fields in the document body:
 
         $document->get_body->get_fields("page number");
 
-=head3  Field datatypes
+=head3  Field data types
 
 The value of a field has a data type. The default data type is C<string>, but
 it's possible to set any ODF-compliant data type as well, using the optional
@@ -1410,7 +1436,7 @@ display information about the current document or about a specific part of the
 current document">.
 
 This definition could be extended knowing that some so-called I<document fields>
-may host contents that are not really informations about the document.
+may host contents that are not really information about the document.
 
 The kind of document field is selected using the mandatory argument of
 C<set_field()> or C<get_fields()>.
@@ -1486,9 +1512,9 @@ the current page is not the last one:
 Content key: various (see below). Supports C<fixed>.
 
 The API allows to set various fields whose purpose is to display in the document
-body or in the page headers or footers some informations whose source is not
+body or in the page headers or footers some information whose source is not
 precisely specified but which regard the so-called "sender" and "author" of the
-document. Some of these informations may come from the document metadata.
+document. Some of this information may come from the document metadata.
 
 The general form of the corresponding content keys is C<sender xxx> or
 C<author yyy>, where "xxx" may be C<firstname>, C<lastname>, C<initials>,

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #=============================================================================
-# test01_write.t        lpOD-Perl installation test     2011-01-02T15:05:13
+# test01_write.t        lpOD-Perl installation test     2011-01-05T12:26:37
 #=============================================================================
 use 5.010_000;
 use strict;
@@ -147,7 +147,8 @@ $doc->insert_style(
 $doc->insert_style(
         odf_create_style(
                 'paragraph',
-                name            => "Label"
+                name            => "Label",
+                margin_left     => "3mm"
                 )
         )->set_properties(
                 area            => 'text',
@@ -158,7 +159,8 @@ $doc->insert_style(
 $doc->insert_style(
         odf_create_style(
                 'paragraph',
-                name            => "Content"
+                name            => "Content",
+                margin_left     => "3mm"
                 )
         )->set_properties(
                 area            => 'text',
@@ -223,6 +225,13 @@ $doc->insert_style(
                 width           => "600*"
                 )
         );
+
+$doc->insert_style(
+        odf_create_style(
+                'table cell',
+                name            => "Sky"
+                )
+        )->set_background(color => '#E6F9FF');
 
 #--- page style definition ---------------------------------------------------
 
@@ -326,15 +335,16 @@ $elt->set_bookmark("Announce");
 my $tbl = $context->append_element(
         odf_create_table(
                 "Environment",
-                length  => scalar keys %desc,
-                width   => 2,
-                style   => "Environment"
+                length          => scalar keys %desc,
+                width           => 2,
+                style           => "Environment"
                 )
         );
 ok($tbl && $tbl->isa(odf_table));
 
 # apply the appropriate style for each column
 $tbl->get_column($_)->set_style("C$_") for (0..1);
+$_->set_style("Sky") for $tbl->get_column('B')->get_cells;
 
 # fill the table with the environment description
 my $i = 0;
