@@ -1129,7 +1129,9 @@ C<insert_element()>. So we can insert a new item list, say, after the first
 paragraph containing "ODF", like that:
 
         $p = $doc->get_body->get_paragraph(content => "ODF");
-        $list = $p->insert_element(odf_create_list);
+        $list = $p->insert_element(
+                odf_create_list, position => NEXT_SIBLING
+                );
 
 There is no mandatory argument for the C<odf_create_list()> constructor, but in
 real applications you should provide a C<style> parameter whose value is the

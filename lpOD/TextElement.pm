@@ -685,12 +685,13 @@ sub     set_annotation
         my $author      = $opt{author};
         my $style       = $opt{style};
         my $content     = $opt{content};
-        delete @opt{qw(date author style content)};
+        unshift @$content, $opt{text} if defined $opt{text};
+        delete @opt{qw(date author style content text)};
         my $a = $self->set_position_mark('office:annotation', %opt);
         $a->set_date($date);
         $a->set_author($author);
         $a->set_style($style);
-        $a->set_content(@{$content})    if $content;
+        $a->set_content(@$content)    if $content;
         return $a;
         }
 

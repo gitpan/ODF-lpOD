@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               ODF-lpOD
-version:            1.105
+version:            1.106
 abstract:           An OpenDocument management interface
 author:
     - Jean-Marie Gouarne <jean-marie.gouarne@arsaperta.com>

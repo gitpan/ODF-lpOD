@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '1.002';
-use     constant PACKAGE_DATE => '2011-01-27T13:52:18';
+our     $VERSION    = '1.003';
+use     constant PACKAGE_DATE => '2011-02-15T15:03:42';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -173,7 +173,8 @@ sub     get_xmlpart
                 my $xmlpart = ODF::lpOD::XMLPart->new
                                 (
                                 container       => $container,
-                                part            => $part_name
+                                part            => $part_name,
+                                pretty          => $self->{pretty}
                                 );
                 unless ($xmlpart)
                         {
@@ -686,7 +687,7 @@ sub     insert_style
                 {
                 when    ([
                         'text', 'paragraph', 'graphic', 'drawing page',
-                        'number', 'currency'
+                        'number', 'currency', 'date'
                         ])
                         {
                         return $self->insert_regular_style($style, %opt);
@@ -1291,8 +1292,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-01-27T13:49:00';
+our     $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-02-15T11:01:36';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1382,7 +1383,7 @@ sub     new
                 {
                 alert "Unknown ODF XML part"; return FALSE;
                 }
-
+        $self->{pretty_print} = PRETTY_PRINT if is_true($self->{pretty});
         $self->{twig} //= XML::Twig->new        # twig init
                                 (
                                 elt_class       => $self->{elt_class},

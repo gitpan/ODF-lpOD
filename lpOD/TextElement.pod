@@ -1115,13 +1115,20 @@ previously existing note body or other non-paragraphs ODF objects);
 
 =item
 
-C<text>: like with C<set_note()> (ignored if C<body> is provided);
+C<text>: a flat string, that will become the text content of the
+annotation; if C<text> and C<content> are both provided, the C<text> value
+will become the content of the first paragraph of the annotation;
 
 =item
 
-C<style>: like with C<set_note()> (ignored if C<body> is provided).
+C<style>: specifies a paragraph style for the content.
 
 =back
+
+The example below inserts a "Hello" annotation after the 4th character of a
+paragraph:
+
+    $para->set_annotation(text => "Hello", offset => 4);
 
 C<set_annotation()> returns the newly created object, that is available for
 later use.

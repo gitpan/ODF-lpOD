@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '1.002';
-use constant PACKAGE_DATE => '2011-01-30T18:19:31';
+our     $VERSION        = '1.003';
+use constant PACKAGE_DATE => '2011-02-15T11:13:12';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -209,8 +209,8 @@ sub	parse_xml
 	my $class	= shift;
 	$twig->safe_parse(@_) or return undef;
         my $element = $twig->root;
-        bless $element, $class;
         $element->set_classes;
+        bless $element, $class;
         return $element;
 	}
 
@@ -1572,7 +1572,7 @@ sub     set_text_content
         my $p = shift @paragraphs;
         unless (defined $p)
                 {
-                $p = create_element('text:p');
+                $p = ODF::lpOD::Element->create('text:p');
                 $p->paste_first_child($self);
                 }
         else
@@ -1607,6 +1607,7 @@ sub     get_size
         my $sep         = shift // ', ';
         my $w = $self->get_attribute('svg:width');
         my $h = $self->get_attribute('svg:height');
+        return undef unless (defined $w && defined $h);
         return wantarray ? ($w, $h) : join $sep, $w, $h;
         }
 
@@ -1619,12 +1620,25 @@ sub     set_size
         return $self->get_size;
         }
 
+sub     get_display
+        {
+        my $self        = shift;
+        return is_true($self->get_attribute('display'));
+        }
+
+sub     set_display
+        {
+        my $self        = shift;
+        return $self->set_attribute('display' => odf_boolean(shift));
+        }
+
 sub     get_position
         {
         my $self        = shift;
         my $sep         = shift // ', ';
         my $x = $self->get_attribute('svg:x');
         my $y = $self->get_attribute('svg:y');
+        return undef unless (defined $x && defined $y);
         if (wantarray)
                 {
                 return ($x, $y);
@@ -1759,6 +1773,14 @@ sub	set_comment
         $cmt->paste_before($self);
         return $cmt;
 	}
+
+sub     set_annotation
+        {
+        my $self        = shift;
+        my $a = ODF::lpOD::Annotation->create(@_);
+        $a->paste_first_child($self);
+        return $a;
+        }
 
 sub     serialize
         {
@@ -2205,8 +2227,8 @@ sub     set_body
 #=============================================================================
 package ODF::lpOD::Annotation;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:11:29';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-15T11:16:59';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2229,7 +2251,12 @@ sub     create
         $a->set_date($opt{date});
         $a->set_author($opt{author});
         $a->set_style($opt{style});
-        $a->set_content(@{$opt{content}})        if $opt{content};
+        $a->set_size($opt{size})                if defined $opt{size};
+        $a->set_position($opt{position})        if defined $opt{position};
+        $a->set_display($opt{display});
+        my $content = $opt{content};
+        unshift @$content, $opt{text}   if defined $opt{text};
+        $a->set_content(@$content)      if $content;
         return $a;
         }
 
@@ -2294,7 +2321,7 @@ sub     get_content
 sub     set_content
         {
         my $self        = shift;
-        $self->cut_children;
+        $self->cut_children(qr'^text');
         foreach my $arg (@_)
                 {
                 if (ref $arg)
@@ -2303,7 +2330,7 @@ sub     set_content
                         }
                 else
                         {
-                        my $p = ODF::lpOD::Paragraph::create(
+                        my $p = ODF::lpOD::Paragraph->create(
                                 text => $arg, style => $self->{style}
                                 );
                         $p->paste_last_child($self);

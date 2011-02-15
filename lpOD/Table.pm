@@ -28,8 +28,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Matrix;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:36:13';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-15T12:32:26';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -124,11 +124,17 @@ sub     contains
         return FALSE;
         }
 
+sub     table
+        {
+        my $self        = shift;
+        return $self->is(TABLE_FILTER) ? $self : $self->parent(TABLE_FILTER);
+        }
+
 #=============================================================================
 package ODF::lpOD::ColumnGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-01-07T08:50:04';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-02-15T12:38:28';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -143,6 +149,16 @@ sub	create
 	}
 
 #-----------------------------------------------------------------------------
+
+sub     get_size
+        {
+        my $self        = shift;
+        return $self->SUPER::get_size   if $self->isa('ODF::lpOD::Table');
+        my $width = $self->get_column_count;
+        my $t = $self->table;
+        my $height = $t ? $t->get_length : undef;
+        return wantarray ? ($height, $width) : $height;
+        }
 
 sub     all_columns
         {
@@ -254,7 +270,7 @@ sub     get_columns
                 {
                 ($start, $end) = translate_range($arg, shift);
                 }
-        $start //= 0; $end //= $self->get_size() - 1;
+        $start //= 0; $end //= $self->get_column_count() - 1;
         my @list = ();
 
 	if ($self->ro)
@@ -505,11 +521,20 @@ sub	set_default_cell_style
 	$_->set_default_cell_style($style) for $self->all_columns;
 	}
 
+#-----------------------------------------------------------------------------
+
+sub     clear
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        $_->clear for $self->get_columns($opt{start}, $opt{end});
+        }
+
 #=============================================================================
 package ODF::lpOD::RowGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-01-13T13:35:11';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-02-15T12:43:26';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -951,6 +976,29 @@ sub	set_default_cell_style
 	$_->set_default_cell_style($style) for $self->all_rows;
 	}
 
+#-----------------------------------------------------------------------------
+
+sub     clear
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        if (is_true($opt{compact}))
+                {
+                my ($height, $width) = $self->get_size;
+                $self->ODF::lpOD::Element::clear;
+                my $row = ODF::lpOD::Row->create;
+                $row->set_repeated($height);
+                $row->paste_first_child($self);
+                my $cell = ODF::lpOD::Cell->create;
+                $cell->set_repeated($width);
+                $cell->paste_first_child($row);
+                }
+        else
+                {
+                $_->clear(%opt) for $self->all_rows;
+                }
+        }
+
 #=============================================================================
 #       Tables
 #-----------------------------------------------------------------------------
@@ -1105,8 +1153,8 @@ sub	get_cell_value
 #=============================================================================
 package ODF::lpOD::TableElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-01-11T11:03:59';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-02-15T10:25:44';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1289,8 +1337,8 @@ sub     get_position
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Column;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-01-10T08:42:14';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-02-15T12:08:18';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1337,18 +1385,24 @@ sub     delete
                 }
         }
 
+sub     clear
+        {
+        my $self        = shift;
+        $_->clear for $self->get_cells;
+        }
+
 #-----------------------------------------------------------------------------
 
 sub	get_length
 	{
 	my $self	= shift;
-	my $parent = $self->parent;
-	unless ($parent && $parent->isa('ODF::lpOD::RowGroup'))
+	my $parent = $self->table;
+	unless ($parent)
 		{
 		alert "No defined length for a non attached column";
 		return undef;
 		}
-	return scalar $parent->get_size;
+	return scalar $parent->get_height;
 	}
 
 sub     get_repeated
@@ -1461,7 +1515,8 @@ sub	get_cells
         my @cells = ();
 	for (my $i = $start ; $i <= $end ; $i++)
 		{
-		push @cells, $self->get_cell($i);
+                my $c = $self->get_cell($i) or last;
+		push @cells, $c;
 		}
 	return @cells;
 	}
@@ -1471,8 +1526,8 @@ sub	get_cells
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Row;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-01-10T18:27:22';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-02-15T10:39:48';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1635,6 +1690,24 @@ sub     get_width
         return (defined $max_w and $max_w < $width) ? $max_w : $width;
         }
 
+sub     clear
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        if (is_true($opt{compact}))
+                {
+                my $width = $self->get_width;
+                $self->ODF::lpOD::Element::clear;
+                my $cell = ODF::lpOD::Cell->create;
+                $cell->set_repeated($width);
+                $cell->paste_first_child($self);
+                }
+        else
+                {
+                $self->SUPER::clear;
+                }
+        }
+
 sub     add_cell
         {
         my $self        = shift;
@@ -1782,8 +1855,8 @@ sub     previous
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
 use base ('ODF::lpOD::Field', 'ODF::lpOD::TableElement');
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-01-10T10:23:04';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-02-15T10:18:46';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2030,6 +2103,14 @@ sub     get_span
                 $self->get_attribute('number rows spanned') // 1,
                 $self->get_attribute('number columns spanned') // 1
                 );
+        }
+
+sub     clear
+        {
+        my $self        = shift;
+        $self->remove_span      if $self->table;
+        $self->del_attributes;
+        $self->SUPER::clear;
         }
 
 #=============================================================================

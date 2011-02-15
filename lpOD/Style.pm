@@ -1018,9 +1018,39 @@ sub     set_properties
 #=============================================================================
 package ODF::lpOD::CellStyle;
 use base 'ODF::lpOD::TableStyle';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:47:35';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2011-02-14T16:18:22';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN   {
+        *set_text_properties    = *ODF::lpOD::TextStyle::set_properties;
+        *p_attribute_name       = *ODF::lpOD::ParagraphStyle::attribute_name;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     attribute_name
+        {
+        my $self        = shift;
+        my $property    = shift // return undef;
+        my $attribute   = undef;
+        if ($property =~ /:/)
+                {
+                $attribute = $property;
+                }
+        else
+                {
+                my $prefix = '';
+                if ($property =~ /^border|wrap|padding|color/)
+                        {
+                        $prefix = 'fo';
+                        }
+                $attribute = $prefix ? $prefix . ':' . $property : $property;
+                }
+        return $attribute;        
+        }
+
 #-----------------------------------------------------------------------------
 
 sub     initialize
@@ -1032,7 +1062,7 @@ sub     initialize
                 $self->set_data_style($opt{data_style});
                 delete $opt{data_style};
                 }
-        $self->SUPER::initialize(%opt);
+        $self->set_properties(area => 'table cell', %opt);
         return $self;
 	}
 
@@ -1040,12 +1070,70 @@ sub	set_properties
 	{
 	my $self	= shift;
 	my %opt         = process_options(@_);
-        if ($opt{area} && ($opt{area} eq 'text'))
+        my $area        = $opt{area} // $self->get_family;
+        delete $opt{area};
+        given ($area)
                 {
-                return $self->ODF::lpOD::TextStyle::set_properties(%opt);
+                when ('table cell')
+                        {
+                        return $self->set_cell_properties(%opt);
+                        }
+                when ('text')
+                        {
+                        return $self->set_text_properties(%opt);
+                        }
+                when ('paragraph')
+                        {
+                        return $self->set_paragraph_properties(%opt);
+                        }
                 }
-        return $self->SUPER::set_properties(%opt);
+        return undef;
 	}
+
+sub     set_cell_properties
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        delete $opt{name};
+        my $pt = $self->properties_tag;
+        my $pr = $self->set_child($pt);
+        if ($opt{clone})
+                {
+                my $proto = $opt{clone}->first_child($pt) or return undef;
+                $pr->delete() if $pr;
+                $proto->clone->paste_last_child($self);
+                }
+        else
+                {
+                foreach my $k (keys %opt)
+                        {
+                        my $a = $self->attribute_name($k);
+                        $pr->set_attribute($a => $opt{$k});
+                        }
+                }
+        }
+
+sub     set_paragraph_properties
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        my $pt = 'style:paragraph-properties';
+        my $pr = $self->set_child($pt);
+        if ($opt{clone})
+                {
+                my $proto = $opt{clone}->first_child($pt) or return undef;
+                $pr->delete() if $pr;
+                $proto->clone->paste_last_child($self);
+                }
+        else
+                {
+                foreach my $k (keys %opt)
+                        {
+                        my $a = $self->p_attribute_name($k);
+                        $pr->set_attribute($a => $opt{$k});
+                        }
+                }
+        }
 
 sub	get_data_style
 	{

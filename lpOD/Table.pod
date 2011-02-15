@@ -183,7 +183,7 @@ following instructions are equivalent and return a list including the rows from
         @rows = $t->get_rows('6:11');
 
 According to the same logic, each of the two instruction below returns the
-columns from 8 to 15::
+columns from 8 to 15:
 
         @cols = $t->get_columns(8, 15);
         @cols = $t->get_columns('I:P');
@@ -394,6 +394,10 @@ be provided and set to C<FALSE>. Such option may put the table in an
 inconsistent state, so it should be used for very special purposes only (such
 as cleaning an inconsistent table).
 
+The C<delete()> method should not be confused with the C<clear()> method that,
+when called from a row or column object, removes the content of every cell
+in the row or column but doesn't remove any cell, row or column.
+
 =head1  Row and column group handling
 
 The content expansion and content selection methods above work with the table
@@ -440,6 +444,12 @@ and they allow the user to expand the content of a particular group.
 
 Row and column group may be collapsed or expanded using their C<collapse()> and
 C<uncollapse()> methods.
+
+It's possible to delete all the cell contents of a group using C<clear()>.
+This method doesn't remove any row or column; it just erases the content and,
+il any, the style and the annotation of every cell. Beware that the column
+group based version of C<clear()> is much slower than the row group based
+version.
 
 =head1 Table headers
 
@@ -556,6 +566,23 @@ If C<set_currency> is used with a non-null value, then the C<type> of the
 cell is automatically set to C<'currency'>. If C<set_type> forces a type that
 is not C<'currency'>, then the cell currency is unset.
 
+A cell may be annotated using C<set_annotation()>. The cell-based version of
+this method works like the paragraph-based version, described in
+L<ODF::lpOD::TextElement>, but the positioning options are ignored. A cell
+annotation is not linked to a text position and may be attached to an empty
+cell. A C<display> boolean option (whose default is C<FALSE>) may be provided
+in order to make the annotation automatically visible in the sheet.
+
+It's possible to remove all the content and the properties of a cell, including
+any possible formula, annotation, style, and so on, with the C<clear()> method.
+In addition, C<clear()> removes any multi-row or multi-column span.
+
+Note that it's possible to clear the content of all the cells of a row, a
+column, a row group, a column group, or a table, with the respective C<clear()>
+methods of these objects. These methods don't remove the cells themselves.
+However, remember that the column and column group based versions of C<clear()>
+are very slow.
+
 =head1  Special cell value extractors
 
 Two access methods are available to directly get the value(s) of one ore more
@@ -644,6 +671,8 @@ holds its content and properties. However, it's possible to know at any time if
 a given cell is covered or not through the boolean C<is_covered()> cell method.
 In addition, the span values of a covered cell are automatically set to 1, and
 C<set_span()> is forbidden with covered cells.
+
+Note that the cell is reduced to the minimal size by C<clear()>.
 
 =head1  Performance issues
 

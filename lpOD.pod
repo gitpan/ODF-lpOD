@@ -120,8 +120,8 @@ be an ODF-compliant zip file (odt, ods, odp, and so on). Example:
 
         my $document = odf_get_document("C:\Path\Doc.odt");
 
-I<In the present version, the source argument must be provided either as a
-regular file path or as a C<IO::Handle> object.>
+The source argument must be provided either as a regular file path or as a
+C<IO::File> object.
 
 =head3  odf_new_document(document_type)
 
@@ -154,7 +154,7 @@ This method produces a file whose basic format is the same as the format of
 the source document or template (whatever the target file name, if any).
 
 If the optional parameter C<target> is provided, it's regarded as the storage
-destination. Its value may be a regular file path or a C<IO::Handle>. This
+destination. Its value may be a regular file path or a C<IO::File>. This
 parameter is mandatory if the C<odf_document> instance has been created
 through C<odf_new_document_from_template>  or C<odf_new_document_from_type>.
 
@@ -185,7 +185,7 @@ consequence, after the sequence below, C<$p1> and C<$p2> will be synonyms:
         my $p2 = $document->get_part(CONTENT);
 
 C<serialize()> returns an XML export of the whole part (the application is then
-responsible of the fate of this export). An optional B<pretty> argument, if set
+responsible of the fate of this export). An optional C<pretty> argument, if set
 to TRUE, specifies that the XML output must be human-readable. Example:
 
         my $content = $document->get_part(CONTENT);
@@ -246,7 +246,7 @@ style "dp1" (assuming we are using a presentation or drawing document):
         );
         say $page->get_attribute('name');
 
-lpOD provide special name-based retrieval methods for some elements that own
+lpOD provides special name-based retrieval methods for some elements that own
 unique names. For example the instruction below selects the table whose name
 is "T1" (if any):
 
