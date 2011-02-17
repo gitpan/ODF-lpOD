@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '1.003';
-use constant PACKAGE_DATE => '2011-02-15T11:13:12';
+our     $VERSION        = '1.004';
+use constant PACKAGE_DATE => '2011-02-17T15:27:11';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -110,6 +110,7 @@ BEGIN
         *_get_text                      = *XML::Twig::Elt::text;
         *_set_tag                       = *XML::Twig::Elt::set_tag;
         *replace_element                = *XML::Twig::Elt::replace;
+        *set_child                      = *set_first_child;
         *get_element_list               = *get_elements;
         *get_bookmark_list              = *get_bookmarks;
         *get_index_mark_list            = *get_index_marks;
@@ -322,7 +323,7 @@ sub     get_child
         return $self->first_child($tag);
         }
 
-sub     set_child
+sub     set_first_child
         {
         my $self        = shift;
         my $tag         = $self->normalize_name(shift);
@@ -332,6 +333,44 @@ sub     set_child
         $child->set_text(shift);
         $child->set_attributes(@_);
         return $child;
+        }
+
+sub	set_last_child
+	{
+	my $self	= shift;
+	my $tag         = $self->normalize_name(shift);
+        my $child =     $self->first_child($tag)
+                                //
+                        $self->append_element($tag);
+        $child->set_text(shift);
+        $child->set_attributes(@_);
+        return $child;
+	}
+
+sub     set_parent
+        {
+        my $self        = shift;
+        my $tag         = $self->normalize_name(shift);
+        my $parent      = $self->parent;
+
+        if ($parent)
+                {
+                unless ($parent->is($tag))
+                        {
+                        $parent = ODF::lpOD::Element->create($tag);
+                        $parent->paste(before => $self);
+                        $self->move(first_child => $parent);
+                        }
+                }
+        else
+                {
+                $parent = ODF::lpOD::Element->create($tag);
+                $self->move(first_child => $parent);
+                }
+
+        $parent->set_text(shift);
+        $parent->set_attributes(@_);
+        return $parent;
         }
 
 sub	delete_child
@@ -1745,6 +1784,11 @@ sub     insert_element
                             {
                             $new_elt->paste_first_child($self);
                             }
+                        }
+                when ('PARENT')
+                        {
+                        $new_elt->paste_before($self);
+                        $self->move(last_child => $new_elt);
                         }
                 default
                         {

@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.002';
-use constant PACKAGE_DATE       => '2011-01-10T19:33:39';
+our	$VERSION	        = '1.003';
+use constant PACKAGE_DATE       => '2011-02-17T12:48:35';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -104,7 +104,7 @@ our @EXPORT     = qw
         
         PRETTY_PRINT EMPTY_TAGS
         
-        FIRST_CHILD LAST_CHILD NEXT_SIBLING PREV_SIBLING WITHIN
+        FIRST_CHILD LAST_CHILD NEXT_SIBLING PREV_SIBLING WITHIN PARENT
         );
 
 #=== package name aliases ====================================================
@@ -242,7 +242,8 @@ use constant                            # element insert positions
         LAST_CHILD      => 'LAST_CHILD',
         NEXT_SIBLING    => 'NEXT_SIBLING',
         PREV_SIBLING    => 'PREV_SIBLING',
-        WITHIN          => 'WITHIN'
+        WITHIN          => 'WITHIN',
+        PARENT          => 'PARENT'
         };
 
 our %ODF_TEMPLATE           =

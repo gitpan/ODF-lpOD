@@ -1964,12 +1964,16 @@ appends a now image frame as the content of this paragraph. You can execute
 a C<save> later and, if you are really lucky, you will see the image
 at the end of the document content. "Lucky" means, among other conditions
 that C<Image::Size> is installed in your Perl environment, because you didn't
-specify any display size for the image and, in such case, lpOD tries to load
+specify any display size for the image and; in such case, lpOD tries to load
 C<Image::Size> in order to get the original size of the resource. However,
 an application-provided C<size> parameter is more safe, knowing that the
 desired display size is not always the original one (not to say that the given
 path to the image resource may be an internet link, and in such case lpOD
 will not try to calculate the original size).
+
+In addition, it's a good idea to specify a unique name through a C<name>
+parameter, so this name may be used later in order to retrieve the frame with
+the context-based C<get_frame()> method.
 
 In our example the image frame is appended as a character is a paragraph.
 So if we want to center the image we just have to center the paragraph using
@@ -1988,6 +1992,7 @@ a regular paragraph style:
         $p->append_element(
                 odf_create_image_frame(
                         "logo.jpg",
+                        name    => "Logo",
                         size    => "6cm, 5cm"
                 );
 
@@ -2005,6 +2010,7 @@ the following instruction could be right:
         $doc->get_body->append_element(
                 odf_create_image_frame(
                         "logo.jpg",
+                        name            => "Logo",
                         size            => "6cm, 5cm",
                         position        => "4cm, 8cm",
                         page            => 1
@@ -2022,6 +2028,7 @@ snippet:
         $doc->get_body->append_element(
                 odf_create_image_frame(
                         "logo.jpg",
+                        name            => "Logo",
                         style           => "Classic",
                         size            => "6cm, 5cm",
                         position        => "4cm, 8cm",
@@ -2080,6 +2087,22 @@ file name:
         $doc->get_body->append_element(
                 odf_create_image_frame(
                         $link,
+                        name            => "Logo",
+                        style           => "Classic",
+                        size            => "6cm, 5cm",
+                        position        => "4cm, 8cm",
+                        page            => 1
+                        )
+                );
+
+Of course, you don't need to include the image resource in the ODF package
+if this resource is available through an absolute URL and if the user's
+viewing/printing application is always connected:
+
+        $doc->get_body->append_element(
+                odf_create_image_frame(
+                        "http://somewhere.here/logo.png",
+                        name            => "Logo",
                         style           => "Classic",
                         size            => "6cm, 5cm",
                         position        => "4cm, 8cm",
@@ -2093,7 +2116,9 @@ L<ODF::lpOD::Document>.
 =head2  Inserting a text box
 
 A text frame is about the same as an image frame, but it contains one or more
-text elements instead of an image.
+text elements instead of an image. While the first argument specifies the text
+content instead of an image link, the optional parameters are the same as for
+an image frame.
 
 Like an image frame, a text frame needs a graphic style.
 
@@ -2108,6 +2133,7 @@ and associates it to a graphic style:
         $doc->get_body->append_element(
                 odf_create_text_frame(
                         "The text in the frame",
+                        name            => "TB1",
                         style           => "TextBox",
                         size            => "6cm, 5cm",
                         position        => "4cm, 8cm",
@@ -2140,6 +2166,7 @@ literals and/or ODF text elements (such as paragraphs) as arguments and
 puts all that stuff sequentially in the frame:
 
         $fr = odf_create_frame(
+                name            => "TB2",
                 style           => "TextBox",
                 size            => "6cm, 5cm",
                 position        => "4cm, 8cm",

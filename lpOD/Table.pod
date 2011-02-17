@@ -447,7 +447,7 @@ C<uncollapse()> methods.
 
 It's possible to delete all the cell contents of a group using C<clear()>.
 This method doesn't remove any row or column; it just erases the content and,
-il any, the style and the annotation of every cell. Beware that the column
+if any, the style and the annotation of every cell. Beware that the column
 group based version of C<clear()> is much slower than the row group based
 version.
 
@@ -672,7 +672,8 @@ a given cell is covered or not through the boolean C<is_covered()> cell method.
 In addition, the span values of a covered cell are automatically set to 1, and
 C<set_span()> is forbidden with covered cells.
 
-Note that the cell is reduced to the minimal size by C<clear()>.
+Note that a cell that spreads over multiple rows and/or columns is reduced to
+the minimal size by C<clear()>.
 
 =head1  Performance issues
 
@@ -863,6 +864,22 @@ columns displays data of various types and formats.
 
 On the other hand, the read optimize flag is useless with methods that return
 values and not objects (i.e. C<get_cell_value>, C<get_cell_values>).
+
+=head2  Compacting empty areas
+
+Cells, rows, row groups, tables, columns and column groups own a C<clear()>
+method. When the calling context is a I<table>, a I<row>, or a I<row group>,
+a C<compact> boolean option, whose default is C<FALSE>, is allowed. If this
+option is set to C<TRUE>, the execution of C<clear()> is faster and the
+physical storage of the processed cells is compacted.
+
+This option is recommended in spreadsheet documents only.
+
+B<Caution>: the benefits of the C<compact> option are not effective if the
+cleared area is immediately used as the target of a lot of individual cell
+accesses using C<get_cell()>, knowing that in such case lpOD will have to
+un-compact a lot of cells in the area. As a consequence, this option is not
+recommended when C<clear()> is used to prepare a massive table update.
 
 =head1	COPYRIGHT & LICENSE
 

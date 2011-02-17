@@ -287,8 +287,8 @@ sub     set_id
 #=============================================================================
 package ODF::lpOD::Shape;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:49:18';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-17T13:22:53';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -354,10 +354,7 @@ sub     get_anchor_page
 sub     set_title
         {
         my $self        = shift;
-        my $t = $self->get_element('svg:title')
-                //
-                $self->append_element('svg:title');
-        $t->set_text(shift);
+        my $t = $self->set_last_child('svg:title', shift);
         return $t;
         }
 
@@ -371,10 +368,7 @@ sub     get_title
 sub     set_description
         {
         my $self        = shift;
-        my $t = $self->get_element('svg:desc')
-                //
-                $self->append_element('svg:desc');
-        $t->set_text(shift);
+        my $t = $self->set_last_child('svg:desc', shift);
         return $t;
         }
 
@@ -656,8 +650,8 @@ sub     get_type
 #=============================================================================
 package ODF::lpOD::Frame;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:58:47';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-17T15:29:45';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -692,7 +686,7 @@ sub     create
                         return undef;
                         }
                 my $link = $opt{image}; delete $opt{image};
-                $opt{size} || image_size($link);
+                $opt{size} //= image_size($link);
                 $fr = ODF::lpOD::Area->create(%opt) or return undef;
                 $fr->set_image($link);
                 }
@@ -739,9 +733,7 @@ sub     set_image
                 alert "Missing image URL"; return FALSE;
                 }
         my %opt = @_;
-        my $image =     $self->get_image()
-                        //
-                        $self->append_element('draw:image');
+        my $image = $self->set_first_child('draw:image');
         if (is_true($opt{load}))
                 {
                 my $doc = $self->document;
@@ -792,6 +784,32 @@ sub     set_text_box
                         }
                 }
         return $t;
+        }
+
+sub     set_hyperlink
+        {
+        my $self        = shift;
+        unless ($self->parent)
+                {
+                alert "Not allowed with non-attached frames";
+                return FALSE;
+                }
+        my %opt         = process_options(@_);
+        unless ($opt{url})
+                {
+                alert("Missing URL"); return FALSE;
+                }
+        $opt{'xlink:href'}      = $opt{url};
+        $opt{'office:name'}     = $opt{name};
+        delete @opt{qw(url name)};
+        return $self->set_parent('draw:a', undef, %opt);
+        }
+
+sub     get_hyperlink
+        {
+        my $self        = shift;
+        my $parent = $self->parent;
+        return ($parent && $parent->is('draw:a')) ? $parent : undef;
         }
 
 #=============================================================================

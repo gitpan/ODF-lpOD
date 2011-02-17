@@ -273,7 +273,8 @@ indirect consequence on other elements.
 
 =head3  clear
 
-Erases the text of an element and all its children.
+Erases the text of an element and all its children. Beware that this method
+is overiden by some specialized element classes.
 
 =head3  clone
 
@@ -317,11 +318,7 @@ set handling.
 Returns all the attributes of the calling element as a hash ref where keys are
 the full XML names of the attributes.
 
-=head3  get_tag
-
-Returns the XML tag of the element with its name space prefix.
-
-=head2  get_style
+=head3  get_style
 
 Returns the name of the style used by the calling element (this accessor makes
 sense for objects that may be displayed according to a layout). Returns
@@ -330,6 +327,10 @@ C<undef> if no style is used.
 Note: if your style names contain non-ASCII characters and if your preferred
 output character set is not C<utf8>, see L<ODF::lpOD::Common> for details
 about character sets handling.
+
+=head3  get_tag
+
+Returns the XML tag of the element with its name space prefix.
 
 =head3  get_text(recursive => FALSE)
 
@@ -345,6 +346,10 @@ concatenated contents of all the descendants of the given element.
 In a default configuration, the character set of the output is C<utf8>. If
 that is not convenient for you, see the character set handling section in
 L<ODF::lpOD::Common>.
+
+=head3  get_url
+
+Returns the URL if the element owns a hyperlink property, or C<undef> otherwise.
 
 =head3  serialize
 
@@ -382,10 +387,41 @@ given text, in the XML output if the document is later serialized. Beware that
 such comments are not always preserved if the document is changed by an office
 application software.
 
-=head3  set_tag(new_tag)
+=head3  set_child(tag, text, attributes)
 
-Changes the XML tag of the calling element. Not for usual business; it's a low
-level technical feature.
+Synonym of C<set_first_child()> (see below).
+
+=head3  set_first_child(tag, text, attributes)
+
+Makes sure that the calling element contains at least one element with the
+given XML tag. If there is no compliant child, a new element is created with
+the given tag and inserted as the first child of the calling element. If one
+or more compliant child exist, the first one is selected and its text content
+(if any) is deleted.
+
+The second argument (optional) is a string that becomes the new text content
+of the created or selected child. The remainder of the argument list, if any,
+is a hash specifying attribute/value pairs for this element.
+
+The return value is the selected or created element.
+
+=head3  set_last_child(tag, text, attributes)
+
+Same as C<set_first_child()> but, in case of creation, the new element is
+inserted as the I<last> child. If compliant children already exist, the
+result is the same as C<set_first_child()>.
+
+=head3  set_parent(tag, text, attributes)
+
+Makes sure that the current element is a child of an element whose tag is
+specified by the first argument. If the calling element is free or if its
+immediate parent has not the given tag, a new element with the given tag is
+inserted as the same place of the calling element, that becomes the first
+child of the new element.
+
+The return value is the new element.
+
+The other arguments are the same as with C<set_first_child()>.
 
 =head3  set_style(style_name)
 
@@ -396,6 +432,11 @@ that the calling object needs a style.
 Note: if your style names contain non-ASCII characters and if your preferred
 input character set is not C<utf8>, see L<ODF::lpOD::Common> for details
 about character sets handling.
+
+=head3  set_tag(new_tag)
+
+Changes the XML tag of the calling element. Not for usual business; it's a low
+level technical feature.
 
 =head3  set_text(text_string)
 
@@ -411,6 +452,10 @@ section in L<ODF::lpOD::Common> if you get troubles about text encoding.
 
 If C<set_text> is called with an empty string, its effect is the same as
 C<clear>.
+
+=head3  set_url(url)
+
+Sets a URL attribute (C<xlink:href>) with the argument.
 
 =head1  Custom element classes
 

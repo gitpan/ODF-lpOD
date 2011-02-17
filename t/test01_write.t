@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #=============================================================================
-# test01_write.t        lpOD-Perl installation test     2011-01-05T12:26:37
+# test01_write.t        lpOD-Perl installation test     2011-02-17T16:16:58
 #=============================================================================
 use 5.010_000;
 use strict;
@@ -33,11 +33,6 @@ lpod->debug(TRUE);
 my $elt;
 
 #--- document initialization -------------------------------------------------
-
-if (-e $filename)
-        {
-        die "# File $filename exists, don't overwrite. Stopped";
-        }
 
 # Document creation check
 my $doc = odf_new_document('text')
@@ -280,6 +275,7 @@ my $fr = $ht->get_cell("A1")
                         title   => "OASIS ODF logo"
                         )
                 );
+$fr->set_hyperlink(url => 'http://opendocument.xml.org/logo');
 ok($fr && $fr->isa(odf_frame));
 
 # put 2 text paragraphs in the right cell of the table

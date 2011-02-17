@@ -255,7 +255,7 @@ the draw page object.
 
 =head1  Frames
 
-A frame is a rectangular container that may contain text boxes and images. It
+A frame is a rectangular container that may contain text boxes or images. It
 may contain other kinds of elements that are not presently covered by the lpOD
 level 1 specification.
 
@@ -265,11 +265,19 @@ A frame is created using C<odf_create_frame()> with the following properties:
 
 =item
 
-C<name>: the optional name of the object (for the end-user);
+C<name>: the optional name of the object;
 
 =item
 
 C<id>: an arbitrary string, that is the unique identifier of the frame;
+
+=item
+
+C<title>: a free informative title;
+
+=item
+
+C<description>: a free informative description;
 
 =item
 
@@ -307,11 +315,21 @@ For an existing frame, the properties above may be read or changed using
 C<get_xxx()> or C<set_xxx()> methods where "xxx" designates the appropriate
 property.
 
-A frame may have a title and/or a description, that may be get or set using
-C<get_title()>, C<set_title()>, C<get_description()>, or C<set_description()>.
-
 A frame may be inserted in place through the standard C<insert_element()>
 method, but the behavior depends on the context.
+
+Once attached to something, a frame may be associated to a clickable hyperlink
+through the C<set_hyperlink()> that requires a C<url> parameter specifying the
+URL. Optionally, a significant name may be provided through a C<name>
+parameter. Beware that this hyperlink is not related to the content of the
+frame; it only specifies a link that should be activated by an interactive
+viewer when the user will click in the frame. Caution: this method is
+prohibited as long as the frame element is free (i.e. non-attached), so it
+can't be used with a created but not inserted frame.
+
+It's possible to retrieve the hyperlink associated to a frame (if any) through
+C<get_hyperlink()>. The returned object is not the URL, it's a regular element
+whose URL may be read or changed using C<get_url()> or C<set_url()>.
 
 In a text document, a frame may be attached to the document body, as long as
 it's anchored to a page; as an consequence, a C<page> parameter must be
@@ -328,7 +346,8 @@ When C<insert_element()> is called from a paragraph, an optional C<offset>
 parameter, specifying the position in the text where the frame will be inserted,
 may be provided (the default position is the beginning of the paragraph).
 
-An existing frame may be selected using C<get_frame()> with the identifier.
+An existing frame may be selected using C<get_frame()> from any context with
+the frame name as argument.
 
 It's possible, of course, to populate a frame using C<insert_element()> or
 C<append_element()> from the frame itself. However, the API provides frame-
@@ -366,7 +385,10 @@ second one is the binary content of an image in BASE64 encoding.
 These properties may be retrieved or changed later using C<get_uri()>,
 C<set_uri()>, C<get_content()>, C<set_content()>.
 
-An image should be incorporated in a document through a I<frame> (see above).
+An image should be incorporated in a document through a I<frame>. In most
+situations, the applications don't need to explicitly create and handle image
+objects, that may be more easily set through the image frame constructor (see
+below).
 
 =head1  Frames including text boxes or images
 
