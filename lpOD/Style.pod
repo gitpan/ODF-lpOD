@@ -936,6 +936,41 @@ The B<text> and B<paragraph> properties are the same as those of a paragraph
 style (see above).
 
 The B<graphic> properties must be provided according to the ODF specification.
+
+Some frequently used properties may be set through the following optional
+parameters:
+
+=over
+
+=item
+
+C<border>: a 3-part string to specify the thickness, the line style and the line
+color (according to the XSL/FO grammar); for example '1mm solid #000080' means
+defines a one-millimeter thick continuous, navy blue border;
+
+=item
+
+C<shadow>: a 3-part string to specify the color, the vertical shift and the
+horizontal shift of the shadow (for example '#808080 1mm 1mm' defines a grey
+shadow whose horizontal and vertical thickness is 1 millimeter);
+
+=item
+
+C<'margin xxx'> where 'xxx' may be C<left>, C<right>, C<top>, or C<bottom>,
+specifies the external margins, i.e. the reserved space between the frame and
+the surrounding text (number and length unit, like '1cm');
+
+=item
+
+C<padding>: the space between the border and the content (number and length
+unit, like '1cm');
+
+=item
+
+C<background color>: self explained;
+
+=back
+
 However, knowing that the most part of them belong to the ODF drawing ("draw")
 name space, the lpOD API automatically regards any property specified without
 name space prefix as a "draw" property (i.e. the C<draw:blue> color correction
@@ -956,6 +991,28 @@ the background:
                 luminance       => '5%',
                 wrap            => 'run-through',
                 'run through'   => 'background'
+                );
+
+A graphic style may be filled with a I<gradient>; to do so, a C<fill> option
+whose value is C<'gradient'> must be provided, and a C<'fill gradient name'>
+parameter must specify the unique name of a gradient.
+
+=head1  Gradient styles
+
+A gradient is built using C<odf_create_style()> with C<'gradient'> as family.
+It requires a C<name> (unique) parameter as other styles. Its possible options
+are described by the ODF specification in §14.14.1. However, these options
+may be used without the "draw:" prefix. Example:
+
+        $gradient = odf_create_style(
+                'gradient',
+                name            => "GR1",
+                style           => 'axial',
+                angle           => 450,
+                start_color     => '#ffffcc',
+                end_color       => '#ffcc99',
+                start_intensity => '100%',
+                end_intensity   => '95%'
                 );
 
 =head1  Page styles

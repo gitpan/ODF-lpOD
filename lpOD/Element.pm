@@ -28,7 +28,7 @@ use strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
 our     $VERSION        = '1.004';
-use constant PACKAGE_DATE => '2011-02-17T15:27:11';
+use constant PACKAGE_DATE => '2011-02-20T17:58:34';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -74,6 +74,7 @@ our %CLASS    =
         'text:outline-style'            => odf_outline_style,
         'style:master-page'             => odf_master_page,
         'style:page-layout'             => odf_page_layout,
+        'draw:gradient'                 => odf_gradient,
         'style:presentation-page-layout'
                                         => odf_presentation_page_layout,
         'style:header-style'            => odf_page_end_style,

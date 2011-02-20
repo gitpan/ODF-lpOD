@@ -27,8 +27,8 @@ use strict;
 #       The ODF Document class definition
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Document;
-our     $VERSION    = '1.003';
-use     constant PACKAGE_DATE => '2011-02-15T15:03:42';
+our     $VERSION    = '1.004';
+use     constant PACKAGE_DATE => '2011-02-20T18:04:00';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -277,6 +277,15 @@ sub     add_file
         return $path;
         }
 
+sub     add_image_file
+        {
+        my $self        = shift;
+        my $source      = shift;
+        my $image = $self->add_file($source) or return undef;
+        my $size  = image_size($source);
+        return wantarray ? ($image, $size) : $image;
+        }
+
 sub     get_mimetype
         {
         my $self        = shift;
@@ -452,6 +461,11 @@ sub     get_style
                         $xp =   '//style:' . $f . '[@style:name="'     .
                                 $name . '"]';
                         }
+                when ('gradient')
+                        {
+                        $xp =   '//draw:gradient[@draw:name="'  .
+                                $name . '"]';
+                        }
                 default
                         {
                         $xp =   '//style:style[@style:name="'   .
@@ -491,6 +505,10 @@ sub     get_styles
                 when (/(master|page layout)/)
                         {
                         $xp = '//style:' . $f;
+                        }
+                when ('gradient')
+                        {
+                        $xp = '//draw:gradient';
                         }
                 default
                         {
@@ -686,8 +704,8 @@ sub     insert_style
         given ($family)
                 {
                 when    ([
-                        'text', 'paragraph', 'graphic', 'drawing page',
-                        'number', 'currency', 'date'
+                        'text', 'paragraph', 'graphic', 'gradient',
+                        'drawing page', 'number', 'currency', 'date'
                         ])
                         {
                         return $self->insert_regular_style($style, %opt);

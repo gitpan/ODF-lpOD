@@ -249,8 +249,8 @@ sub     set_header
 #=============================================================================
 package ODF::lpOD::DrawPage;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:48:38';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-19T23:50:08';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -276,12 +276,6 @@ sub     create
                 'presentation:presentation-page-layout-name' => $opt{layout}
                 );
         return $dp;
-        }
-
-sub     set_id
-        {
-        my $self        = shift;
-        return $self->set_attribute('id' => shift);
         }
 
 #=============================================================================
@@ -394,8 +388,8 @@ sub     get_text_style
 #=============================================================================
 package ODF::lpOD::Area;
 use base 'ODF::lpOD::Shape';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:50:05';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-19T19:54:55';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -407,10 +401,10 @@ sub     create
         {
         my $caller      = shift;
         my %opt         = @_;
-        my $size        = $opt{size} // "1cm, 1cm";
+        my $size        = $opt{size};
         delete @opt {qw(start end size)};
-        my $a = ODF::lpOD::Shape->create(%opt);
-        $a->set_size($size)     if $a;
+        my $a = ODF::lpOD::Shape->create(%opt) or return undef;
+        $a->set_size($size);
         return $a;
         }
 
@@ -650,8 +644,8 @@ sub     get_type
 #=============================================================================
 package ODF::lpOD::Frame;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-02-17T15:29:45';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-02-19T20:43:16';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -686,9 +680,9 @@ sub     create
                         return undef;
                         }
                 my $link = $opt{image}; delete $opt{image};
-                $opt{size} //= image_size($link);
+                $opt{size} //= image_size($link) if $link;
                 $fr = ODF::lpOD::Area->create(%opt) or return undef;
-                $fr->set_image($link);
+                $fr->set_image($link) if $link;
                 }
         elsif ($opt{text})        
                 {
@@ -714,13 +708,14 @@ sub     get_image
 sub     set_image
         {
         my $self        = shift;
-        my $link        = shift;
-        if (ref $link)
+        my $source      = shift;
+        my $link;
+        if (ref $source)
                 {
-                if ($link->is('draw:image'))
+                if ($source->is('draw:image'))
                         {
-                        $link->paste_last_child($self);
-                        return $link;
+                        $source->paste_last_child($self);
+                        return $source;
                         }
                 else
                         {
@@ -728,30 +723,45 @@ sub     set_image
                         return FALSE;
                         }
                 } 
-        unless ($link)
+        unless ($source)
                 {
                 alert "Missing image URL"; return FALSE;
                 }
         my %opt = @_;
-        my $image = $self->set_first_child('draw:image');
         if (is_true($opt{load}))
                 {
                 my $doc = $self->document;
                 if ($doc && $doc->{container})
                         {
-                        $link = $doc->add_file($link);
+                        $link = $doc->add_file($source);
                         }
+                else
+                        {
+                        alert "Image loading not allowed out of a document";
+                        return FALSE;
+                        }
+                }
+        else
+                {
+                $link = $source;
+                }
+        my $image = $self->set_first_child('draw:image');
+                my ($w, $h) = $self->get_size;
+        if (defined $opt{size})
+                {
+                $self->set_size($opt{size});
+                }
+        else
+                {
+                my ($w, $h) = $self->get_size;
+                $self->set_size(image_size($source))
+                        unless (defined $w && defined $h);
                 }
         $image->set_attribute('xlink:href' => $link);
         foreach my $o (keys %opt)
                 {
                 my $att = ($o =~ /:/) ? $o : 'xlink:' . $o;
                 $image->set_attribute($att => $opt{$o});
-                }
-        my ($w, $h) = $self->get_size;
-        unless ($w || $h)
-                {
-                $self->set_size(image_size($link));
                 }
         return $image;
         }
@@ -767,9 +777,7 @@ sub     get_text_box
 sub     set_text_box
         {
         my $self        = shift;
-        my $t = $self->get_text_box()
-                //
-                $self->append_element('draw:text-box');
+        my $t = $self->set_first_child('draw:text-box');
         my @list        = @_;
         foreach my $e (@list)
                 {

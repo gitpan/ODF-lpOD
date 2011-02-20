@@ -125,9 +125,11 @@ some configuration parameters.
 The C<info> method returns some information about the current lpOD
 installation, as a string in scalar context, or as a hash in array context.
 
-Example:
+For example, the instruction 'say scalar lpod->info' produces an information
+string containing "ODF::lpOD", the CPAN package build date, and the current
+installation path, like in the example below:
 
-        say scalar lpod->info;
+ ODF::lpOD 1.106 2011-02-15T15:07:39 /usr/lib/perl5/site_perl/5.10.0/ODF/lpOD
 
 The C<installation_path> method returns the path of the C<ODF::lpOD> module
 installation in the user's file system.

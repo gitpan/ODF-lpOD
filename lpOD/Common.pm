@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.003';
-use constant PACKAGE_DATE       => '2011-02-17T12:48:35';
+our	$VERSION	        = '1.004';
+use constant PACKAGE_DATE       => '2011-02-20T14:37:30';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -82,7 +82,7 @@ our @EXPORT     = qw
         odf_number_style
         odf_master_page odf_page_end_style odf_drawing_page_style
         odf_page_layout odf_presentation_page_layout
-        odf_graphic_style
+        odf_graphic_style odf_gradient
         odf_font_declaration
 
         TRUE FALSE PRETTY
@@ -176,6 +176,7 @@ use constant
         odf_presentation_page_layout
                                 => 'ODF::lpOD::PresentationPageLayout',
         odf_graphic_style       => 'ODF::lpOD::GraphicStyle',
+        odf_gradient            => 'ODF::lpOD::Gradient',
         odf_page_end_style      => 'ODF::lpOD::PageEndStyle',
         odf_drawing_page_style  => 'ODF::lpOD::DrawingPageStyle',
         odf_file_entry          => 'ODF::lpOD::FileEntry',

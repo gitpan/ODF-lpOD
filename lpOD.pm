@@ -27,8 +27,8 @@ use strict;
 #       The main module for the lpOD Project
 #-----------------------------------------------------------------------------
 package ODF::lpOD;
-our $VERSION                    =       "1.107";
-use constant PACKAGE_DATE       =>      "2011-02-17T16:17:53";
+our $VERSION                    =       "1.108";
+use constant PACKAGE_DATE       =>      "2011-02-20T23:12:13";
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Document;
@@ -46,7 +46,7 @@ push @EXPORT,   @ODF::lpOD::Common::EXPORT;
 
 BEGIN
         {
-        my $lpod_pm_path = $INC{'ODF/lpOD.pm'};
+        my $lpod_pm_path = $INC{'ODF/lpOD.pm'} // "";
         $lpod_pm_path =~ s/\.pm$//;
         $ODF::lpOD::Common::INSTALLATION_PATH = $lpod_pm_path;
         load_color_map;

@@ -1945,7 +1945,8 @@ individual or bulk style importation (see L<ODF::lpOD::Style>).
 =head1  Inserting frames, images and boxes
 
 A frame is a generic rectangular area that may contain, for example, an image
-or a simple or complex text element.
+or a simple or complex text element. It's an instance of the C<odf_frame> (or
+C<ODF::lpOD::Frame>) class.
 
 =head2  Inserting an image box
 
@@ -1958,6 +1959,14 @@ we assume that C<$doc> is a I<text> document.
         $context = $doc->get_body;
         $p = $context->append_element(odf_create_paragraph);
         $p->append_element(odf_create_image_frame("logo.png"));
+
+Note that the two following instructions are equivalent:
+
+        $fr = odf_create_image_frame("logo.png");
+        $fr = odf_frame->create(image => "logo.png");
+
+So there is no C<odf_image_frame> object; an image frame is a regular
+C<odf_frame> object containing an image.
 
 This code sequence creates and appends a new paragraph without text, then
 appends a now image frame as the content of this paragraph. You can execute
@@ -2094,6 +2103,27 @@ file name:
                         page            => 1
                         )
                 );
+
+In some situations, if the original size of the image is convenient for you,
+you can create and attach the frame without size and content, then set the
+content, load the image file and set the size thanks to C<set_image()> and
+its C<load> option:
+
+        $fr = $doc->get_body->append_element(
+                odf_frame->create(
+                        name            => "Logo",
+                        style           => "Classic",
+                        position        => "4cm, 8cm",
+                        page            => 1
+                        )
+                );
+        $fr->set_image("logo.png", load => TRUE);
+
+In the example above, C<set_image()> will see that the frame size is not
+set and will try to detect the original size in the image file and set it
+accordingly. Alternatively, you can force an explicit value with in
+C<set_image()> through a C<size> optional parameter, so the original size
+will not looked for.
 
 Of course, you don't need to include the image resource in the ODF package
 if this resource is available through an absolute URL and if the user's
@@ -2347,7 +2377,7 @@ First, open your document and select the document body, just as usual:
         $doc = odf_get_document("template.odp");
         $context = $doc->get_body;
 
-Then, say, remove any existing draw page in order (just to show the way):
+Then, say, remove any existing draw page (just to show the way):
 
         $_->delete for $context->get_draw_pages;
 

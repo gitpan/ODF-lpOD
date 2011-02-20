@@ -522,6 +522,14 @@ the current document instance; it becomes available if the current instance
 is made persistent through a C<save()> call then a new instance is created
 using the saved package with C<odf_get_document>.
 
+=head3  add_image_file
+
+Same as C<add_file()> but, in array context, returns the destination path and
+(provided that C<Image::File> is installed and the image format is supported)
+the image size. This size (if defined) may be used to set the size of the
+corresponding image container in the document (see the "Frames" section in
+L<ODF::lpOD::StructuredContainer>).
+
 =head3  set_part
 
 Allows the user to create or replace a document part using data in memory.

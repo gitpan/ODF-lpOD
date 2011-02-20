@@ -287,8 +287,7 @@ C<style>: the name of a graphic style for the frame;
 
 C<position>, the coordinates of the frame, as a list of 2 strings or as 2
 comma-separated fields in a single string, containing the X and Y positions,
-each string specifying the number and the unit (ex. "1cm", "2pt"), knowing
-that the default value is 0 and the default length unit is "cm" (centimeter);
+each string specifying the number and the unit (ex. "1cm", "2pt");
 
 =item
 
@@ -367,11 +366,15 @@ may be later used to insert additional content;
 =item
 
 C<set_image()>, which creates an image element that will cover the whole
-area of the frame (the parameters are the same as with C<odf_create_image()>
-introduced later); alternatively, if C<set_image()> is called with an
+area of the frame; the first argument is the external of internal path to
+the image file; alternatively, if C<set_image()> is called with an
 existing ODF image element as argument, this element is incorporated as is
 without creation; C<set_image()> returns the new (or newly inserted) ODF
-image element.
+image element; a C<load> boolean option is allowed and, if set to C<TRUE>,
+specifies that the external file whose path is provided as the first
+argument must be loaded in the ODF package (works only if the calling frame
+is attached to a document); a C<size> optional parameter allows the
+application to explicitly force a particular size.
 
 =back
 
@@ -379,8 +382,8 @@ image element.
 
 An image element may be created out of any document with C<odf_create_image()>.
 This constructor requires only one named parameter, that is either C<url> or
-C<content>. The first one is a link to an external graphic resource, while the
-second one is the binary content of an image in BASE64 encoding.
+C<content>. The first one is a link to a graphic resource, while the second
+one is the binary content of an image in BASE64 encoding.
 
 These properties may be retrieved or changed later using C<get_uri()>,
 C<set_uri()>, C<get_content()>, C<set_content()>.
@@ -410,6 +413,21 @@ If the C<size> parameter is not set, lpOD attempts to set it to the original
 image size if C<Image::Size> is installed in your environment, if the given
 resource is a readable image file in the local file system, and if the image
 type is supported by C<Image::Size>.
+
+Note that the L<ODF::lpOD::Document> class provides a C<add_image_file()>
+method that can import external image files in the ODF package. In array
+context, this method returns both the internal path of the image and, if
+possible, the image size.
+
+The following sequence imports an image file, creates a frame that uses it,
+then attach the frame to a newly appended paragraph (so the image will appear
+at the very end of a text document):
+
+   my ($path, $size) = $doc->add_image_file('/home/images/logo.png');
+   my $frame = odf_create_image_frame($path, size => $size);
+   my $paragraph = $doc->get_body->append_element(odf_create_paragraph);
+   $paragraph->append_element($frame);
+
 
 =head1  Drawing shapes
 
@@ -488,12 +506,11 @@ For some shapes, the following properties must be provided:
 
 C<position>, the coordinates of the frame, as a list of 2 strings
 containing the X and Y positions (each string specifies the number
-and the unit, ex. "1cm", "2pt"), knowing that the default values are 0;
+and the unit, ex. "1cm", "2pt");
 
 =item
 
-C<size>: the size, provided using the same format and rules as the position,
-knowing that the default values are "1cm".
+C<size>: the size, provided using the same format and rules as the position.
 
 =back
 

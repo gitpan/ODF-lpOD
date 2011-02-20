@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Style;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2011-01-01T19:55:37';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-20T14:36:04';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -110,6 +110,12 @@ our %STYLE_DEF  =
                 tag             => 'style:style',
                 name            => 'name',
                 class           => odf_graphic_style
+                },
+        'gradient'      =>
+                {
+                tag             => 'draw:gradient',
+                name            => 'name',
+                class           => odf_gradient
                 },
         'presentation'  =>
                 {
@@ -1580,8 +1586,8 @@ sub	get_placeholders
 #=============================================================================
 package ODF::lpOD::DrawingPageStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:49:14';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2011-02-20T00:41:54';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1591,11 +1597,28 @@ sub     set_background
         return FALSE;
         }
 
+sub     attribute_name
+        {
+        my $self        = shift;
+        my $p           = shift // return undef;
+        my $prefix;
+        given ($p)
+                {
+                when (/:/)
+                        { return $p                }
+                when (/display|visible|transition/)
+                        { $prefix = 'presentation' }
+                default
+                        { $prefix = 'draw'         }
+                }
+        return $prefix . ':' . $p;
+        }
+
 #=============================================================================
 package ODF::lpOD::GraphicStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-27T16:16:45';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-19T17:40:25';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1630,26 +1653,87 @@ sub	initialize
 sub	attribute_name
         {
         my $self        = shift;
-        my $p           = shift         or return undef;
-        return $p if $p =~ /:/;
+        my $p           = shift;
         my $prefix;
         given ($p)
                 {
-                when (/(pos$|rel$|wrap$|run)/)
-                        {
-                        $prefix = 'style';        
-                        }
-                when ('clip')
-                        {
-                        $prefix = 'fo';
-                        }
+                when (undef)
+                        { return $p                     }
+                when (/:/)
+                        { return $p                     }
+                when (/(pos$|rel$|wrap$|run|shadow)/)
+                        { $prefix = 'style'             }
+                when (/border|color|padding|margin|clip/)
+                        { $prefix = 'fo'                }
                 default
-                        {
-                        $prefix = 'draw';
-                        }
+                        { $prefix = 'draw'              }
                 }
         return $prefix . ':' . $p;
         }
+
+#=============================================================================
+package ODF::lpOD::Gradient;
+use base 'ODF::lpOD::Style';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2011-02-20T21:13:04';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     get_family              { 'gradient'}
+
+sub     context_path            { STYLES, '//office:styles' }
+
+sub     get_properties          {}
+sub     set_properties          {}
+
+sub     get_name
+        {
+        my $self        = shift;
+        return $self->get_attribute('name');
+        }
+
+#-----------------------------------------------------------------------------
+
+sub	attribute_name
+	{
+	my $self	= shift;
+	my $p           = shift;
+        given ($p)
+                {
+                when (undef)
+                        { return $p                     }
+                when (/:/)
+                        { return $p                     }
+                when ('style')
+                        { return 'draw:style'           }
+                default
+                        { return $p                     }
+                }
+	}
+
+sub	initialize
+	{
+	my $self	= shift;
+	my %opt         = @_;
+        foreach my $k (keys %opt)
+                {
+                my $a = $self->attribute_name($k);
+                $self->set_attribute($a => $opt{$k});
+                }
+        return $self;
+	}
+
+sub	set_display_name
+	{
+	my $self	= shift;
+	$self->set_attribute('draw:display-name' => shift);
+	}
+
+sub	get_display_name
+	{
+	my $self	= shift;
+	return $self->get_attribute('draw:display-name' => shift);
+	}
 
 #=============================================================================
 package ODF::lpOD::FontDeclaration;
