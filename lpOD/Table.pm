@@ -533,8 +533,8 @@ sub     clear
 #=============================================================================
 package ODF::lpOD::RowGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-02-15T12:43:26';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-02-22T14:42:55';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -957,6 +957,27 @@ sub	get_cell_values
                 }
 	}
 
+sub     get_text
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        return $self->ODF::lpOD::Element::get_text(%opt)
+                if is_true($opt{recursive});
+        my $text;
+        my $old_status = $self->read_optimize;
+        $self->read_optimize(TRUE);
+        for my $row ($self->get_rows)
+                {
+                for ($row->get_cells)
+                        {
+                        my $t = $_->get_value;
+                        $text .= $t if defined $t;
+                        }
+                }
+        $self->read_optimize($old_status);
+        return $text;
+        }
+
 sub     collapse
         {
         my $self        = shift;
@@ -1153,8 +1174,8 @@ sub	get_cell_value
 #=============================================================================
 package ODF::lpOD::TableElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-02-15T10:25:44';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-02-22T14:31:42';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1332,13 +1353,26 @@ sub     get_position
         return wantarray ? ($parent->get_name, $position) : $position;
         }
 
+#-----------------------------------------------------------------------------
+
+sub     clear
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        my $rep = $self->get_repeated;
+        my $style = $self->get_style;
+        $self->del_attributes;
+        $self->set_repeated($rep);
+        $self->set_style($style);
+        }
+
 #=============================================================================
 #       Table columns
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Column;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-02-15T12:08:18';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-02-21T19:12:25';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1389,6 +1423,7 @@ sub     clear
         {
         my $self        = shift;
         $_->clear for $self->get_cells;
+        $self->SUPER::clear;
         }
 
 #-----------------------------------------------------------------------------
@@ -1526,8 +1561,8 @@ sub	get_cells
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Row;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-02-15T10:39:48';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-02-22T14:42:34';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1675,6 +1710,21 @@ sub     get_cells
         return @list;
         }
 
+sub     get_text
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        return $self->ODF::lpOD::Element::get_text(%opt)
+                        if is_true($opt{recursive});
+        my $text;
+        for ($self->get_cells)
+                {
+                my $t = $_->get_value;
+                $text .= $t if defined $t;
+                }
+        return $text;
+        }
+
 sub     get_width
         {
         my $self        = shift;
@@ -1704,8 +1754,9 @@ sub     clear
                 }
         else
                 {
-                $self->SUPER::clear;
+                $_->clear for $self->all_cells;
                 }
+        return $self->SUPER::clear;
         }
 
 sub     add_cell
@@ -1855,13 +1906,14 @@ sub     previous
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
 use base ('ODF::lpOD::Field', 'ODF::lpOD::TableElement');
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-02-15T10:18:46';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-02-27T13:04:52';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN	{
 	*repeat			= *ODF::lpOD::TableElement::repeat;
+        *get_parent_row         = *row;
 	}
 
 #-----------------------------------------------------------------------------
@@ -1981,7 +2033,8 @@ sub     set_text
                 style           => undef,
                 @_
                 );
-        $self->cut_children;
+        $self->cut_children(qr'^text|^table');
+        return undef unless defined $text;
         $self->append_element
                 (
 		ODF::lpOD::Paragraph->create
@@ -1999,7 +2052,7 @@ sub	set_value
 sub     get_text
         {
         my $self        = shift;
-        return $self->ODF::lpOD::Element::get_text(recursive => TRUE);
+        return $self->ODF::lpOD::TextElement::get_text(@_);
         }
 
 sub     get_content
@@ -2011,7 +2064,7 @@ sub     get_content
 sub     set_content
         {
         my $self        = shift;
-        $self->clear;
+        $self->set_text;
         foreach my $elt (@_)
                 {
                 if (ref $elt && $elt->isa('ODF::lpOD::Element'))
@@ -2109,8 +2162,12 @@ sub     clear
         {
         my $self        = shift;
         $self->remove_span      if $self->table;
+        my $rep = $self->get_repeated;
+        my $style = $self->get_style;
         $self->del_attributes;
-        $self->SUPER::clear;
+        $self->set_repeated($rep);
+        $self->set_style($style);
+        $self->set_text;
         }
 
 #=============================================================================

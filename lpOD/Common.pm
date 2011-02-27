@@ -27,8 +27,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.004';
-use constant PACKAGE_DATE       => '2011-02-20T14:37:30';
+our	$VERSION	        = '1.005';
+use constant PACKAGE_DATE       => '2011-02-26T23:23:32';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -37,7 +37,7 @@ our @EXPORT     = qw
         (
         lpod_common lpod
 
-        odf_get_document odf_new_document
+        odf_get_document odf_new_document odf_create_document
         odf_new_document_from_template odf_new_document_from_type
 
         odf_get_container odf_new_container
@@ -63,8 +63,8 @@ our @EXPORT     = qw
         odf_document odf_container
         odf_xmlpart odf_content odf_styles odf_meta odf_settings odf_manifest
         
-        odf_element
-        odf_text_element
+        odf_element odf_text_node
+        odf_text_element odf_text_hyperlink
         odf_bibliography_mark odf_note odf_annotation odf_changed_region
         odf_paragraph odf_heading odf_draw_page odf_image odf_shape odf_frame
         odf_area odf_rectangle odf_ellipse odf_vector odf_line odf_connector
@@ -127,7 +127,9 @@ use constant
 use constant
         {
         odf_element             => 'ODF::lpOD::Element',
+        odf_text_node           => 'ODF::lpOD::TextNode',
         odf_text_element        => 'ODF::lpOD::TextElement',
+        odf_text_hyperlink      => 'ODF::lpOD::TextHyperlink',
         odf_paragraph           => 'ODF::lpOD::Paragraph',
         odf_heading             => 'ODF::lpOD::Heading',
         odf_list                => 'ODF::lpOD::List',
@@ -273,6 +275,7 @@ BEGIN   {
         *odf_new_document_from_type
                                 = *ODF::lpOD::Document::_create;
         *odf_new_document       = *ODF::lpOD::Document::_create;
+        *odf_create_document    = *ODF::lpOD::Document::_create;
         *odf_get_container      = *ODF::lpOD::Container::get_from_uri;
         *odf_new_container_from_template
                                 = *ODF::lpOD::Container::create_from_template;

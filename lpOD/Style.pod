@@ -34,16 +34,16 @@ C<odf_document> method:
 
 Additional named parameters can be required according to the family. An optional
 C<parent> argument, whose value is the name of another common style of
-the same family (existing or to be created), can be provided, knowing that a
-style inherits (but can override) all the properties of its parent. A
-C<display name> additional parameter may be provided; if set, this parameter
-designates a visible name that may differ from the internal name. It's
-possible to copy (instead of inherit) all the properties of an existing style
-of the same family, through a C<clone> option, knowing that C<clone> and
-C<parent> are mutually exclusive options. The code example below produces two
-text styles whose properties are the same as "MyTextStyleName", but the first
-one will be affected by later changes of the base style while the second one
-is independent:
+the same family (existing or to be created), can be provided to
+C<odf_create_style>, knowing that a style inherits (but can override) all the
+properties of its parent. A C<display name> additional parameter may be
+provided; if set, this parameter designates a visible name that may differ from
+the internal name. It's possible to copy (instead of inherit) all the properties
+of an existing style of the same family, through a C<clone> option, knowing that
+C<clone> and C<parent> are mutually exclusive options. The code example below
+produces two text styles whose properties are the same as "MyTextStyleName", but
+the first one will be affected by later changes of the base style while the
+second one is independent:
 
    odf_create_style('text', name => 'NewStyle1', parent => 'MyTextStyleName');
    $proto = doc->get_style('text', 'MyTextStyleName');
@@ -56,9 +56,28 @@ When a style is used as a default style, its name and display name are
 meaningless and ignored. The family and the name constitute the absolute
 identifier of a style in a document.
 
+The parent of an existing style may be read or changed using the style-based
+C<get_parent_style()> or C<set_parent_style()> method. Beware that
+C<get_parent_style()> is not the same as C<get_parent()>; the last one is a
+generic, low level utility method (see L<ODF::lpOD::Element>).
+
+C<get_parent_style()> returns the I<name> of the parent style, if any. This
+name may be used to retrieve the parent style object with the document-based
+C<get_style()> method. Symmetrically, the argument of C<set_parent_style()>
+should be a style name (if this argument is a valid style object, lpOD tries
+to replace it by its name).
+
 The C<odf_create_style()> function creates a free element, not included in a
 document. This element (or a clone of it) is available to be attached later
 to a document through a generic, document-based C<insert_style()> method.
+
+When attached to a document, a style provides a C<get_parent_styles()> method
+that returns the full set of inherited styles, if any. Knowing that this method
+works in the context of a document where the parent styles are supposed to be
+registered and available, the returned list is made of style objects, not
+style names. The main purpose of this method is to allow the applications to
+check and, if needed, to extract all the dependencies of a given style in order
+to replicate it in another document.
 
 The C<insert_style()> method requires a style object as its only one mandatory
 argument. It's return value is the style itself.

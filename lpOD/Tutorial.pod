@@ -407,6 +407,11 @@ Using an alternative style, the same job could be done like that:
                 style   => "Standard"
                 );
 
+Remember that, in most cases, every C<odf_create_xxx()> lpOD function is nothing
+but an alias for the C<create()> constructor of a C<odf_xxx> class. So the user
+can choose between the functional and object notations for any instance
+construction.
+
 The C<style> option requires the name of a paragraph style (that is, or will
 be, defined elsewhere). We'll have a look to text styles in another recipe.
 You can create text element without explicit style name as long as the default
@@ -2121,9 +2126,9 @@ its C<load> option:
 
 In the example above, C<set_image()> will see that the frame size is not
 set and will try to detect the original size in the image file and set it
-accordingly. Alternatively, you can force an explicit value with in
+accordingly. Alternatively, you can force an explicit value with
 C<set_image()> through a C<size> optional parameter, so the original size
-will not looked for.
+will not be looked for.
 
 Of course, you don't need to include the image resource in the ODF package
 if this resource is available through an absolute URL and if the user's

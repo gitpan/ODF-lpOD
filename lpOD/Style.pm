@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Style;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-02-20T14:36:04';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-02-25T14:22:53';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -219,10 +219,45 @@ sub     set_family
         return $self->set_attribute(family => $family);
         }
 
-sub	set_parent
+sub	set_parent_style
 	{
 	my $self	= shift;
-	return $self->set_attribute('parent style name' => shift);
+        my $style       = shift;
+        if (ref $style)
+                {
+                unless ($style->isa('ODF::lpOD::Style'))
+                        {
+                        alert "Wrong style reference"; return undef;
+                        }
+                $style = $style->get_name;
+                }
+	return $self->set_attribute('parent style name' => $style);
+	}
+
+sub     get_parent_style
+        {
+        my $self        = shift;
+        return $self->get_attribute('parent style name');
+        }
+
+sub	get_parent_styles
+	{
+	my $self	= shift;
+        my $doc = $self->document;
+        unless ($doc)
+                {
+                alert "Non attached style"; return undef;
+                }
+        my $family = $self->get_family;
+        my $name;
+        my @styles;
+        my $s = $self;        
+        while ($s && ($name = $s->get_parent_style))
+                {
+                $s = $doc->get_style($family, $name);
+                push @styles, $s if $s;
+                }
+        return @styles;
 	}
 
 sub	set_style_class
@@ -308,7 +343,7 @@ sub	create
 	bless $style, $desc->{class};
         $style->set_name($opt{name});
         $style->set_display_name($opt{display_name});
-        $style->set_parent($opt{parent});
+        $style->set_parent_style($opt{parent});
         delete @opt{qw(name display_name parent)};
         $style->initialize(%opt);
         return $style;

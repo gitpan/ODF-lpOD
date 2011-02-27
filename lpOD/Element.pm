@@ -27,8 +27,8 @@ use strict;
 #       Level 0 - Basic XML element handling - ODF Element class
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Element;
-our     $VERSION        = '1.004';
-use constant PACKAGE_DATE => '2011-02-20T17:58:34';
+our     $VERSION        = '1.005';
+use constant PACKAGE_DATE => '2011-02-26T23:49:04';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -37,9 +37,11 @@ use base 'XML::Twig::Elt';
 
 our %CLASS    =
         (
+        '#PCDATA'                       => odf_text_node,
         'text:p'                        => odf_paragraph,
         'text:h'                        => odf_heading,
         'text:span'                     => odf_text_element,
+        'text:a'                        => odf_text_hyperlink,
         'text:bibliography-mark'        => odf_bibliography_mark,
         'text:note'                     => odf_note,
         'office:annotation'             => odf_annotation,
@@ -94,6 +96,7 @@ sub     associate_tag
 
 BEGIN
         {
+        *create                         = *new;
         *xe_new                         = *XML::Twig::Elt::new;
         *get_tag                        = *XML::Twig::Elt::tag;
         *get_tagname                    = *XML::Twig::Elt::tag;
@@ -165,19 +168,6 @@ sub     new
                 &$INIT_CALLBACK($element);
                 }
         return $element;
-        }
-
-sub     create
-        {
-	my $caller	= shift;
-        my $tag         = shift;
-        my $element     = XML::Twig::Elt->new($tag, @_);
-        my $class = $CLASS{$tag};
-        $class ||= ($tag =~ /^number:.*-style$/) ?
-                        'ODF::lpOD::Style'      :
-                        'ODF::lpOD::Element';
-        bless $element, $class;
-        return $element;        
         }
 
 #-----------------------------------------------------------------------------
@@ -255,6 +245,7 @@ sub     set_classes
         my $self        = shift;
         foreach my $e ($self->descendants_or_self)
                 {
+                next if $e->isa('ODF::lpOD::TextNode');
                 my $tag = $e->tag;
                 my $class = $CLASS{$tag} || 'ODF::lpOD::Element';
                 bless $e, $class;
@@ -787,24 +778,28 @@ sub     get_elements
 
 #--- specific unnamed element retrieval methods ------------------------------
 
-sub     get_paragraph
+sub     get_text_element
         {
         my $self        = shift;
         my %opt         = @_;
+        my $type = $opt{type} // 'p';
+        delete $opt{type};
+        $type = 'text:' . $type unless $type =~ /:/;
+        
         if ($opt{bookmark})
                 {
                 return $self->get_element_by_bookmark
-                                ($opt{bookmark}, tag => 'text:p');
+                                ($opt{bookmark}, tag => $type);
                 }
         unless (defined $opt{style})
                 {
-                return $self->get_element('text:p', %opt);
+                return $self->get_element($type, %opt);
                 }
         else
                 {
                 return $self->get_element
                         (
-                        'text:p',
+                        $type,
                         attribute       => 'style name',
                         value           => $opt{style},
                         position        => $opt{position},
@@ -813,10 +808,30 @@ sub     get_paragraph
                 }
         }
 
-sub     get_paragraphs
+sub	get_paragraph
+	{
+	my $self	= shift;
+	return $self->get_text_element(type => 'p', @_);
+	}
+
+sub	get_text_span
+	{
+	my $self	= shift;
+	return $self->get_text_element(type => 'span', @_);
+	}
+sub     get_parent_paragraph
+        {
+	my $self	= shift;
+	return $self->parent(qr'text:(p|h)');
+        }
+
+sub     get_text_elements
         {
         my $self        = shift;
         my %opt         = @_;
+        my $type = $opt{type} // 'p';
+        delete $opt{type};
+        $type = 'text:' . $type unless $type =~ /:/;
 
         if ($opt{style})
                 {
@@ -824,8 +839,20 @@ sub     get_paragraphs
                 $opt{value} = $opt{style};
                 delete $opt{style};
                 }
-        return $self->get_elements('text:p', %opt);
+        return $self->get_elements($type, %opt);
         }
+
+sub	get_paragraphs
+	{
+	my $self	= shift;
+	return $self->get_text_elements(type => 'p', @_);
+	}
+
+sub	get_text_spans
+	{
+	my $self	= shift;
+	return $self->get_text_elements(type => 'span', @_);
+	}
 
 sub     get_heading
         {
@@ -857,6 +884,28 @@ sub     get_headings
                 }
         return $self->get_elements('text:h', %opt);
         }
+
+sub	get_hyperlinks
+	{
+	my $self	= shift;
+	my %opt         = @_;
+        my $type = $opt{type};
+        delete $opt{type};
+        unless ($type)
+                {
+                return  (
+                        $self->get_hyperlinks(type => 'text', %opt),
+                        $self->get_hyperlinks(type => 'draw', %opt)
+                        );
+                }
+        if (defined $opt{url})
+                {
+                $opt{attribute} = 'xlink:href';
+                $opt{value} = $opt{url};
+                delete $opt{url};
+                }
+        return $self->get_elements("$type:a", %opt);
+	}
 
 sub     get_list
         {
@@ -908,6 +957,12 @@ sub	get_parent_table
 	my $self	= shift;
 	return $self->parent('table:table');
 	}
+
+sub     get_parent_cell
+        {
+	my $self	= shift;
+	return $self->parent('table:table-cell');        
+        }
 
 sub     get_tables
         {
@@ -1584,11 +1639,14 @@ sub     get_text
 sub     set_text
         {
         my $self        = shift;
-        my $text        = shift;
-        return undef unless defined $text;
-        return caller() ne 'XML::Twig::Elt' ?
-                $self->_set_text(input_conversion($text))       :
-                $self->_set_text($text);
+        my $input       = shift;
+        return undef unless defined $input;
+        
+        my $text = caller() ne 'XML::Twig::Elt' ?
+                input_conversion($input) : $input;
+        my $r = $self->_set_text($text);
+        bless $_, 'ODF::lpOD::TextNode' for $self->children(TEXT_SEGMENT);
+        return $r;
         }
 
 sub     get_text_content
@@ -1751,7 +1809,6 @@ sub     insert_element
                         );
 
         my $new_elt = ref $tag ? $tag : ODF::lpOD::Element->new($tag);
-
         if (defined $opt{after})
                 {
                 return $new_elt->paste_after($opt{after});
@@ -2143,6 +2200,52 @@ sub     not_allowed
         }
 
 #=============================================================================
+package ODF::lpOD::TextNode;
+use base 'ODF::lpOD::Element';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2011-02-27T00:44:46';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN
+        {
+        *create                         = *XML::Twig::Elt::new;
+        *get_tag                        = *XML::Twig::Elt::tag;
+        *set_tag                        = *ODF::lpOD::Element::set_tag;
+        *set_text                       = *ODF::lpOD::Element::set_text;
+        *get_parent                     = *XML::Twig::Elt::parent;
+        *get_ancestor                   = *XML::Twig::Elt::parent;
+        *previous_sibling               = *XML::Twig::Elt::prev_sibling;
+        *get_root                       = *XML::Twig::Elt::root;
+        *is_element                     = *XML::Twig::Elt::is_elt;
+        *is_text_segment                = *XML::Twig::Elt::is_text;
+        *_set_text                      = *XML::Twig::Elt::set_text;
+        *_get_text                      = *XML::Twig::Elt::text;
+        *_set_tag                       = *XML::Twig::Elt::set_tag;
+        *replace_element                = *XML::Twig::Elt::replace;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     node_info
+        {
+        my $self        = shift;
+        my %i           = ();
+        $i{text}        = $self->_get_text;
+        $i{size}        = length($i{text});
+        $i{tag}         = TEXT_SEGMENT;
+        $i{class}       = __PACKAGE__;
+        $i{attributes}  = undef;
+        return %i;
+        }
+
+sub     get_text
+        {
+        my $self        = shift;
+        return output_conversion($self->text);
+        }
+
+#=============================================================================
 package ODF::lpOD::BibliographyMark;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '1.000';
@@ -2150,8 +2253,8 @@ use constant PACKAGE_DATE => '2010-12-24T13:37:35';
 #=============================================================================
 package ODF::lpOD::Note;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:11:12';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-22T00:16:40';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -2260,7 +2363,7 @@ sub     set_body
                         }
                 else
                         {
-                        my $p = ODF::lpOD::Paragraph::create(
+                        my $p = ODF::lpOD::Paragraph->create(
                                 text => $arg, style => $self->{style}
                                 );
                         $p->paste_last_child($body);

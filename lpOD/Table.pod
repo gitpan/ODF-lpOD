@@ -573,9 +573,10 @@ annotation is not linked to a text position and may be attached to an empty
 cell. A C<display> boolean option (whose default is C<FALSE>) may be provided
 in order to make the annotation automatically visible in the sheet.
 
-It's possible to remove all the content and the properties of a cell, including
-any possible formula, annotation, style, and so on, with the C<clear()> method.
-In addition, C<clear()> removes any multi-row or multi-column span.
+It's possible to remove all the content and the properties of a cell but its
+style, including any possible formula, annotation, and so on, with the
+C<clear()> method. In addition, C<clear()> removes any multi-row or multi-
+column span.
 
 Note that it's possible to clear the content of all the cells of a row, a
 column, a row group, a column group, or a table, with the respective C<clear()>
@@ -583,9 +584,15 @@ methods of these objects. These methods don't remove the cells themselves.
 However, remember that the column and column group based versions of C<clear()>
 are very slow.
 
+The cell coordinates may be retrieved using C<get_position()>. In scalar
+context, this method returns the local position in the row. In array context,
+it returns the table name, the row number and the column number. In addition,
+C<get_parent_table()> returns the table object itself, while
+C<get_parent_row()> returns the including row.
+
 =head1  Special cell value extractors
 
-Two access methods are available to directly get the value(s) of one ore more
+A few access methods are available to directly get the value(s) of one ore more
 specified cells, without explicit access to the cell objects. These accessors
 are not syntactic sugar only; they may allow better performances in some
 situations.
@@ -647,6 +654,17 @@ of the C<float> cells in the "E2:G10" range:
         say "I found $r->[0] values";
         say "...from $r->[1] to $r->[2]";
         say "...and the grand total is $r->[3]";
+
+=head3  Flat text export
+
+A special C<get_text()> method is provide with tables or row groups. Knowing
+that a table shouldn't directly contain text (the text content, if any, belong
+to cells), this method returns the concatenated contents of all the cells as a
+flat string. It's useful only to allow the applications to quickly check if at
+least one cell contains something, or if a particular substring is present
+somewhere in the table. Note that the returned text doesn't always reflect the
+visible content of the cells: for non-string cells, the exported content is
+the I<value>, not its formatted representation.
 
 =head1  Cell span expansion
 

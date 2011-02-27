@@ -28,8 +28,8 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-30T17:23:17';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-02-25T20:02:16';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -406,6 +406,7 @@ sub     set_text
                 $self->append_element('line break') if @lines;
                 }
         $self->normalize;
+        bless $_, 'ODF::lpOD::TextNode' for $self->children('#PCDATA');
         return TRUE;
         }
 
@@ -413,17 +414,28 @@ sub     get_text
         {
         my $self        = shift;
         my %opt         = @_;
+        return $self->ODF::lpOD::TextNode::get_text
+                                if $self->is(TEXT_SEGMENT);
         $opt{recursive} //= $RECURSIVE_EXPORT;
-        
-        unless (is_true($opt{recursive}))
+        if (is_true($opt{recursive}))
                 {
-                return $self->SUPER::get_text;
+                return $self->SUPER::get_text(%opt);
                 }
-
         my $text        = undef;
-        foreach my $node ($self->children)
+        NODE: foreach my $node ($self->children)
                 {
-                given ($node->get_tag)
+                if  (
+                    $node->isa('ODF::lpOD::TextNode')
+                        or
+                    $node->isa('ODF::lpOD::TextElement')
+                    )
+                    {
+                    my $t = $node->get_text(%opt);
+                    $text .= $t if defined $t;                    
+                    }
+                else
+                    {
+                    given ($node->get_tag)
                         {
                         when ('text:tab')
                                 {
@@ -435,15 +447,11 @@ sub     get_text
                                 }
                         when ('text:s')
                                 {
-                                my $c = $node->get_attribute('c') // 1; #/
+                                my $c = $node->get_attribute('c') // 1;
                                 $text .= " " while $c-- > 0;
                                 }
-                        default
-                                {
-                                my $t = $node->get_text(%opt);
-                                $text .= $t if defined $t;
-                                }
                         }
+                    }
                 }
 
         return $text;
@@ -770,6 +778,29 @@ sub	set_field
                 }
         return $field;
 	}
+
+#=============================================================================
+package ODF::lpOD::TextHyperlink;
+use base 'ODF::lpOD::TextElement';
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2011-02-24T22:21:03';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     set_type
+        {
+        my $self        = shift;
+        return $self->get_attribute('xlink:type');
+        }
+
+sub	get_type
+	{
+	my $self	= shift;
+	return $self->get_attribute('xlink:type');
+	}
+
+sub     set_style       {}
+sub     get_style       {}
 
 #=============================================================================
 package ODF::lpOD::Paragraph;

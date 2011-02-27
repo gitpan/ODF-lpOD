@@ -336,12 +336,9 @@ Returns the XML tag of the element with its name space prefix.
 
 Returns the text contents of the element as a string. By default this method is
 not recursive (i.e. it just returns the own text of the element, not the text
-belonging to children and descendant elements). Such behavior is not convenient
-for every possible use case (for example, the text of a paragraph may be partly
-or entirely split among several low level text containers, while a typical
-end-user regards this text as a flat string). So, if the optional C<recursive>
-parameter is provided and set to C<TRUE>, then the method returns the
-concatenated contents of all the descendants of the given element.
+belonging to children and descendant elements). However, if the optional
+C<recursive> parameter is provided and set to C<TRUE>, then the method returns
+the concatenated contents of all the descendants of the given element.
 
 In a default configuration, the character set of the output is C<utf8>. If
 that is not convenient for you, see the character set handling section in

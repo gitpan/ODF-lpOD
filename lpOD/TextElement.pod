@@ -201,12 +201,15 @@ element.
 Like the common C<get_text> method (see L<ODF::lpOD::Element>), the paragraph-
 based version of C<get_text> returns the text content of the paragraph. However,
 in a paragraph (or heading), C<get_text> processes the tabs, line breaks, and
-multiple space elements in a ODF-compliant way.
+multiple space elements in a ODF-compliant way. it returns the whole displayable
+text content of the paragraph, without markup (the exported text is "flattened"
+whatever the possible use or various text styles in the paragraph). However,
+the various objects possibly inserted in the text, such as notes, text fields
+and so on, are not exported by default.
 
-The C<recursive> option (set to TRUE) is generally recommended (while not
-mandatory), knowing that the text of a paragraph is often split in various
-I<text spans> (i.e. paragraph sub-elements), in order to get the text as it's
-seen by the end-user.
+If the C<recursive> option is set to C<TRUE>, C<get_text()> provides a flat
+export of the concatenated text contents of all the elements included in the
+paragraph (including notes, fields and so on).
 
 =head2  Other properties
 
@@ -810,7 +813,7 @@ character of the paragraph):
                 "Go There", type => "lexical"
                 );
 
-Not that the last instruction (unlike the preceding ones) uses a possibly
+Note that the last instruction (unlike the preceding ones) uses a possibly
 meaningful text as the first argument instead of an arbitrary technical
 identifier. Because this instruction creates a lexical index entry, the given
 text will appear in the document as a reference to the paragraph as soon as a
@@ -1534,7 +1537,7 @@ the optional C<fixed> flag only.
 
 The following example tells the editing applications to print the initials
 of the document sender (if such an information is available) immediately after
-a given string::
+a given string:
 
         $paragraph->set_field("sender initials", after => "Issued by ");
 
