@@ -527,10 +527,18 @@ process) and inserted as a new element in a document:
         close FH;
         
         # importing process
-        open(FH, '<:utf8', "paragraph.xml");
-        $xml .= $_ while <$FH>;
-        close FH;
-        $p = odf_create_element($xml);
+        $p = odf_create_element("paragraph.xml");
+
+In the last instruction above, the ODF element constructor argument is a
+filename. Knowing that a legal ODF XML tag can't be terminated by ".xml",
+the given "paragraph.xml" string is regarded as a XML file name, and
+C<odf_create_element()> automatically uses the content of this file (that
+must be well-formed XML) to build the element. Note that when the argument
+is a string starting with "http:", it's regarded as a HTTP URL and the
+constructor automatically tries to load the corresponding resource, that is
+supposed to be well-formed XML (beware: this feature works only if
+C<LWP::Simple> is installed in your Perl environment and, of course, if you
+are on line).
 
 After that, the imported element may be attached anywhere using
 C<insert_element()> or C<append_element()>. (Note that it's strongly
@@ -2463,3 +2471,12 @@ we can always select a page by position, like in this example which provides
 a name to the last page:
 
         $context->get_draw_page_by_position(-1)->set_name("The End");
+
+=head1	AUTHOR/COPYRIGHT
+
+Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
+Contact: jmgdoc@cpan.org
+
+Copyright (c) 2011 Jean-Marie Gouarne for this tutorial.
+
+=cut

@@ -1,41 +1,26 @@
-# Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+#=============================================================================
 #
-# Author: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
+#       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
-# This file is part of lpOD (see: http://lpod-project.org).
-# lpOD is free software; you can redistribute it and/or modify it under
-# the terms of either:
-#
-# a) the GNU General Public License as published by the Free Software
-#    Foundation, either version 3 of the License, or (at your option)
-#    any later version.
-#    Lpod is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#    You should have received a copy of the GNU General Public License
-#    along with lpOD.  If not, see <http://www.gnu.org/licenses/>.
-#
-# b) the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#    http://www.apache.org/licenses/LICENSE-2.0
-#-----------------------------------------------------------------------------
+#=============================================================================
 use 5.010_000;
 use strict;
 #=============================================================================
 #       The ODF Document class definition
-#-----------------------------------------------------------------------------
+#=============================================================================
 package ODF::lpOD::Document;
-our     $VERSION    = '1.004';
-use     constant PACKAGE_DATE => '2011-02-20T18:04:00';
+our     $VERSION    = '1.005';
+use     constant PACKAGE_DATE => '2011-03-09T21:53:29';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN   {
-        *forget         = *DESTROY;
-        *container      = *get_container;
-        *add_part       = *add_file;
+        *forget                 = *DESTROY;
+        *container              = *get_container;
+        *add_part               = *add_file;
+        *register_style         = *insert_style;
         }
 
 #--- specific constructors ---------------------------------------------------
@@ -121,6 +106,7 @@ sub     new
                 $self->{container} = ODF::lpOD::Container->new
                                 (uri => $self->{uri}) or return undef;
                 }
+        $self->{pretty} //= lpod->debug;
         return $self;
         }
 
@@ -411,6 +397,7 @@ sub     get_default_style
         {
         my $self        = shift;
         my $family      = shift;
+        $family =~ s/ /-/g;
         my $xp =        '//style:default-style[@style:family="' .
                         $family . '"]';
         return $self->get_element(STYLES, $xp);
@@ -432,6 +419,7 @@ sub     get_style
                 alert "Missing style family"; return undef;
                 }
         my $name        = shift;
+        $family =~ s/ /-/g;
         unless ($name)
                 {
                 given ($family)
@@ -446,7 +434,6 @@ sub     get_style
                                 }
                         }
                 }
-
         my $style; my $xp;
         my $f = $family; $f =~ s/[ _]/-/g;
         given ($family)
@@ -456,10 +443,16 @@ sub     get_style
                         $xp =   '//text:list-style[@style:name="'       .
                                 $name . '"]';
                         }
-                when (/(master|page layout)/)
+                when (/(master|page-layout)/)
                         {
-                        $xp =   '//style:' . $f . '[@style:name="'     .
+                        $xp =   '//style:' . $f . '[@style:name="'      .
                                 $name . '"]';
+                        }
+                when ('data')
+                        {
+                        my $n = shift;
+                        $xp =   '//number:' . $name . '-style'        .
+                                '[@style:name="' . $n . '"]';
                         }
                 when ('gradient')
                         {
@@ -475,7 +468,6 @@ sub     get_style
                                 '"]';
                         }
                 }
-
         return
                 $self->get_element(STYLES, $xp)
                                 //
@@ -490,9 +482,9 @@ sub     get_styles
                 {
                 alert "Missing style family"; return undef;
                 }
-        if ($family ~~ ODF::lpOD::NumberStyle->families)
+        if ($family ~~ ODF::lpOD::DataStyle->families)
                 {
-                return $self->get_numeric_styles($family);
+                return $self->get_data_styles($family, @_);
                 }
         my $xp;
         my $f = $family; $f =~ s/[ _]/-/g;
@@ -522,7 +514,7 @@ sub     get_styles
                 );        
         }
 
-sub	get_numeric_styles
+sub	get_data_styles
 	{
 	my $self	= shift;
         my $family      = shift;
@@ -538,6 +530,17 @@ sub	get_numeric_styles
                 }
         return @ns;
 	}
+
+sub     get_data_style
+        {
+        my $self        = shift;
+        my ($family, $name) = @_;
+        my $xp = "//number:$family-style";
+        $xp .= '[@style:name="' . $name . '"]';
+        return  $self->get_element(STYLES, $xp)
+                //
+                $self->get_element(CONTENT, $xp);
+        }
 
 sub     check_stylename
         {
@@ -1310,8 +1313,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-02-15T11:01:36';
+our     $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-03-07T08:43:09';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1541,7 +1544,7 @@ sub     serialize
         my $self        = shift;
         my %opt         =
                 (
-                pretty          => FALSE,
+                pretty          => lpod->debug,
                 empty_tags      => EMPTY_TAGS,
                 output          => undef,
                 @_

@@ -32,6 +32,8 @@ C<odf_document> method:
 
    $doc->insert_style($s);
 
+Note that C<register_style()> is an alias of C<insert_style()>.
+
 Additional named parameters can be required according to the family. An optional
 C<parent> argument, whose value is the name of another common style of
 the same family (existing or to be created), can be provided to
@@ -318,6 +320,11 @@ official nine numeric values from C<100> to C<900> (§15.4.32);
 
 C<style>: to specify whether to use normal or italic font face; the
 legal values are C<normal>, C<italic> and C<oblique>;
+
+=item
+
+C<variant>: may be set to C<'small-caps'> in order to display the text a small
+capitalized letters;
 
 =item
 
@@ -1331,6 +1338,46 @@ size.
 The C<set_placeholder()> method always returns the inserted placeholder
 element.
 
+=head1  Data styles
+
+The display format of some typed data containers, such as table cells, may be
+specified through appropriate I<data styles>. A data style may be registered
+in a document using C<insert_style()> or C<register_style()> as usual.
+
+There is no specific data style constructor. The developers should
+preferentially use data styles previously defined in template documents.
+However, it's possible to import a data style from an XML string (provided
+by the application or previously exported from another document/location
+through the generic element-based C<serialize()> method). Remember that a
+typical "blind" style import from an XML source (whatever the style family)
+may look like:
+
+        $doc->insert_style(odf_element->create($xml));
+
+In order to specify a currency display format whose name is "N110", with a
+leading dollar sign, followed by a space, then by one or more integer digits
+and two decimal digits, the content of the C<$xml> string above should be:
+
+        <number:currency-style style:name="N110">
+          <number:currency-symbol>$</number:currency-symbol>
+          <number:text> </number:text>
+          <number:number number:decimal-places="2"
+                         number:min-integer-digits="1"
+                         number:grouping="true"/>
+        </number:currency-style>
+
+A data style may be retrieved using the document-based C<get_style()> method,
+with 3 arguments (instead of 2). The first argument must be C<'data'>, the
+second one is the data style type, and the last one is the individual style
+name. The allowed data types are C<'number'>, C<'percentage'>, C<'currency'>,
+C<'date'>, C<'time'>, C<'boolean'>, and C<'text'>. As an example, the
+instructions below try to select a currency data style and a boolean one, whose
+respective names are "MyMoney" and "YesNo":
+
+        my $cs = $doc->get_style('data', 'currency', 'MyMoney');
+        my $bs = $doc->get_style('data', 'boolean', 'YesNo');
+
+
 =head1  Inter-document style replication
 
 A special, document-based C<substitute_styles()>, allows the user to remove
@@ -1382,5 +1429,19 @@ set to C<FALSE> when C<substitute_styles()> is used from this part.
 Of course, the bulk style substitution in not the only way to import styles
 registered elsewhere. Thanks to C<get_style()> and C<get_styles()>, styles
 may be picked individually or by family, cloned and registered locally by
-C<insert_style()>.
+C<insert_style()> or C<register_style()>.
 
+=head1	AUTHOR/COPYRIGHT
+
+Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
+Contact: jmgdoc@cpan.org
+
+Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+Copyright (c) 2011 Jean-Marie Gouarné.
+
+This work was sponsored by the Agence Nationale de la Recherche
+(L<http://www.agence-nationale-recherche.fr>).
+
+License: GPL v3, Apache v2.0 (see LICENSE).
+
+=cut

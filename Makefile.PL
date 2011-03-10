@@ -1,8 +1,15 @@
-#-----------------------------------------------------------------------------
-# lpOD Perl - Packaging & installation - 2011-01-05T08:38:47
-#-----------------------------------------------------------------------------
-use 5.010_000;
-use strict;
+#=============================================================================
+#
+#       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
+#
+#=============================================================================
+use     5.010_000;
+use     strict;
+#=============================================================================
+#       Packaging & installation for ODF::lpOD - 2011-03-10T08:55:07
+#=============================================================================
 use ExtUtils::MakeMaker;
 use Getopt::Long;
 #-----------------------------------------------------------------------------
@@ -14,7 +21,7 @@ sub	default_version
 
 sub	default_author
 	{
-	'Jean-Marie Gouarne <jean-marie.gouarne@arsaperta.com>'
+	'Jean-Marie Gouarne <jean-marie.gouarne@online.fr>'
 	}
 
 sub	default_date

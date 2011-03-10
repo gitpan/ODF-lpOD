@@ -36,11 +36,33 @@ the current one.
 
 =head3  odf_create_element(data)
 
-Creates an odf_element from a fragment of XML data or an arbitrary tag.
-If the given argument is valid XML, it's parsed and the new element is
-created accordingly, possibly with a complex structure. If the argument
-is a non-XML string, it's regarded as a tag (possibly with a name space
-prefix), and the new element is created internally without XML parsing. 
+Creates an odf_element from an argument which may be an arbitrary tag, a
+well-formed XML string, a file handle, or a web link. Beware that it's a
+generic, low level constructor, allowing the user to create arbitrary
+elements. Its explicit use should be exceptional.
+
+The following instruction creates a regular XML element whose tag is "foo":
+
+        $e = odf_create_element('foo');
+
+If the given argument is a string whose first character is "<", it's parsed
+as an XML element definition. As an example, the instruction below creates
+a "foo" element with a "bar" attribute whose value is "baz" while the text
+of the element is "xyz":
+
+        $e = odf_create_element('<foo bar="baz">xyz</foo>');
+
+If the given string starts with C<'http:'>, then it's regarded as the URL of
+an XML resource available through the web. If L<LWP::Simple> is installed and
+if the remote resource is available, then this resource is parsed as XML.
+
+If the argument is a reference (and not a string), it's regarded as a text file
+handle; if it's really a file handle, the content of this file is loaded and
+parsed as XML.
+
+The use of file handles or HTTP links allows the applications to easily import
+ODF element definitions from remote locations and/or to reuse element
+definitions stored in application-specific XML files or databases.
 
 The new element is not attached to a document; it's free for later use.
 
@@ -478,29 +500,17 @@ This extensibility mechanism must be used very cautiously if the specified tag
 is already associated with a lpOD class, knowing that a wrongly overriden
 method could produce destructive side effects.
 
-=head1	COPYRIGHT & LICENSE
+=head1	AUTHOR/COPYRIGHT
+
+Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
+Contact: jmgdoc@cpan.org
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+Copyright (c) 2011 Jean-Marie Gouarné.
 
 This work was sponsored by the Agence Nationale de la Recherche
 (L<http://www.agence-nationale-recherche.fr>).
 
-lpOD is free software; you can redistribute it and/or modify it under
-the terms of either:
-
-a) the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option)
-any later version.
-lpOD is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-You should have received a copy of the GNU General Public License
-along with lpOD.  If not, see L<http://www.gnu.org/licenses/>.
-
-b) the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-L<http://www.apache.org/licenses/LICENSE-2.0>
+License: GPL v3, Apache v2.0 (see LICENSE).
 
 =cut

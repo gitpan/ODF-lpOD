@@ -688,30 +688,18 @@ the entry is automatically set to an empty string. However, for users who know
 exactly what they do, C<set_type()> allows to force a non-empty type I<after>
 C<set_path()>.
 
-=head1	COPYRIGHT & LICENSE
+=head1	AUTHOR/COPYRIGHT
+
+Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
+Contact: jmgdoc@cpan.org
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+Copyright (c) 2011 Jean-Marie Gouarné.
 
 This work was sponsored by the Agence Nationale de la Recherche
 (L<http://www.agence-nationale-recherche.fr>).
 
-lpOD is free software; you can redistribute it and/or modify it under
-the terms of either:
-
-a) the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option)
-any later version.
-lpOD is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-You should have received a copy of the GNU General Public License
-along with lpOD.  If not, see L<http://www.gnu.org/licenses/>.
-
-b) the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-L<http://www.apache.org/licenses/LICENSE-2.0>
+License: GPL v3, Apache v2.0 (see LICENSE).
 
 =cut
 

@@ -3,6 +3,7 @@ MANIFEST
 README
 INSTALL
 LICENSE
+Changes
 lpOD.pm
 lpOD/Common.pm
 lpOD/Document.pm

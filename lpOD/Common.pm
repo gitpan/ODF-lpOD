@@ -1,34 +1,18 @@
-# Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+#=============================================================================
 #
-# Author: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
+#       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
-# This file is part of lpOD (see: http://lpod-project.org).
-# Lpod is free software; you can redistribute it and/or modify it under
-# the terms of either:
-#
-# a) the GNU General Public License as published by the Free Software
-#    Foundation, either version 3 of the License, or (at your option)
-#    any later version.
-#    lpOD is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#    You should have received a copy of the GNU General Public License
-#    along with lpOD.  If not, see <http://www.gnu.org/licenses/>.
-#
-# b) the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#    http://www.apache.org/licenses/LICENSE-2.0
-#-----------------------------------------------------------------------------
+#=============================================================================
 use     5.010_000;
 use     strict;
-#-----------------------------------------------------------------------------
+#=============================================================================
 #       Common lpOD/Perl parameters and utility functions
-#-----------------------------------------------------------------------------
+#=============================================================================
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.005';
-use constant PACKAGE_DATE       => '2011-02-26T23:23:32';
+our	$VERSION	        = '1.006';
+use constant PACKAGE_DATE       => '2011-03-09T19:30:57';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -79,7 +63,7 @@ our @EXPORT     = qw
         odf_text_style odf_paragraph_style
         odf_list_style odf_list_level_style odf_outline_style
         odf_table_style odf_column_style odf_row_style odf_cell_style
-        odf_number_style
+        odf_data_style
         odf_master_page odf_page_end_style odf_drawing_page_style
         odf_page_layout odf_presentation_page_layout
         odf_graphic_style odf_gradient
@@ -172,7 +156,7 @@ use constant
         odf_column_style        => 'ODF::lpOD::ColumnStyle',
         odf_row_style           => 'ODF::lpOD::RowStyle',
         odf_cell_style          => 'ODF::lpOD::CellStyle',
-        odf_number_style        => 'ODF::lpOD::NumberStyle',
+        odf_data_style          => 'ODF::lpOD::DataStyle',
         odf_master_page         => 'ODF::lpOD::MasterPage',
         odf_page_layout         => 'ODF::lpOD::PageLayout',
         odf_presentation_page_layout

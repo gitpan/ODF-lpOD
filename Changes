@@ -1,0 +1,9 @@
+1.110   2011-03-10
+  - Added change log in the distribution.
+  - TextStyle: added 'variant' option.
+  - Document: XML indent if debug mode, added register_style() as an alias
+  for insert_style(); bug fix in get_style().
+  - Element.pm: Bug fixes and improvements regarding XML imports.
+  - Style.pm : Number style handling improvement.
+  - All: many comment changes.
+  - Doc updates.

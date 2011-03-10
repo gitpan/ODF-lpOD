@@ -1,35 +1,19 @@
-# Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+#=============================================================================
 #
-# Author: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
+#       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
-# This file is part of lpOD (see: http://lpod-project.org).
-# lpOD is free software; you can redistribute it and/or modify it under
-# the terms of either:
-#
-# a) the GNU General Public License as published by the Free Software
-#    Foundation, either version 3 of the License, or (at your option)
-#    any later version.
-#    Lpod is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#    You should have received a copy of the GNU General Public License
-#    along with lpOD.  If not, see <http://www.gnu.org/licenses/>.
-#
-# b) the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#    http://www.apache.org/licenses/LICENSE-2.0
-#-----------------------------------------------------------------------------
+#=============================================================================
 use     5.010_000;
 use     strict;
-#-----------------------------------------------------------------------------
-#	Style handling base package
-#-----------------------------------------------------------------------------
+#=============================================================================
+#	Style handling package
+#=============================================================================
 package ODF::lpOD::Style;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-02-25T14:22:53';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-03-09T19:29:36';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -143,7 +127,7 @@ sub     set_class
                 my $tag = $self->get_tag;
                 if ($tag =~ /^number:.*-style$/)
                         {
-                        $class = odf_number_style;
+                        $class = odf_data_style;
                         }
                 }
         else
@@ -310,13 +294,12 @@ sub	create
 	{
         my $caller      = shift;
 	my $family      = shift;
-        my %opt         = process_options(@_);
 	my $desc = $STYLE_DEF{$family};
 	unless ($desc)
 	        {
 	        alert "Missing or not supported style family"; return FALSE;
 	        }
-
+        my %opt         = process_options(@_);
         my $tag = $opt{'tag'} || $desc->{tag}; delete $opt{tag};
         my $style;
         if ($opt{clone})
@@ -463,8 +446,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::TextStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2011-01-02T12:07:10';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-03-04T08:35:43';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -474,6 +457,7 @@ our %ATTR =
     size                => 'fo:font-size',
     weight              => 'fo:font-weight',
     style               => 'fo:font-style',
+    variant             => 'fo:font-variant',
     color               => 'fo:color',
     country             => 'fo:country',
     language            => 'fo:language',
@@ -1189,11 +1173,20 @@ sub	set_data_style
 	}
 
 #=============================================================================
-package ODF::lpOD::NumberStyle;
+package ODF::lpOD::DataStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:47:54';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2011-03-09T19:56:25';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my $caller      = shift;
+        my $ds = ODF::lpOD::Element->create(@_);
+        return bless $ds, __PACKAGE__;
+        }
+
 #-----------------------------------------------------------------------------
 
 our     @FAMILIES       =
@@ -1206,8 +1199,38 @@ sub     get_family
         {
         my $self        = shift;
         my $tag = $self->get_tag;
-        $tag =~ /^number:(.*)-style$/;
-        return $1;
+        my $f;
+        if ($tag =~ /^number:(.*)-style$/)
+                {
+                $f = $1;
+                }
+        return $f;
+        }
+
+sub     classify
+        {
+        my $arg         = shift;
+        if (ref $arg)
+                {
+                my $f = $arg->ODF::lpOD::DataStyle::get_family;
+                if ($f)
+                        {
+                        bless $arg, __PACKAGE__;
+                        }
+                return $arg;
+                }
+        else
+                {
+                if ($arg =~ /^number:(.*)-style$/)
+                        {
+                        my $family = $1;
+                        if ($family ~~ [@FAMILIES])
+                                {
+                                return __PACKAGE__;
+                                }
+                        }
+                }
+        return undef;
         }
 
 sub     set_name

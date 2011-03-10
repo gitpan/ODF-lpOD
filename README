@@ -12,6 +12,15 @@ lpOD Project -- Languages & Platforms OpenDocument
 
 http://lpod-project.org
 
-Architect: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
-
+Architect: Jean-Marie Gouarné <jean-marie.gouarne@online.fr>
 Coordinator: Luis Belmar-Letelier <luis@itaapy.com>
+
+Copyright owners for the Perl implementation:
+
+  Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+  Copyright (c) 2011 Jean-Marie Gouarné.
+
+Developer/maintainer for the Perl implementation:
+
+  Jean-Marie Gouarné <jmgdoc@cpan.org>
+  http://jean.marie.gouarne.online.fr

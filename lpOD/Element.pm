@@ -1,34 +1,18 @@
-# Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+#=============================================================================
 #
-# Author: Jean-Marie Gouarné <jean-marie.gouarne@arsaperta.com>
+#       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
+#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
-# This file is part of lpOD (see: http://lpod-project.org).
-# Lpod is free software; you can redistribute it and/or modify it under
-# the terms of either:
-#
-# a) the GNU General Public License as published by the Free Software
-#    Foundation, either version 3 of the License, or (at your option)
-#    any later version.
-#    lpOD is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#    You should have received a copy of the GNU General Public License
-#    along with lpOD.  If not, see <http://www.gnu.org/licenses/>.
-#
-# b) the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#    http://www.apache.org/licenses/LICENSE-2.0
-#-----------------------------------------------------------------------------
-use 5.010_000;
-use strict;
-#-----------------------------------------------------------------------------
-#       Level 0 - Basic XML element handling - ODF Element class
-#-----------------------------------------------------------------------------
+#=============================================================================
+use     5.010_000;
+use     strict;
+#=============================================================================
+#       Base ODF element class and some derivatives
+#=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.005';
-use constant PACKAGE_DATE => '2011-02-26T23:49:04';
+our     $VERSION        = '1.006';
+use constant PACKAGE_DATE => '2011-03-10T09:18:04';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -139,14 +123,22 @@ sub     new
 	my $class	= ref($caller) || $caller;
         my $data        = shift;
         my $element;
-        if (ref $data)          # load data from file
+        if (ref $data)                  # load data from file handle
                 {
                 $data = ODF::lpOD::Element->load_from_file($data);
                 }
-                                # remove leading and trailing spaces
+        elsif ($data =~ /^http:/i)      # load data from the www
+                {
+                $data = ODF::lpOD::Element->load_from_cloud($data);
+                }
+        elsif ($data =~ /\.xml$/i)      # load data from file
+                {
+                $data = ODF::lpOD::Element->load_from_file_path($data);
+                }
+                                        # remove leading and trailing spaces
         $data	=~ s/^\s+//;
         $data	=~ s/\s+$//;
-        if ($data =~ /^</)	# create element from XML string
+        if ($data =~ /^</)	        # create element from XML string
                 {
                 return ODF::lpOD::Element->parse_xml($data, @_);
                 }
@@ -160,7 +152,7 @@ sub     new
                 }
         elsif ($tag =~ /^number:.*-style$/)
                 {
-                bless $element, 'ODF::lpOD::Style';
+                bless $element, 'ODF::lpOD::DataStyle';
                 }
                 # optional user-defined post-constructor function
         if ($INIT_CALLBACK && (caller() eq 'XML::Twig'))
@@ -176,13 +168,31 @@ sub	load_from_file
 	{
 	my $self	= shift;
 	my $source      = shift;
-        my $data;
-        while (my $l = <$source>)
-                {
-                chomp $l;
-                $data .= $l if $l;
-                }
+        local $/;
+        my $data = <$source>;
         return $data;
+	}
+
+sub     load_from_file_path
+        {
+        my $self        = shift;
+        my $source      = shift;
+        open(my $FH, '<:utf8', $source);
+        my $data = ODF::lpOD::Element->load_from_file($FH);
+        close $FH;
+        return $data;
+        }
+
+sub	load_from_cloud
+	{
+        unless (eval 'require LWP::Simple')
+                {
+                alert "HTTP import requires LWP::Simple";
+                return undef;
+                }
+	my $self	= shift;
+	my $url         = shift or return undef;
+        return LWP::Simple::get($url);
 	}
 
 sub	parse_xml
@@ -202,7 +212,6 @@ sub	parse_xml
 	$twig->safe_parse(@_) or return undef;
         my $element = $twig->root;
         $element->set_classes;
-        bless $element, $class;
         return $element;
 	}
 
@@ -232,7 +241,7 @@ sub     set_tag
 sub     set_class
         {
         my $self        = shift;
-        my $prefix = $self->ns_prefix;
+        my $prefix = $self->ns_prefix or return $self;
         if ($prefix eq 'text')
                 {
                 ODF::lpOD::TextField::classify($self);
@@ -245,12 +254,19 @@ sub     set_classes
         my $self        = shift;
         foreach my $e ($self->descendants_or_self)
                 {
+                my $class;
                 next if $e->isa('ODF::lpOD::TextNode');
                 my $tag = $e->tag;
-                my $class = $CLASS{$tag} || 'ODF::lpOD::Element';
+                if ($tag =~ /^number:.*style$/)
+                        {
+                        $class = 'ODF::lpOD::Style';
+                        }
+                $class ||= $CLASS{$tag};
+                $class ||= 'ODF::lpOD::Element';
                 bless $e, $class;
                 $e->set_class;
                 }
+        return $self;
         }
 
 sub     check_tag
@@ -1889,7 +1905,7 @@ sub     serialize
         my $self        = shift;
         my %opt         = process_options
                 (
-                pretty          => FALSE,
+                pretty          => lpod->debug,
                 empty_tags      => EMPTY_TAGS,
                 @_
                 );
