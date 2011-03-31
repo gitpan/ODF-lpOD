@@ -134,7 +134,7 @@ lpOD applications !).
 
 =head1  Access to individual document parts
 
-=head3  get_part(name)
+=head3  get_part(name [options])
 
 Generic C<odf_document> method allowing access to any I<part> of a previously
 created document instance, including parts that are not handled by lpOD.
@@ -149,7 +149,96 @@ object:
 With C<MIMETYPE> as argument, C<get_part()> returns the MIME type of the
 document as a text string, i.e. the same result as C<get_mimetype()>.
 
-This method may be used in order to get any other document part, such an
+The parts are loaded for read-write use by default. However, a C<update>
+boolean option may be provided; if set to C<FALSE>, this option instructs
+lpOD that the loaded part will not be persistently changed. In such case, the
+part is not really in "read-only" mode, knowing that the user can always
+insert, update or delete any element, but the changes regarding this part are
+not committed in the ODF file when the C<save()> method is used. However, the
+user can make an XML export reflecting these changes at any time through the
+part-based C<serialize()> method.
+
+For special purposes with XML parts, get_part() may be called with optional
+C<handlers> and/or C<roots> parameters that specify a custom behavior during
+the parsing time, before the full document availability. These parameters are
+respectively linked to the C<twig_handlers> and C<twig_roots> options of the
+underlying XML::Twig API, so you can find details about them in the XML::Twig
+documentation. The value of each one must be a hash reference whose keys are
+XML tags and values are user-defined function references.
+
+The given handlers are triggered each time the corresponding XML tags are found
+by the XML parser when the part is loaded, before any other processing. As an
+example, the following sequence displays the total number of paragraphs found
+in a document content, knowing that 'text:p' is the ODF tag for paragraphs:
+
+        my $doc = odf_get_document($filename);
+        my $count = 0;
+        my $content = $doc->get_part(
+                CONTENT,
+                handlers    => {
+                    'text:p'    => sub { $count++ }
+                    }
+                );
+        say "This document contains $count paragraphs";
+
+Of course there are more user-friendly ways to count objects once the document
+part is loaded, and this feature is probably not needed in most cases. However,
+it's the most efficient way to process elements "on the fly" in huge documents.
+
+The user-defined callback function receives 2 arguments. The first one is the
+XML::Twig instance internally used by lpOD to handle the XML part (you can
+ignore it as long as you work with ODF::lpOD documented features only). The
+second one is the parsed ODF element itself.
+
+The C<roots> option produces a more drastic effect. If this option is set,
+C<get_part()> ignores any XML content outside of the given roots (with the
+exception of the root element of the XML part). As an example, the instruction
+below instructs C<get_part()> to load the I<'office:automatic-styles'> element
+only in the C<CONTENT> part:
+
+        my $content = $doc->get_part(
+                CONTENT,
+                roots   => {
+                    'office:automatic-styles' => TRUE
+                    }
+                );
+
+In the example above, a specified root tag is specified with an associated
+C<TRUE> value. The given value may be a user-defined function as well; if so,
+the given function is triggered each time the given XML tag is processed, in
+the same way as with the C<handler> option. The next example illustrates the
+fastest way to parse a large document just to extract and display its headings
+(i.e. the I<'text:h'> elements), without any other processing (this code, with
+some more output presentation sugar, could be used in order to quickly export
+a table of content):
+
+        sub say_heading_text {
+                my ($twig, $heading) = @_;
+                say $heading->get_text;
+                }
+
+        $doc->get_part(
+                CONTENT,
+                roots   => {
+                        'text:h' => \&say_heading_text
+                        }
+                );
+
+Remember that, after such a sequence, the loaded content includes only the
+root element and the I<'text:h'> elements.
+
+The C<roots> option allows the applications to avoid performance issues when
+they just need to get a read-only access to particular portions of huge
+documents. On the other hand, this option should not be used when the part is
+loaded for update, because it would produce truncated and inconsistent
+documents. So, as soon as C<roots> is set, the default value of the C<update>
+option is silently set to C<FALSE> (but the user can explicitly set this option
+to C<TRUE>... and live with the consequences).
+
+Caution: These options work only with a previously existing document, and if
+the given part has not been already loaded.
+
+C<get_part()> may be used in order to get any other document part, such as an
 image or any other non-XML part. To do so, the real path of the needed part
 must be specified instead of one of the XML part symbolic names. As an example,
 the instruction below returns the binary content of an image:
@@ -163,6 +252,14 @@ bytes.
 C<Pictures> folder.)
 
 Returns C<undef> if case of failure.
+
+A special C<get_body()> accessor is available. C<get_body()> is mainly a
+part-based method, introduced later, but, when called from a document object,
+it returns the body element of the C<CONTENT> part. So the two instructions
+below are equivalent:
+
+        $context = $doc->get_body;
+        $context = $doc->get_part(CONTENT)->get_body;
 
 =head3  get_parts
 
@@ -304,8 +401,8 @@ page count of the document (assuming it's a text document):
         my $stat = $meta->get_statistics;
         say $meta->{'meta:page-count'};
 
-Note that nothing prevents the applications from using C<get_statistics> to
-set any arbitrary figures.
+Note that nothing prevents the applications from using C<set_statistics> to
+set any arbitrary figure.
 
 =head2  Keywords
 
@@ -474,7 +571,7 @@ the C<CONTENT>:
         $doc->save();
 
 Note that C<needs_update(FALSE)> deactivates the automatic update only; the
-explicit use of the C<store()> part-based method remains always effective. 
+explicit use of the C<store()> part-based method remains always effective.
 
 =head3  add_file
 
@@ -702,4 +799,3 @@ This work was sponsored by the Agence Nationale de la Recherche
 License: GPL v3, Apache v2.0 (see LICENSE).
 
 =cut
-

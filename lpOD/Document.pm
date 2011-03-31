@@ -11,8 +11,8 @@ use strict;
 #       The ODF Document class definition
 #=============================================================================
 package ODF::lpOD::Document;
-our     $VERSION    = '1.005';
-use     constant PACKAGE_DATE => '2011-03-09T21:53:29';
+our     $VERSION    = '1.006';
+use     constant PACKAGE_DATE => '2011-03-17T19:39:05';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -160,7 +160,8 @@ sub     get_xmlpart
                                 (
                                 container       => $container,
                                 part            => $part_name,
-                                pretty          => $self->{pretty}
+                                pretty          => $self->{pretty},
+                                @_
                                 );
                 unless ($xmlpart)
                         {
@@ -194,11 +195,11 @@ sub     get_part
         my $part_name   = shift;
         if (is_xmlpart($part_name))
                 {
-                return $self->get_xmlpart($part_name);
+                return $self->get_xmlpart($part_name, @_);
                 }
         else
                 {
-                return $container->get_part($part_name);
+                return $container->get_part($part_name, @_);
                 }
         }
 
@@ -1313,8 +1314,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '1.004';
-use constant PACKAGE_DATE => '2011-03-07T08:43:09';
+our     $VERSION    = '1.005';
+use constant PACKAGE_DATE => '2011-03-23T08:33:57';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1392,13 +1393,16 @@ sub     new
                 container       => undef,
                 part            => undef,
                 load            => TRUE,
-                update          => TRUE,
                 elt_class       => 'ODF::lpOD::Element',
                 twig            => undef,
                 context         => undef,
                 @_
                 };
 
+        unless (defined $self->{update})
+                {
+                $self->{update} = $self->{roots} ? FALSE : TRUE;
+                }
         my $part_class = class_of($self->{part});
         unless ($class)
                 {
@@ -1407,6 +1411,8 @@ sub     new
         $self->{pretty_print} = PRETTY_PRINT if is_true($self->{pretty});
         $self->{twig} //= XML::Twig->new        # twig init
                                 (
+                                twig_handlers   => $self->{handlers},
+                                twig_roots      => $self->{roots},
                                 elt_class       => $self->{elt_class},
                                 pretty_print    => $self->{pretty_print},
                                 output_encoding => TRUE,

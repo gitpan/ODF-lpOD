@@ -415,6 +415,8 @@ L<ODF::lpOD::Common>: Common utility functions
 
 =back
 
+An alternative tutorial, intended for French-reading users, is available at
+L<http://jean.marie.gouarne.online.fr/doc/introduction_lpod_perl.pdf>
 
 =head1	AUTHOR/COPYRIGHT
 

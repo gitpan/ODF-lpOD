@@ -684,10 +684,67 @@ element while it's consistent at a higher level, knowing that its start and end
 points may belong to different paragraphs. On the other hand, it's always safe
 from the document root or body element.
 
+=head2  Reference marks and fields
+
+=head3  Reference marks
+
+References marks are created according using C<set_reference_mark()>, according
+to the same logic as bookmarks. The first argument is the unique reference name
+and all the options are the same as with C<set_bookmark()>. Note that it's
+possible to create I<point references> as well as I<range references>.
+
+When setting a range reference, it's recommended to put the start and the end
+in the same paragraph or heading.
+
+Reference marks may be retrieved in the same way as bookmarks through the
+context-based C<get_reference_mark()> and C<get_reference_marks()> methods.
+
+=head3  Reference fields
+
+A reference mark, like a bookmark, may be the target of a I<reference field>,
+that is a particular dynamic text field. A reference field is intended to
+display an information regarding a reference mark that is located elsewhere.
+A reference field may be set using C<set_reference()> with the same positioning
+options as bookmarks or text fields, and the following specific named
+parameters:
+
+=over
+
+=item
+
+C<type>: the type of target, that may be C<reference> (the default) or
+C<bookmark>;
+
+=item
+
+C<name>: the name of the target bookmark or reference mark;
+
+=item
+
+C<format>: specifies what information about the reference is displayed;
+supported values are C<page> (the default), C<chapter>, C<direction>, C<text>,
+C<category-and-value>, C<caption>, and C<value>; see section 6.6.5 in ODF 1.1
+specification for details about these values.
+
+=back
+
+As an example, the following sequence, assuming that C<$p1> and C<$p2> are two
+distinct paragraphs, puts a reference mark in C<$p1> and inserts a field that
+displays the chapter number of C<$p1> immediately after a given substring in
+C<$p2>:
+
+        $p1->set_reference_mark("Here");
+        $p2->set_reference(
+                type    => 'reference',
+                format  => 'chapter'
+                name    => "Here",
+                after   => "see chapter "
+                );
+
 =head2  Index marks
 
-Index marks may be handled like bookmarks but they functionality differ. There
-are three kinds of index marks, namely:
+Index marks may be handled like bookmarks but their functionality differs.
+There are three kinds of index marks, namely:
 
 =over
 
@@ -1258,7 +1315,7 @@ but they are neutral. If the calling element contains tracked changes, they
 work like their document-based versions in the given context. This feature
 allows the users to retrieve tracked changes in page headers and footers,
 knowing that these changes are registered in the contexts of the corresponding
-page style definitions, and not in the document content. 
+page style definitions, and not in the document content.
 
 =head2  Tracked change methods
 
@@ -1689,4 +1746,3 @@ This work was sponsored by the Agence Nationale de la Recherche
 License: GPL v3, Apache v2.0 (see LICENSE).
 
 =cut
-

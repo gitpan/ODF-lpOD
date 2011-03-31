@@ -12,8 +12,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-02-25T20:02:16';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-03-30T09:20:56';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -74,7 +74,7 @@ sub     set_spaces
         my $self        = shift;
         my $count       = shift         or return undef;
         my %opt         = @_;
-        
+
         my $s = $self->insert_element('s', %opt);
         $s->set_attribute('c', $count);
         return $s;
@@ -266,7 +266,7 @@ sub     set_position_mark
                 alert "Conflicting before and after parameters";
                 return FALSE;
                 }
-        
+
         $opt{offset}  //= 0;
         $opt{search}    = $opt{before} // $opt{after};
         if      (defined $opt{after})   { $opt{insert} = 'after'  }
@@ -346,7 +346,7 @@ sub     set_text_mark
                         return undef;
                         }
                 }
-        
+
         delete $opt{tag};
         return $self->set_position_mark($tag, %opt);
         }
@@ -359,7 +359,7 @@ sub     set_text
         my $text        = shift;
         return $self->SUPER::set_text($text, @_)    unless $text;
         return $self->_set_text($text)  if caller() eq 'XML::Twig::Elt';
-        
+
         $self->_set_text("");
         my @lines = split("\n", $text);
         while (@lines)
@@ -415,7 +415,7 @@ sub     get_text
                     )
                     {
                     my $t = $node->get_text(%opt);
-                    $text .= $t if defined $t;                    
+                    $text .= $t if defined $t;
                     }
                 else
                     {
@@ -452,7 +452,7 @@ sub     set_span
                 alert("Missing style name");
                 return FALSE;
                 }
-        $opt{search} = $opt{filter} if exists $opt{filter};  
+        $opt{search} = $opt{filter} if exists $opt{filter};
         $opt{attributes} = { 'style name' => $opt{style} };
         delete @opt{qw(filter style)};
         unless (defined $opt{length}) { $opt{search} //= ".*" }
@@ -505,18 +505,19 @@ sub     set_hyperlink
         return $self->split_content(tag => 'a', %opt);
         }
 
-sub     set_bookmark
+sub     set_place_mark
         {
         my $self        = shift;
+        my $type        = shift;
         my $name        = shift;
         unless ($name)
                 {
-                alert "Missing bookmark name"; return FALSE;
+                alert "Missing $type name"; return FALSE;
                 }
 
         return $self->set_text_mark
                 (
-                tag             => 'bookmark',
+                tag             => $type,
                 attributes      =>
                         {
                         name            => $name
@@ -525,17 +526,44 @@ sub     set_bookmark
                 );
         }
 
+sub     set_bookmark
+        {
+        my $self        = shift;
+        return $self->set_place_mark('bookmark', @_);
+        }
+
+sub     set_reference_mark
+        {
+        my $self        = shift;
+        return $self->set_place_mark('reference mark', @_);
+        }
+
+sub     set_reference
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        $opt{type}      //= 'reference';
+        my $tag = 'text:' . $opt{type} . '-ref';
+        $opt{attributes} =
+                {
+                ref_name                => $opt{name},
+                reference_format        => $opt{format}
+                };
+        delete @opt{qw(type name format)};
+        return $self->set_position_mark($tag, %opt);
+        }
+
 sub     set_index_mark
         {
         my $self        = shift;
         my $text        = shift;
-        
+
         unless ($text)
                 {
                 alert "Missing index entry text";
                 return FALSE;
                 }
-        
+
         my %opt         = process_options (@_);
 
         if ($opt{index_name})
@@ -626,7 +654,7 @@ sub     set_bibliography_mark
                         }
                 }
         alert "Missing type parameter" unless $type_ok;
-        
+
         return $self->set_position_mark('bibliography mark', %opt);
         }
 

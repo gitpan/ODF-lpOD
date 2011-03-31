@@ -668,7 +668,7 @@ the I<value>, not its formatted representation.
 
 =head1  Cell span expansion
 
-A cell may be expanded in so it covers one or more adjacent columns and/or rows.
+A cell may be expanded so it covers one or more adjacent columns and/or rows.
 The cell-based C<set_span()> method allows the user to control this expansion.
 It takes C<rows> and C<columns> as parameters, specifying the number of rows
 and the number of columns covered. The following example selects the "B4" cell

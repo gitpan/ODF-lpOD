@@ -157,6 +157,39 @@ element.
 Returns the C<odf_document> instance to which the element belongs.
 Returns C<undef> if the element is not attached to a C<odf_document>.
 
+=head1  Context import
+
+The C<import_children()> method allows the user to directly append elements
+coming from an external context. As an example, the following instruction
+appends appends all the children of a given C<$source> element in the context
+of the calling C<$destination> element:
+
+        $destination->import_children($source);
+
+In this example, both C<$destination> and C<$source> are elements. The source
+context may belong to the same document as the destination context, or not, so
+this method may be used for content replication across documents. Knowing that
+the imported elements are clones of the original ones, the source contexte is
+unchanged. The imported elements are appended at the end of the calling context
+in the same order as in the source context.
+
+An optional filter may be specified as the 2nd argument, in order to import a
+particular kind of the source context only. So, the instruction below imports
+only the I<paragraphs> of the source context (remember that C<'text:p'> is the
+ODF tag for paragraphs):
+
+        $destination->import_children($source, 'text:p');
+
+The C<substitute_children()> method, that takes the same arguments as
+C<import_children()>, removes all the children of the calling element (if any),
+then imports the children of a source element. The following sequence replaces
+all the content of a given document body by the content of another document
+body (see L<ODF::lpOD::Document> for details about C<get_body()>):
+
+        $doc_destination->get_body->import_children(
+                $doc_source->get_body
+                );
+
 =head1  Top level contexts
 
 As introduced in L<ODF::lpOD::Document>, the C<odf_part> handlers provide

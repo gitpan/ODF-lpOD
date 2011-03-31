@@ -7,3 +7,10 @@
   - Style.pm : Number style handling improvement.
   - All: many comment changes.
   - Doc updates.
+1.111   2011-03-30
+  - Table.pm: Added out of range security to get_rows() and get_cells();
+  improved cell span handling.
+  - Document.pm: Added the 'handlers' and 'roots' options with get_part().
+  - TextElement.pm: Added reference mark support methods.
+  - Detail change in t/test01_write.t
+  - Doc improvements.

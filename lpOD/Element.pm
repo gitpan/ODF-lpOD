@@ -11,8 +11,8 @@ use     strict;
 #       Base ODF element class and some derivatives
 #=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.006';
-use constant PACKAGE_DATE => '2011-03-10T09:18:04';
+our     $VERSION        = '1.007';
+use constant PACKAGE_DATE => '2011-03-23T20:04:57';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -1039,7 +1039,8 @@ sub     get_position_mark
                 alert ("Name is mandatory for position mark retrieval");
                 return FALSE;
                 }
-        my $attr = $tag =~ /bookmark/ ? 'text:name' : 'text:id';
+        my $attr = $tag =~ /bookmark|reference-mark/ ?
+                'text:name' : 'text:id';
         my %opt = (attribute => $attr, value => $name);
         given ($role)
                 {
@@ -1121,6 +1122,18 @@ sub     get_bookmarks
         {
         my $self        = shift;
         return $self->get_elements(qr'bookmark$|bookmark-start$');
+        }
+
+sub     get_reference_mark
+        {
+        my $self        = shift;
+        return $self->get_position_mark('text:reference-mark', shift);
+        }
+
+sub     get_reference_marks
+        {
+        my $self        = shift;
+        return $self->get_elements(qr'reference-mark$|reference-mark-start$');
         }
 
 sub     get_index_marks
@@ -1268,6 +1281,18 @@ sub     get_bookmark_text
                 $n = $n->next_elt($self, TEXT_SEGMENT);
                 }
         return $text;
+        }
+
+sub     remove_reference_mark
+        {
+        my $self        = shift;
+        return $self->remove_position_mark('text:reference-mark', shift);
+        }
+
+sub     check_reference_mark
+        {
+        my $self        = shift;
+        return $self->check_position_mark('text:reference-mark', shift);
         }
 
 sub     get_bibliography_marks

@@ -517,8 +517,8 @@ sub     clear
 #=============================================================================
 package ODF::lpOD::RowGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '1.004';
-use constant PACKAGE_DATE => '2011-02-22T14:42:55';
+our $VERSION    = '1.005';
+use constant PACKAGE_DATE => '2011-03-11T08:57:12';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -675,7 +675,7 @@ sub     get_rows
 		{
 		my $row = $self->get_row($start);
 		my $n = $end - $start;
-		while ($n >= 0)
+		while ($n >= 0 && $row)
 			{
 			my $r = $row->get_repeated;
 			while ($r > 0 && $n >= 0)
@@ -1545,8 +1545,8 @@ sub	get_cells
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Row;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '1.004';
-use constant PACKAGE_DATE => '2011-02-22T14:42:34';
+our $VERSION    = '1.005';
+use constant PACKAGE_DATE => '2011-03-21T09:13:28';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1667,7 +1667,7 @@ sub     get_cells
 		my $cell = $self->get_cell($start);
 		my $n = $end - $start;
                 my $sp = $start - $cell->get_position;
-		while ($n >= 0)
+		while ($n >= 0 && $cell)
 			{
 			my $r = $cell->get_repeated() - $sp;
 			while ($r > 0 && $n >= 0)
@@ -1802,6 +1802,11 @@ sub     add_cell
                 $elt->paste_last_child($self);
                 }
         $elt->set_style($style) if $set_style;
+        $elt->set_attributes
+                (
+                'number columns spanned'        => undef,
+                'number rows spanned'           => undef
+                );
         if (is_true($empty))
                 {
                 $elt->set_value(undef);

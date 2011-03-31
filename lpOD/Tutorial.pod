@@ -11,9 +11,11 @@ the big picture and allow the user to get started and produce something before
 going through the man pages for details. The features described here are only
 a subset of the lpOD functional coverage.
 
-Note that our code examples use Perl 5.10 syntax, so don't forget
-C<use 5.010.xxx> if you use them unchanged (and remember that lpOD requires
-Perl 5.10 or later).
+Note that our code examples use some Perl 5.10 features (and remember that
+lpOD requires Perl 5.10 or later).
+
+Note: An alternative tutorial, intended for french-reading users, is available
+at L<http://jean.marie.gouarne.online.fr/doc/introduction_lpod_perl.pdf>.
 
 =head1  Global document operation
 
@@ -525,12 +527,12 @@ process) and inserted as a new element in a document:
         open(FH, '>:utf8', "paragraph.xml");
         print FH $xml;
         close FH;
-        
+
         # importing process
         $p = odf_create_element("paragraph.xml");
 
 In the last instruction above, the ODF element constructor argument is a
-filename. Knowing that a legal ODF XML tag can't be terminated by ".xml",
+file name. Knowing that a legal ODF XML tag can't be terminated by ".xml",
 the given "paragraph.xml" string is regarded as a XML file name, and
 C<odf_create_element()> automatically uses the content of this file (that
 must be well-formed XML) to build the element. Note that when the argument
@@ -744,9 +746,9 @@ be included in a document without a unique name (the style identifier for the
 objects that use it).
 
 Once created, the style must be registered in the document style set. To do
-so, you must use the document-based C<insert_style()> method (don't use
-C<insert_element()> for styles). The following instruction creates the new
-paragraph style and includes it in the document:
+so, you must use the document-based C<register_style()> or C<insert_style()>
+method (don't use C<insert_element()> for styles). The following instruction
+creates the new paragraph style and includes it in the document:
 
         $ps1 = $doc->insert_style(
                 odf_create_style('paragraph', name => 'Bordered')
@@ -924,7 +926,7 @@ style is "Standard":
                         weight  => "bold",
                         style   => "italic",
                         color   => "navy blue"
-                        )                
+                        )
                 );
         foreach $p ($doc->get_paragraphs(style => "Standard")) {
                 $p->set_span(
@@ -1629,7 +1631,7 @@ spreadsheet-like cell range specification, or the numeric (zero-based)
 position of the first cell; of course if the second argument is numeric a
 third argument, specifying the numeric position of the last cell, is required.
 The result is a list containing only the defined values matching the given
-type (empty cells and cells whose data type doesn' match are ignored), so the
+type (empty cells and cells whose data type doesn't match are ignored), so the
 length of the list may be less than the specified cell range.
 
 This method may be used from rows, columns, or tables. See L<ODF::lpOD::Table>
@@ -1742,7 +1744,7 @@ following sequence adds 3 column styles:
                 )->set_properties(
                         width           => '500*'
                 );
-        
+
         $doc->insert_style(
                 odf_create_style(
                         'table column',
@@ -1751,7 +1753,7 @@ following sequence adds 3 column styles:
                 )->set_properties(
                         width           => '200*'
                 );
-        
+
         $doc->insert_style(
                 odf_create_style(
                         'table column',
@@ -1841,7 +1843,7 @@ blue border with a 1.25mm grey shadow:
                 );
         $cs->set_properties(
                 border  => "1mm solid #000080",
-                shadow  => "#808080 1.25mm 1.25mm"               
+                shadow  => "#808080 1.25mm 1.25mm"
                 );
         $cs->set_background(color => "yellow");
 
@@ -1936,7 +1938,7 @@ Note that the default value of the <area> parameter of C<set_properties()>
 is the I<family> of the calling style instance, that is 'table cell' here,
 so we could omit this parameter in the first call of C<set_properties()>
 of the example above.
-        
+
 Another important question, for numeric cells, is the display format of
 the figures. As an example, the same amount, say 123.4, stored in a
 cell whose type is C<currency>, could be displayed as "0123.400", "123.40 €",

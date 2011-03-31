@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #=============================================================================
-# test01_write.t        lpOD-Perl installation test     2011-02-17T16:16:58
+# test01_write.t        lpOD-Perl installation test     2011-03-25T09:06:27
 #=============================================================================
 use 5.010_000;
 use strict;
@@ -117,8 +117,7 @@ $doc->insert_style(
                 name            => "Top title",
                 align           => 'center',
                 margin_top      => '0cm',
-                margin_bottom   => '1cm',
-                master_page     => 'StdMaster'
+                margin_bottom   => '1cm'
                 )
         )->set_properties(
                 area            => 'text',
@@ -134,7 +133,8 @@ $doc->insert_style(
                 name            => "Middle title",
                 parent          => "Top title",
                 margin_top      => '1cm',
-                margin_bottom   => '8mm'
+                margin_bottom   => '8mm',
+                master_page     => 'StdMaster'
                 )
         )->set_background(color => 'light blue');
 
