@@ -12,5 +12,11 @@
   improved cell span handling.
   - Document.pm: Added the 'handlers' and 'roots' options with get_part().
   - TextElement.pm: Added reference mark support methods.
-  - Detail change in t/test01_write.t
+  - Detail change in t/test01_write.t.
   - Doc improvements.
+1.112   2011-05-10
+  - TextElement.pm: bug fix in set_note(), improved get_text() recursive.
+  - StructuredContainer.pm: new odf_toc methods.
+  - Style.pm: underline options improvement, doc error fix (#67409),
+  added register()/insert() method, 'stroke-.*' attribute handling improvement.
+  - Documentation: clarified some details, fixed errors and typos.

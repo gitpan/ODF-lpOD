@@ -2294,6 +2294,47 @@ more than a single paragraph in a page footer or header. You can use
 C<insert_element()> and/or C<append_element()> repeatedly with these two
 page style components.
 
+Now our "CustomPage" style is properly defined and registered, but not used
+in the document. Remember that, in a ODF text document, one can't specify
+something like "this page style must apply to page number 2", because pages
+are not statically defined. On the other hand, we can require that a given
+page style apply from the position of a given paragraph. To do so, we must
+define a paragraph style whose C<master page> option is set to the name of the
+required page style, then use this paragraph style with a paragraph somewhere
+in the document content:
+
+        $doc->insert_style(
+                odf_style->create(
+                        'paragraph',
+                        name            => "AfterBreak",
+                        master_page     => "CustomPage"
+                        ),
+                automatic => TRUE
+                );
+        $paragraph->set_style("AfterBreak");
+
+The sequence above produces two visible effects. The (previously selected)
+paragraph whose style is changed to "AfterBreak" is preceded by a page break
+unless it was the first paragraph of the document; in any case it's ensured to
+be the first paragraph of a new page. This new page takes the specified
+"CustomPage" style, and this style page remains in effect for any subsequent
+page up to (and not including) a paragraph whose style owns a C<master page>
+option (or up to the end). This style is registered as C<automatic> here; it's
+not mandatory, but recommended, knowing that this style is specifically defined
+for a given paragraph and should not be displayed for potential reuse in the
+graphical interface of the end-user's text processor.
+
+In this simplistic example, the paragraph style definition don't specify any
+property but C<master page>, so the paragraph itself will be displayed
+according to the default paragraph style. Of course, you can specify any
+regular paragraph style option. If you want to associate a master page to an
+existing paragraph without changing the appearance of the paragraph itself, you
+can create the new paragraph style as a clone of the previously applied one,
+and just add the C<master page> option through C<set_master_page()>. Caution:
+in most cases you should avoid to use C<set_master_page()> against previously
+existing paragraph styles, knowing that every paragraph using the affected
+styles would automatically become "page breakers".
+
 =head1  Using variables and text fields
 
 While illustrating a page style creation use case, we introduced a page number

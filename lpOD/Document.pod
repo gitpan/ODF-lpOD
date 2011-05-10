@@ -185,10 +185,31 @@ Of course there are more user-friendly ways to count objects once the document
 part is loaded, and this feature is probably not needed in most cases. However,
 it's the most efficient way to process elements "on the fly" in huge documents.
 
+Note that the C<handlers> option works only when the document part is loaded
+for the first time. So, in the following sequence, it will not work because
+the C<CONTENT> part is implicitly and automatically loaded and parsed by
+C<get_body()> (knowing that the I<body> context is located inside the
+C<CONTENT>):
+
+        sub process_paragraph   { say "Hello paragraph !" }
+        $doc = odf_get_document($filename);
+        $context = $doc->get_body;
+        $content = $doc->get_part(
+                CONTENT,
+                handlers        => {
+                        'text:p'   => \&process_paragraph
+                        }
+                );
+
 The user-defined callback function receives 2 arguments. The first one is the
 XML::Twig instance internally used by lpOD to handle the XML part (you can
 ignore it as long as you work with ODF::lpOD documented features only). The
 second one is the parsed ODF element itself.
+
+Remember that every key in the handlers hash may be a quoted regexp in order
+to provide more flexibility. If, in the code example above, C<'text:p'> is
+replaced by C<qr'text:(p|h)'>, then the corresponding handler is triggered for
+paragraphs and headings (knowing that 'text:h' is the ODF tag for headings).
 
 The C<roots> option produces a more drastic effect. If this option is set,
 C<get_part()> ignores any XML content outside of the given roots (with the

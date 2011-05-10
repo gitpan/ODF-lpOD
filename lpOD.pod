@@ -6,7 +6,7 @@ ODF::lpOD - An OpenDocument management interface
 
         use ODF::lpOD:
 
-        my $document = odf_get_document("report.odt");
+        my $document = odf_document->get("report.odt");
 
         my $meta = $document->get_part(META);
         $meta->set_title("The best document format");
@@ -18,12 +18,12 @@ ODF::lpOD - An OpenDocument management interface
                 );
         $paragraph->set_text("I found it");
         $paragraph->set_style("Standout");
-        my $new_paragraph = odf_create_paragraph (
+        my $new_paragraph = odf_paragraph->create (
                                 style => "Standard",
                                 text => "A new content"
                                 );
         $context->append_element($new_paragraph);
-        my $table = odf_create_table (
+        my $table = odf_table->create (
                 "Main Figures", height => 20, width => 16
                 );
         $context->insert_element($table, before => $paragraph);
@@ -100,8 +100,8 @@ interesting context than the root.
 
 lpOD is a read-write API. However, the changes made by the applications aren't
 automatically persistent. The API provides methods that insert, delete, or
-update elements in memory. In order to make the change persistent, explicit
-C<odf_part> and C<odf_document> methods must be used.
+update elements in memory, but these changes must be explicitly committed using
+other, package-oriented methods, in order to become persistent.
 
 =head2  Global document initialization
 
@@ -120,6 +120,12 @@ be an ODF-compliant zip file (odt, ods, odp, and so on). Example:
 
         my $document = odf_get_document("C:\Path\Doc.odt");
 
+C<odf_get_document()> is just a functional way to call the C<get()> constructor
+of the C<odf_document> class; so the example above produce the same effect as
+the following one:
+
+        my $document = odf_document->get("C:\Path\Doc.odt");
+
 The source argument must be provided either as a regular file path or as a
 C<IO::File> object.
 
@@ -130,6 +136,11 @@ Allowed document types are presently C<'text'>, C<'spreadsheet'>,
 C<'presentation'>, and C<'drawing'>). Example:
 
         my $document = odf_new_document('spreadsheet');
+
+Knowing that this functional constructor is just a way to call the C<create()>
+method of the C<odf_document> class, the following code is equivalent:
+
+        my $document = odf_document->create('spreadsheet');
 
 Technically, the new document is generated as a clone of an existing template
 document, provided with the lpOD distribution. It operates in the same way as
@@ -202,7 +213,7 @@ position is regarded as counted backward from the end. The position is zero-
 based (i.e. a zero value means the first matching element). As an example, the
 instruction below returns the last paragraph of the document.
 
-        my $document = odf_get_document($source);
+        my $document = odf_document->get($source);
         my $content = $document->get_part(CONTENT);
         my $p = $part->get_element("//text:p", -1);
 
@@ -223,7 +234,7 @@ select something I<below> the current element. Thanks to the C<get_paragraph>
 element provided by the C<odf_element> class, the last example could be wrote
 as shown below:
 
-        my $document = odf_get_document($source);
+        my $document = odf_document->get($source);
         my $context = $document->get_part(CONTENT)->get_root;
         my $p = $context->get_paragraph(-1);
 
@@ -257,7 +268,7 @@ direct C<get> and C<set> accessors for the content of the usual metadata, so
 there is no need of a context element, as shown below in the following example
 that displays the title of a document:
 
-        my $document = odf_get_document($source);
+        my $document = odf_document->get($source);
         my $meta = $document->get_part(META);
         say $meta->get_title;
 
@@ -319,10 +330,10 @@ become the parent of the new element. As an example, the sequence below creates
 a new paragraph (with given style and content), then appends it to a selected
 section:
 
-        my $document = odf_get_document($source);
+        my $document = odf_document->($source);
         my $context = $document->get_part(CONTENT)->get_body;
         my $section = $context->get_section("Prologue");
-        my $paragraph = odf_create_paragraph(
+        my $paragraph = odf_paragraph->create(
                 style => "Standard", text => "The End of the Beginning"
                 );
         $section->append_element($paragraph);
@@ -345,11 +356,11 @@ of the big picture through this simple program:
 
         use ODF::lpOD;
 
-        my $doc = odf_new_document('text');
+        my $doc = odf_document->create('text');
         my $content = $doc->get_part(CONTENT);
         my $context = $content->get_body;
         $context->append_element(
-                odf_create_paragraph(
+                odf_paragraph->create(
                         style => "Standard",
                         text => "Hello World !"
                         )

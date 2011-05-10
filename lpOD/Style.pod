@@ -12,7 +12,8 @@ by the value of an explicit C<style:family> attribute, and sometimes by the
 XML tag of the style element itself.
 
 In order to hide the complexity of the ODF data structure, the level 1 API
-allows the user to handle any style as a high level I<odf_style> object.
+allows the user to handle any style as a high level C<ODF::lpOD::Style>, or
+C<odf_style>, object.
 
 =head1 Common style features
 
@@ -33,6 +34,19 @@ C<odf_document> method:
    $doc->insert_style($s);
 
 Note that C<register_style()> is an alias of C<insert_style()>.
+
+Alternatively, it's possible to register a style using the C<register()> method
+of the C<odf_style> class. So, the two following instructions, assuming that
+C<$doc> is a C<odf_document> and C<$s> is a C<odf_style>, are equivalent:
+
+   $doc->register_style($s);
+   $s->register($doc);
+
+A style should not be registered in a document when it's already registered
+in another document. If you need to replicate a style in multiple documents,
+you should make copies:
+
+   $style->clone->register($_) for @many_documents;
 
 Additional named parameters can be required according to the family. An optional
 C<parent> argument, whose value is the name of another common style of
@@ -68,6 +82,12 @@ name may be used to retrieve the parent style object with the document-based
 C<get_style()> method. Symmetrically, the argument of C<set_parent_style()>
 should be a style name (if this argument is a valid style object, lpOD tries
 to replace it by its name).
+
+Note that an I<automatic style> can't be used as the I<parent> of another
+(common or automatic) style; a style can inherit from a common style only.
+However, lpOD will not warn if you specify the name of an automatic style
+(or the name of a not yet registered style) as a parent, knowing that you are
+allowed to create, change or move the parent style later.
 
 The C<odf_create_style()> function creates a free element, not included in a
 document. This element (or a clone of it) is available to be attached later
@@ -205,7 +225,11 @@ user of a typical office application) or I<automatic>, according to a boolean
 C<automatic> option, whose default value is C<FALSE>. A common style may have
 a secondary unique name which is its C<display name>, which can be set through
 an additional option. With the exception of this optional property, and a
-few other ones, there is no difference between automatic and common styles.
+few other ones, there is no difference between automatic and common style
+definitions. However, they are two major semantic differences. First, an
+automatic style can't be inherited. Second, the automatic styles are not
+displayed as available and reusable styles in the graphical user interface
+of a typical interactive office software.
 
 Defaults styles and common styles are automatically inserted in the C<STYLES>
 document part. But automatic styles may be inserted, at the user's choice, in
@@ -333,9 +357,32 @@ as a RGB, 6-digit hexadecimal string with a leading '#';
 
 =item
 
-C<underline>: to specify if and how text is underlined; possible values
+C<underline style>: to specify if and how text is underlined; possible values
 are C<solid> (for a continuous line), C<dotted>, C<dash>, C<long dash>,
 C<dot dash>, C<dot dot dash>, C<wave>, and C<none>;
+
+=item
+
+C<underline>: same as C<underline style>;
+
+=item
+
+C<underline width>: the width of the underline; possible values are C<auto>,
+C<normal>, C<bold>, C<thin>, C<dash>, C<medium>, C<thick>;
+
+=item
+
+C<underline color>: the color that is used to underline text (as a color code
+or symbolic color name); if the value is 'font-color', the current text color
+is used for underlining;
+
+=item
+
+C<underline mode>: specifies whether underlining is applied to words only or
+continuously; if the value is 'words' or 'skip-white-space', the spaces are not
+underlined, even if they are included in the underlined text span, while the
+whole text span is underlined if the value is 'continuous' (that is usually the
+default if this property is not set);
 
 =item
 
@@ -417,7 +464,11 @@ this part only) is used as the prototype.
 Among the creation option for a paragraph style, a C<master page> parameter
 may be set in order to specify the style of the page where the paragraphs
 using the style will appear. A paragraph whose style has a C<master page>
-option is the first of a new page.
+option is the first of a new page (in other words, a paragraph whose style
+owns a C<master page> property is automatically preceded by a page break unless
+it's the first paragraph of the document content). This option may be checked
+and changed in existing paragraph styles using the C<get_master_page()> and
+C<set_master_page()> accessors.
 
 The API allows the user to set any attribute using its official name according
 to the ODF specification related to the paragraph formatting properties (§15.5).
@@ -573,9 +624,9 @@ through the C<odf_create_style()> function. The only mandatory argument is
 the style family, which is C<list>. However, a name is generally required as
 the second argument, knowing that a style list can't presently be used as a
 default style; an error is raised at any attempt to attach a nameless list
-style using C<insert_style()>. An optional display name argument is allowed
-(if the style list is about to be used as a common style); if  provided, the
-display name should be unique as well.
+style using C<insert_style()> or C<register_style()>. An optional display name
+argument is allowed (if the style list is about to be used as a common style);
+if  provided, the display name should be unique as well.
 
 An existing list style object provides a C<set_level_style()> method,
 allowing the applications to set or change the list style properties for a
@@ -1062,7 +1113,9 @@ inserted, it's possible to specify the master page of the following page. In
 addition, any master page may own a property that tells what should be the
 master page to use after the current page (for example, a "Right page" style
 may be defined in order to ensure that any page using it will be followed by
-a page that will use a "Left page" style and vice-versa).
+a page that will use a "Left page" style and vice-versa). However, beyond the
+end user's point of view, a page break is not an ODF object; it's implemented
+through the C<master page> optional property of a I<paragraph style>.
 
 Master page objects (and the corresponding I<page layouts>) apply to
 presentation and drawing documents, too. However, the page style model is very

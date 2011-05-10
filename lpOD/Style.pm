@@ -12,9 +12,15 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Style;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.004';
-use constant PACKAGE_DATE => '2011-03-09T19:29:36';
+our $VERSION    = '1.005';
+use constant PACKAGE_DATE => '2011-04-13T19:46:48';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN   {
+        *insert                 = *register;
+        }
+
 #-----------------------------------------------------------------------------
 
 our %STYLE_DEF  =
@@ -235,7 +241,7 @@ sub	get_parent_styles
         my $family = $self->get_family;
         my $name;
         my @styles;
-        my $s = $self;        
+        my $s = $self;
         while ($s && ($name = $s->get_parent_style))
                 {
                 $s = $doc->get_style($family, $name);
@@ -337,6 +343,13 @@ sub	initialize
 	my $self	= shift;
 	return ($self->set_properties(@_) || undef);
 	}
+
+sub     register
+        {
+        my $self        = shift;
+        my $document    = shift;
+        return $document->register_style($self, @_);
+        }
 
 #-----------------------------------------------------------------------------
 
@@ -446,8 +459,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::TextStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-03-04T08:35:43';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-04-12T19:20:03';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -461,6 +474,7 @@ our %ATTR =
     color               => 'fo:color',
     country             => 'fo:country',
     language            => 'fo:language',
+    underline           => 'style:text-underline-style',
     background_color    => 'fo:background-color',
     display             => 'text:display'
     );
@@ -500,6 +514,14 @@ sub     set_properties
                 $pr //= $self->insert_element($pt);
                 foreach my $k (keys %opt)
                         {
+                        if ($k =~ /^underline./)
+                                {
+                                my $a = 'text-' . $k;
+                                my $v = $opt{$k};
+                                $v = 'skip-white-space'
+                                    if (($k =~ /mode$/) && ($v =~ /^word/));
+                                $pr->set_attribute($a => $v);
+                                }
                         if ($k eq 'display')
                                 {
                                 my $v;
@@ -647,7 +669,7 @@ sub     convert
                 {
                 $ls->set_tag($self->level_style_tag);
                 }
-        return $self;        
+        return $self;
         }
 
 #-----------------------------------------------------------------------------
@@ -1073,7 +1095,7 @@ sub     attribute_name
                         }
                 $attribute = $prefix ? $prefix . ':' . $property : $property;
                 }
-        return $attribute;        
+        return $attribute;
         }
 
 #-----------------------------------------------------------------------------
@@ -1256,7 +1278,7 @@ sub	get_title
 	my $self	= shift;
 	return $self->get_attribute('title');
 	}
-        
+
 sub     set_properties  {}
 sub     get_properties  {}
 
@@ -1470,7 +1492,7 @@ sub	set_properties
                                         'fo:border-bottom' => $v,
                                         'fo:border-left'   => $v
                                         );
-                                next;                                
+                                next;
                                 }
                         when (/(margin|border|padding|background)/)
                                 {
@@ -1592,7 +1614,7 @@ sub     set_size
         my ($w, $h)     = input_2d_value(@_);
         $self->set_properties(width => $w, height => $h);
         return $self->get_size;
-        }        
+        }
 
 #=============================================================================
 package ODF::lpOD::PresentationPageLayout;
@@ -1675,8 +1697,8 @@ sub     attribute_name
 #=============================================================================
 package ODF::lpOD::GraphicStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-02-19T17:40:25';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-04-20T16:47:30';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1721,6 +1743,8 @@ sub	attribute_name
                         { return $p                     }
                 when (/(pos$|rel$|wrap$|run|shadow)/)
                         { $prefix = 'style'             }
+                when (/^stroke[ -_]/)
+                        { $prefix = 'svg'               }
                 when (/border|color|padding|margin|clip/)
                         { $prefix = 'fo'                }
                 default

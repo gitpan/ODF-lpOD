@@ -6,6 +6,12 @@ ODF::lpOD::Element - Common features available with any ODF element
 
 This manual page describes the C<odf_element> class.
 
+Note that C<odf_element> is the super-class of various specialized objects,
+so the present manual page introduces only the I<basic> methods that apply
+to I<every> C<odf_element>. The C<odf_element> class is not always explicitly
+used in a typical application; it's generally used through more specialized,
+user-oriented specialized objects.
+
 C<odf_element> is an alias for C<ODF::lpOD::Element> package.
 
 Every XML element (loaded from an existing ODF document or created by any
@@ -66,11 +72,18 @@ definitions stored in application-specific XML files or databases.
 
 The new element is not attached to a document; it's free for later use.
 
-Note: C<odf_create_element()> is an alias for one of the following
-instructions, which are equivalent:
+C<odf_create_element()> is an alias for one of the following instructions,
+which are equivalent:
 
         odf_element->create();
         ODF::lpOD::Element->create();
+
+The same principle applies for every subclass of C<ODF::lpOD::Element>; as a
+a consequence, whatever C<"xxx"> in the name of a particular lpOD element
+constructor, the two following instructions are equivalent:
+
+        $e = odf_create_xxx(@args);
+        $e = odf_xxx->create(@args);
 
 =head3  get_element(tag [options])
 
@@ -84,7 +97,7 @@ For example, the following instruction (assuming C<$context> is a previously
 retrieved element) returns the first element that is either a paragraph or a
 heading (knowing that the corresponding tags are C<text:p> and C<text:h>):
 
-        my $text_element = $context->get_element(qr'text:(p|h)'); 
+        my $text_element = $context->get_element(qr'text:(p|h)');
 
 The allowed options are:
 
@@ -205,8 +218,8 @@ The following sequence, starting from the creation of a document instance,
 selects a part, then the root element of the part, than selects the list of
 table styles defined in the part:
 
-        my $doc = odf_get_container("/home/jmg/report.odt");
-        my $content = $doc->get_content;
+        my $doc = odf_document->get("/home/jmg/report.odt");
+        my $content = $doc->get_part(CONTENT);
         my $context = $content->get_root;
         my @table_styles = $context->get_element_list(
                 'style:style',
@@ -214,8 +227,9 @@ table styles defined in the part:
                 value           => 'table'
                 );
 
-Note that in this last example nothing could be found knowing that style
-elements are not allowed by the ODF specification in the C<body> context.
+Note that the sequence above is shown in order to illustrate a principle but
+that it should not be needed in a real application, knowing that lpOD provides
+more user-friendly style retrieval tools.
 
 =head1  Child element creation methods
 
@@ -325,6 +339,11 @@ child> of the calling element. So these tow lines are equivalent:
 The methods introduced in this section are accessors that get or set the
 own properties of the calling element. However, in some cases they may have
 indirect consequence on other elements.
+
+Note that C<odf_element> is a subclass of C<XML::Twig::Elt>. So, beyond the
+methods specifically described below, programmers familiar with C<XML::Twig>
+are allowed to directly (but cautiously) call any C<XML::Twig::Elt> method
+from any element, if the methods described below don't meet all their needs.
 
 =head3  clear
 
@@ -522,11 +541,11 @@ class instead of C<ODF::lpOD::Paragraph>:
         use ODF::lpOD;
         use base 'ODF::lpOD::Paragraph';
         __PACKAGE_->associate_tag('text:p');
-        
+
         sub custom_method {
                 #...
         }
-        
+
         1;
 
 This extensibility mechanism must be used very cautiously if the specified tag

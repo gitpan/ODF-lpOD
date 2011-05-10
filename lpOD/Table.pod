@@ -10,7 +10,7 @@ I<cells>.
 
 The lpOD API doesn't make differences between document types in this area. So,
 tables are dealed with in the same way for a spreadsheet document (whose content
-is just a set of tables) as for any other document. 
+is just a set of tables) as for any other document.
 
 A table is an instance of the lpOD C<odf_table> class.
 
@@ -380,7 +380,7 @@ column object. So, the two snippets below are equivalent:
 
         # with delete_row
         $table->delete_row($row_number);
-        
+
         # without delete_row
         $row = $table->get_row($row_number);
         $row->delete;
@@ -440,7 +440,7 @@ provides a C<get_column()> one.
 
 A row group provides a C<add_row()> method, while a column group provides a
 C<add_column()> method. These methods work like their table-based versions,
-and they allow the user to expand the content of a particular group. 
+and they allow the user to expand the content of a particular group.
 
 Row and column group may be collapsed or expanded using their C<collapse()> and
 C<uncollapse()> methods.
@@ -657,7 +657,7 @@ of the C<float> cells in the "E2:G10" range:
 
 =head3  Flat text export
 
-A special C<get_text()> method is provide with tables or row groups. Knowing
+A special C<get_text()> method is provided with tables or row groups. Knowing
 that a table shouldn't directly contain text (the text content, if any, belong
 to cells), this method returns the concatenated contents of all the cells as a
 flat string. It's useful only to allow the applications to quickly check if at
@@ -757,7 +757,7 @@ one in a large spreadsheet:
         @values = ();
         push @values, scalar $_->get_value
                 for $row->get_cells($start, $end);
-        
+
         # second form
         @values = $row->get_cell_values($start, $end);
 

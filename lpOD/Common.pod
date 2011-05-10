@@ -6,14 +6,14 @@ ODF::lpOD::Common - Common utilities provided by the Perl lpOD library
 
 This manual page describes miscellaneous functions and auxiliary features of
 the lpOD Perl implementation that are not directly linked to the lpOD functional
-specification. 
+specification.
 
 =head1  Data conversion and type checking utilities
 
 The utilities introduced in this section are implemented as exported functions.
 They may be used without package or object reference.
 
-=head3  is_true(value), 
+=head3  is_true(value),
 
 Returns C<TRUE> if the given value may be regarded as true (in the Perl lpOD
 implementation). The usual Perl true values are interpreted as C<TRUE>, with the
@@ -155,13 +155,13 @@ Two explicit color translation functions are provided:
 =item
 
 C<color_code(name)> : returns the color code corresponding to the given color
-name, if known; ex: C<color_code('antique white') produces '#faebd7'; returns
+name, if known; ex: C<color_code('antique white')> produces '#faebd7'; returns
 C<undef> if the name is unknown;
 
 =item
 
 C<color_name(code)> : returns a symbolic name, if any, corresponding to the
-given color code; ex: C<color_name('#faebd7') returns 'antique white'; returns
+given color code; ex: C<color_name('#faebd7')> returns 'antique white'; returns
 C<undef> if no name is known for this code.
 
 =back
@@ -228,4 +228,3 @@ This work was sponsored by the Agence Nationale de la Recherche
 License: GPL v3, Apache v2.0 (see LICENSE).
 
 =cut
-

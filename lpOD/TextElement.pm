@@ -12,8 +12,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-03-30T09:20:56';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-04-05T09:12:10';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -401,10 +401,6 @@ sub     get_text
         return $self->ODF::lpOD::TextNode::get_text
                                 if $self->is(TEXT_SEGMENT);
         $opt{recursive} //= $RECURSIVE_EXPORT;
-        if (is_true($opt{recursive}))
-                {
-                return $self->SUPER::get_text(%opt);
-                }
         my $text        = undef;
         NODE: foreach my $node ($self->children)
                 {
@@ -433,6 +429,14 @@ sub     get_text
                                 {
                                 my $c = $node->get_attribute('c') // 1;
                                 $text .= " " while $c-- > 0;
+                                }
+                        default
+                                {
+                                if (is_true($opt{recursive}))
+                                        {
+                                        my $t = $node->SUPER::get_text(%opt);
+                                        $text .= $t if defined $t;
+                                        }
                                 }
                         }
                     }
@@ -684,7 +688,7 @@ sub     set_note
 
         my $note        = $self->set_position_mark('note', %opt);
         $note->set_citation($citation, $label);
-        $note->{style}  = $opt{style};
+        $note->{style}  = $style;
         if ($body)
                 {
                 $note->set_body(@{$body});

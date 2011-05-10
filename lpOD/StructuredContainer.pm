@@ -60,7 +60,7 @@ sub     create
         $s->set_attribute('protection key', $opt{key});
         $s->set_attribute('display', $opt{display});
         $s->set_attribute('condition', $opt{condition});
-        
+
         return $s;
         }
 
@@ -71,7 +71,7 @@ sub     set_source
         my $self        = shift;
         my $url         = shift;
         my %attr        = @_;
-        
+
         my $source = $self->insert_element('section source');
         $source->set_attribute('xlink:href', $url);
         $source->set_attributes({%attr});
@@ -322,7 +322,7 @@ sub     set_anchor_page
         $self->set_attribute('text:anchor-type' => 'page');
         return $number;
         }
-        
+
 sub     get_anchor_page
         {
         my $self        = shift;
@@ -354,7 +354,7 @@ sub     get_description
         {
         my $self        = shift;
         my $t = $self->get_element('svg:desc') or return undef;
-        return $t->get_text;        
+        return $t->get_text;
         }
 
 sub     set_text_style
@@ -668,7 +668,7 @@ sub     create
                 $fr = ODF::lpOD::Area->create(%opt) or return undef;
                 $fr->set_image($link) if $link;
                 }
-        elsif ($opt{text})        
+        elsif ($opt{text})
                 {
                 my $text = $opt{text}; delete $opt{text};
                 $fr = ODF::lpOD::Area->create(%opt) or return undef;
@@ -706,7 +706,7 @@ sub     set_image
                         alert "Non-valid image element";
                         return FALSE;
                         }
-                } 
+                }
         unless ($source)
                 {
                 alert "Missing image URL"; return FALSE;
@@ -868,7 +868,7 @@ sub     set_content
         my $content = shift;
         $bin->_set_text($content);
         $self->del_attribute('xlink:href');
-        return $content;                        
+        return $content;
         }
 
 sub     get_content
@@ -881,14 +881,15 @@ sub     get_content
 #=============================================================================
 package ODF::lpOD::TOC;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T23:05:25';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-04-05T08:20:21';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 use constant TOC_SOURCE             => 'text:table-of-content-source';
 use constant TOC_ENTRY_TEMPLATE     => 'text:table-of-content-entry-template';
 use constant TOC_TITLE_TEMPLATE     => 'text:index-title-template';
+use constant TOC_BODY               => 'text:index-body';
 
 #-----------------------------------------------------------------------------
 
@@ -924,6 +925,18 @@ sub	set_source
 	{
 	my $self	= shift;
 	return  $self->set_child(TOC_SOURCE);
+	}
+
+sub	get_body
+	{
+	my $self	= shift;
+	return $self->first_child(TOC_BODY);
+	}
+
+sub	set_body
+	{
+	my $self	= shift;
+	return $self->set_child(TOC_BODY);
 	}
 
 sub     source_attribute
