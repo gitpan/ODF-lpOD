@@ -12,8 +12,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-04-05T09:12:10';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-05-10T10:42:10';
 use ODF::lpOD::Common;
 #=============================================================================
 
