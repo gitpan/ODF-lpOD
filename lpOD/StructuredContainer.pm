@@ -233,8 +233,8 @@ sub     set_header
 #=============================================================================
 package ODF::lpOD::DrawPage;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-02-19T23:50:08';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-05-12T08:48:56';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -255,11 +255,56 @@ sub     create
         $dp->set_id($id);
         $dp->set_name($opt{'name'});
         $dp->set_style($opt{style});
-        $dp->set_attribute('master page name' => $opt{master});
-        $dp->set_attribute(
-                'presentation:presentation-page-layout-name' => $opt{layout}
-                );
+        $dp->set_master($opt{master});
+        $dp->set_layout($opt{layout} );
         return $dp;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     get_master
+        {
+        my $self        = shift;
+        return $self->get_attribute('master page name');
+        }
+
+sub     set_master
+        {
+        my $self        = shift;
+        return $self->set_attribute('master page name', shift);
+        }
+
+sub     get_layout
+        {
+        my $self        = shift;
+        return $self->get_attribute
+                ('presentation:presentation-page-layout-name');
+        }
+
+sub     set_layout
+        {
+        my $self        = shift;
+        return $self->set_attribute
+                ('presentation:presentation-page-layout-name', shift);
+        }
+
+sub     get_title_frame
+        {
+        my $self        = shift;
+        return $self->get_element
+                (
+                'draw:frame',
+                attribute       => 'presentation:class',
+                value           => 'title'
+                );
+        }
+
+sub     get_title
+        {
+        my $self        = shift;
+        my $frame = $self->get_title_frame      or return undef;
+        my $p = $frame->get_paragraph           or return undef;
+        return $p->get_text;
         }
 
 #=============================================================================
@@ -628,8 +673,8 @@ sub     get_type
 #=============================================================================
 package ODF::lpOD::Frame;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-02-19T20:43:16';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-05-12T09:06:16';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -655,6 +700,7 @@ sub     create
         my %opt         = process_options(@_);
         $opt{tag} = 'frame';
         my $fr;
+        my $pc = $opt{class}; delete $opt{class};
         if ($opt{image})
                 {
                 if ($opt{text})
@@ -678,6 +724,7 @@ sub     create
                 {
                 $fr = ODF::lpOD::Area->create(%opt);
                 }
+        $fr->set_attribute('presentation:class' => $pc) if $pc;
         return $fr;
         }
 

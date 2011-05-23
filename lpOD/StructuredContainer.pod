@@ -253,6 +253,26 @@ the draw page object.
 
 =back
 
+The C<get_title()> method, when applied to a draw page, tries to get the title
+text box of the page, and returns the text content of the first paragraph
+found in it, if set. The first frame whose presentation class is C<title>, if
+any, is assumed to be the title text box. Beware that there is no
+C<set_title()> method for draw pages.
+
+The following sequence, assuming the given file is a presentation document,
+displays the name and (if defined) the title of every draw page:
+
+      $doc = odf_get_document($filename);
+      $context = $doc->get_body;
+      foreach my $p ($context->get_draw_pages) {
+            my $n = $p->get_name // '<no name>';
+            my $t = $p->get_title // '<no title>';
+            say sprintf("%s %s", $n, $t);
+            }
+
+If the draw page doesn't contain any frame whose class is C<title>, or if its
+title frame doesn't contain any paragraph, C<get_title()> returns C<undef>.
+
 =head1  Frames
 
 A frame is a rectangular container that may contain text boxes or images. It
@@ -305,8 +325,9 @@ according to their sequential position in the document tree;
 
 =item
 
-C<class>: an optional presentation class (see the "Class" subsection in
-ODF §9.6.1).
+C<class>: an optional presentation class, such as C<title>, C<subtitle>,
+C<outline>, C<graphic>, etc (see the "Class" subsection in ODF §9.6.1 for the
+whole list of legal values).
 
 =back
 

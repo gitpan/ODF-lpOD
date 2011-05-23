@@ -11,8 +11,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #=============================================================================
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.006';
-use constant PACKAGE_DATE       => '2011-03-09T19:30:57';
+our	$VERSION	        = '1.007';
+use constant PACKAGE_DATE       => '2011-05-23T09:15:07';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -46,7 +46,7 @@ our @EXPORT     = qw
 
         odf_document odf_container
         odf_xmlpart odf_content odf_styles odf_meta odf_settings odf_manifest
-        
+
         odf_element odf_text_node
         odf_text_element odf_text_hyperlink
         odf_bibliography_mark odf_note odf_annotation odf_changed_region
@@ -73,21 +73,21 @@ our @EXPORT     = qw
         is_true is_false defined_false
         is_odf_datatype odf_boolean process_options
         alpha_to_num translate_coordinates translate_range
-        
+
         xelt xtwig
-        
+
         META CONTENT STYLES SETTINGS MANIFEST MIMETYPE
 
         text_segment TEXT_SEGMENT
-        
+
         input_conversion output_conversion search_string
         color_code color_name load_color_map unload_color_map
         is_numeric iso_date numeric_date check_odf_value odf_value
         file_parse file_type image_size input_2d_value
         alert not_implemented
-        
+
         PRETTY_PRINT EMPTY_TAGS
-        
+
         FIRST_CHILD LAST_CHILD NEXT_SIBLING PREV_SIBLING WITHIN PARENT
         );
 
@@ -103,7 +103,7 @@ use constant
         odf_styles              => 'ODF::lpOD::Styles',
         odf_meta                => 'ODF::lpOD::Meta',
         odf_settings            => 'ODF::lpOD::Settings',
-        odf_manifest            => 'ODF::lpOD::Manifest'        
+        odf_manifest            => 'ODF::lpOD::Manifest'
         };
 
 #--- ODF element -------------------------------------------------------------
@@ -200,7 +200,7 @@ use constant                            # common constants
         TRUE            => 1,
         FALSE           => 0,
         };
-        
+
 use constant                            # ODF package parts
         {
         META            => 'meta.xml',
@@ -267,7 +267,7 @@ BEGIN   {
         *odf_new_container_from_type
                                 = *ODF::lpOD::Container::create;
         *odf_get_xmlpart        = *ODF::lpOD::XMLPart::get;
-        
+
         *odf_create_element     = *ODF::lpOD::Element::_create;
         *odf_create_paragraph   = *ODF::lpOD::Paragraph::_create;
         *odf_create_heading     = *ODF::lpOD::Heading::_create;
@@ -308,7 +308,7 @@ BEGIN   {
 
         *is_numeric             = *Scalar::Util::looks_like_number;
         *odf_value              = *check_odf_value;
-        
+
         #initializations
 
         }
@@ -316,7 +316,7 @@ BEGIN   {
 #=== exported utilities ======================================================
 
 our     $DEBUG          = FALSE;
-        
+
 sub     alert
         {
         if ($DEBUG)
@@ -324,7 +324,7 @@ sub     alert
                 require Carp;
                 return Carp::cluck(@_);
                 }
-        say for @_;
+        warn "$_\n" for @_;
         }
 
 sub     info
@@ -385,12 +385,12 @@ sub     is_false
         return is_true(shift) ? FALSE : TRUE;
         }
 
-sub	defined_false
-	{
-	my $arg	= shift;
-	return FALSE unless defined $arg;
-        return is_false($arg) ? TRUE : FALSE;
-	}
+sub     defined_false
+        {
+        my $arg	= shift;
+        return FALSE unless defined $arg;
+                return is_false($arg) ? TRUE : FALSE;
+        }
 
 sub     odf_boolean
         {
@@ -420,7 +420,7 @@ sub     check_odf_value
                         {
                         if (is_true($value))
                                 {
-                                $value = 'true'; 
+                                $value = 'true';
                                 }
                         else
                                 {
@@ -452,7 +452,7 @@ sub     process_options
                 {
                 my $outk = $ink;
                 $outk =~ s/[ -]/_/g;
-                $out{$outk} = $in{$ink}; 
+                $out{$outk} = $in{$ink};
                 }
         return %out;
         }
@@ -479,9 +479,9 @@ sub     alpha_to_num
         return $num;
         }
 
-sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
-	{
-	my $arg	= shift // return undef;
+sub     translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
+        {
+        my $arg	= shift // return undef;
         my $ra = ref $arg;
         if ($ra)
                 {
@@ -492,15 +492,15 @@ sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
                 {
                 shift
                 }
-	return ($arg, @_) unless defined $arg;
-	my $coord = uc $arg;
-	return ($arg, @_) unless $coord =~ /[A-Z]/;
+        return ($arg, @_) unless defined $arg;
+        my $coord = uc $arg;
+        return ($arg, @_) unless $coord =~ /[A-Z]/;
 
-	$coord	=~ s/\s*//g;
-	$coord	=~ /(^[A-Z]*)(\d*)/;
-	my $c	= $1;
-	my $r	= $2;
-	return ($arg, @_) unless $c;
+        $coord	=~ s/\s*//g;
+        $coord	=~ /(^[A-Z]*)(\d*)/;
+        my $c	= $1;
+        my $r	= $2;
+        return ($arg, @_) unless $c;
         my $colnum = alpha_to_num($c);
         if (defined $r and $r gt "")
                 {
@@ -511,7 +511,7 @@ sub	translate_coordinates   # adapted from OpenOffice::OODoc (Genicorp)
                 {
                 return ($colnum, @_);
                 }
-	}
+        }
 
 sub     translate_range
         {
@@ -533,7 +533,7 @@ our $OUTPUT_CHARSET     = 'utf8';
 our $INPUT_ENCODER      = Encode::find_encoding($INPUT_CHARSET);
 our $OUTPUT_ENCODER     = Encode::find_encoding($OUTPUT_CHARSET);
 
-sub	get_input_charset       { $INPUT_CHARSET  }
+sub     get_input_charset       { $INPUT_CHARSET  }
 
 sub     get_output_charset      { $OUTPUT_CHARSET }
 
@@ -571,7 +571,7 @@ sub     input_conversion
         {
         my $text        = shift;
         return $text unless $INPUT_CHARSET;
-        
+
         unless ($INPUT_ENCODER)
                 {
                 alert "Unsupported input character conversion";
@@ -590,34 +590,34 @@ sub     output_conversion
                 alert "Unsupported output character conversion";
                 return $text;
                 }
-        
+
         return (defined $text) ? $OUTPUT_ENCODER->encode($text) : undef;
         }
 
 #--- ISO-9601 / internal date conversion -------------------------------------
 
-sub	iso_date
-	{
-	my $time = shift // time();
-	my @t = localtime($time);
-	return sprintf
-			(
-			"%04d-%02d-%02dT%02d:%02d:%02d",
-			$t[5] + 1900, $t[4] + 1, $t[3], $t[2], $t[1], $t[0]
-			);
-	}
+sub     iso_date
+        {
+        my $time = shift // time();
+        my @t = localtime($time);
+        return sprintf
+                (
+                "%04d-%02d-%02dT%02d:%02d:%02d",
+                $t[5] + 1900, $t[4] + 1, $t[3], $t[2], $t[1], $t[0]
+                );
+        }
 
-sub	numeric_date                            # in progress
-	{
-	require Time::Local;
+sub     numeric_date                            # in progress
+        {
+        require Time::Local;
 
-	my $iso_date = shift    or return undef;
-	$iso_date .= 'T00:00:00'unless ($iso_date =~ /T/);
-	$iso_date =~ /(\d*)-(\d*)-(\d*)T(\d*):(\d*):(\d*)/;
-	my $sec = $6 || 0; my $min = $5 || 0; my $hrs = $4 || 0;
-	my $day = $3 || 1; my $mon = $2 || 1; my $year = $1 || 0;
-	return Time::Local::timelocal($sec,$min,$hrs,$day,$mon-1,$year); 
-	}
+        my $iso_date = shift    or return undef;
+        $iso_date .= 'T00:00:00'unless ($iso_date =~ /T/);
+        $iso_date =~ /(\d*)-(\d*)-(\d*)T(\d*):(\d*):(\d*)/;
+        my $sec = $6 || 0; my $min = $5 || 0; my $hrs = $4 || 0;
+        my $day = $3 || 1; my $mon = $2 || 1; my $year = $1 || 0;
+        return Time::Local::timelocal($sec,$min,$hrs,$day,$mon-1,$year);
+        }
 
 #-----------------------------------------------------------------------------
 
@@ -707,11 +707,11 @@ sub     image_size
         return [$w, $h];
         }
 
-sub	input_2d_value
-	{
+sub     input_2d_value
+        {
         my $arg         = shift or return undef;
         my $u           = shift // 'cm';
-	my ($x, $y);
+        my ($x, $y);
         if (ref $arg)
                 {
                 $x = $arg->[0]; $y = $arg->[1];
@@ -728,11 +728,11 @@ sub	input_2d_value
 		        $x = $arg; $y = shift;
 		        }
 		}
-	$x ||= ('0' . $u); $y ||= ('0' . $u);
-	$x .= $u unless $x =~ /[a-zA-Z]$/;
-	$y .= $u unless $y =~ /[a-zA-Z]$/;
-        return wantarray ? ($x, $y) : [$x, $y];
-	}        
+        $x ||= ('0' . $u); $y ||= ('0' . $u);
+        $x .= $u unless $x =~ /[a-zA-Z]$/;
+        $y .= $u unless $y =~ /[a-zA-Z]$/;
+            return wantarray ? ($x, $y) : [$x, $y];
+        }
 
 #--- symbolic color names handling -------------------------------------------
 
@@ -740,11 +740,11 @@ our     %COLORCODE      = ();
 our     %COLORNAME      = ();
 
 sub	color_code
-	{
-	my $name        = shift         or return undef;
+        {
+        my $name        = shift         or return undef;
         if ($name && ($name =~ /^#/))   { return $name }
         return $COLORCODE{$name};
-	}
+        }
 
 sub     color_name
         {
@@ -752,41 +752,41 @@ sub     color_name
         return $COLORNAME{lc $code};
         }
 
-sub	load_color_map
-	{
-	my $filename = shift || (installation_path() . '/data/rgb.txt');
-	unless ( -e $filename && -r $filename )
-		{
-		warn "Color map file non existent or unreadable"
-                                if $DEBUG;
-		return FALSE;
-		}
-	my $r = open COLORS, "<", $filename;
-	unless ($r)
-		{
-		alert "Error opening $filename"; return FALSE;
-		}
-	while (my $line = <COLORS>)
-		{
-		$line =~ s/^\s*//; $line =~ s/\s*$//;
-		next unless $line =~ /^[0-9]/;
-		$line =~ /(\d*)\s*(\d*)\s*(\d*)\s*(.*)/;
-		my $name = $4;
-		$COLORCODE{$name} = sprintf("#%02x%02x%02x", $1, $2, $3)
-                                                if $name;
-		}
-	close COLORS;
+sub     load_color_map
+        {
+        my $filename = shift || (installation_path() . '/data/rgb.txt');
+        unless ( -e $filename && -r $filename )
+                {
+                warn "Color map file non existent or unreadable"
+                                        if $DEBUG;
+                return FALSE;
+                }
+        my $r = open COLORS, "<", $filename;
+        unless ($r)
+                {
+                alert "Error opening $filename"; return FALSE;
+                }
+        while (my $line = <COLORS>)
+                {
+                $line =~ s/^\s*//; $line =~ s/\s*$//;
+                next unless $line =~ /^[0-9]/;
+                $line =~ /(\d*)\s*(\d*)\s*(\d*)\s*(.*)/;
+                my $name = $4;
+                $COLORCODE{$name} = sprintf("#%02x%02x%02x", $1, $2, $3)
+                                                        if $name;
+                }
+        close COLORS;
         %COLORNAME = reverse %COLORCODE;
-	return TRUE;
-	}
+        return TRUE;
+        }
 
-sub	unload_color_map
-	{
-	my $self	= shift;
-	%COLORCODE      = ();
+sub     unload_color_map
+        {
+        my $self	= shift;
+        %COLORCODE      = ();
         %COLORNAME      = ();
         return TRUE;
-	}
+        }
 
 #-----------------------------------------------------------------------------
 
@@ -796,7 +796,7 @@ sub     template
         {
         my $type        = shift // "";
         $type = shift if $type eq lpod;
-        
+
         my $filename = $ODF_TEMPLATE{$type};
         unless ($filename)
                 {
@@ -818,7 +818,7 @@ our $LPOD_ID_PATTERN    = 'lpOD_%09x';
 sub     new_id
         {
         state $count    = 0;
-        return sprintf($LPOD_ID_PATTERN, ++$count);        
+        return sprintf($LPOD_ID_PATTERN, ++$count);
         }
 
 #-----------------------------------------------------------------------------
@@ -831,4 +831,3 @@ sub     not_implemented
 
 #=============================================================================
 1;
-

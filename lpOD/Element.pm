@@ -11,8 +11,8 @@ use     strict;
 #       Base ODF element class and some derivatives
 #=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.007';
-use constant PACKAGE_DATE => '2011-03-23T20:04:57';
+our     $VERSION        = '1.008';
+use constant PACKAGE_DATE => '2011-05-12T08:44:21';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -163,7 +163,7 @@ sub     new
         }
 
 #-----------------------------------------------------------------------------
-        
+
 sub	load_from_file
 	{
 	my $self	= shift;
@@ -801,7 +801,7 @@ sub     get_text_element
         my $type = $opt{type} // 'p';
         delete $opt{type};
         $type = 'text:' . $type unless $type =~ /:/;
-        
+
         if ($opt{bookmark})
                 {
                 return $self->get_element_by_bookmark
@@ -825,20 +825,21 @@ sub     get_text_element
         }
 
 sub	get_paragraph
-	{
-	my $self	= shift;
-	return $self->get_text_element(type => 'p', @_);
-	}
+		{
+		my $self	= shift;
+		return $self->get_text_element(type => 'p', @_);
+		}
 
 sub	get_text_span
-	{
-	my $self	= shift;
-	return $self->get_text_element(type => 'span', @_);
-	}
+		{
+		my $self	= shift;
+		return $self->get_text_element(type => 'span', @_);
+		}
+
 sub     get_parent_paragraph
         {
-	my $self	= shift;
-	return $self->parent(qr'text:(p|h)');
+		my $self	= shift;
+		return $self->parent(qr'text:(p|h)');
         }
 
 sub     get_text_elements
@@ -858,17 +859,17 @@ sub     get_text_elements
         return $self->get_elements($type, %opt);
         }
 
-sub	get_paragraphs
-	{
-	my $self	= shift;
-	return $self->get_text_elements(type => 'p', @_);
-	}
+sub		get_paragraphs
+		{
+		my $self	= shift;
+		return $self->get_text_elements(type => 'p', @_);
+		}
 
-sub	get_text_spans
-	{
-	my $self	= shift;
-	return $self->get_text_elements(type => 'span', @_);
-	}
+sub		get_text_spans
+		{
+		my $self	= shift;
+		return $self->get_text_elements(type => 'span', @_);
+		}
 
 sub     get_heading
         {
@@ -977,7 +978,7 @@ sub	get_parent_table
 sub     get_parent_cell
         {
 	my $self	= shift;
-	return $self->parent('table:table-cell');        
+	return $self->parent('table:table-cell');
         }
 
 sub     get_tables
@@ -1682,7 +1683,7 @@ sub     set_text
         my $self        = shift;
         my $input       = shift;
         return undef unless defined $input;
-        
+
         my $text = caller() ne 'XML::Twig::Elt' ?
                 input_conversion($input) : $input;
         my $r = $self->_set_text($text);
