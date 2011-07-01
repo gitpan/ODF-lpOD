@@ -12,8 +12,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Matrix;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-02-15T12:32:26';
+our $VERSION                    = '1.002';
+use constant PACKAGE_DATE       => '2011-06-06T08:38:04';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -57,7 +57,7 @@ sub     set_group
         $group->group(@elts);
         my %opt         = @_;
         $group->set_attribute('display', odf_boolean($opt{display}));
-        return $group;        
+        return $group;
         }
 
 sub     get_group
@@ -117,8 +117,8 @@ sub     table
 #=============================================================================
 package ODF::lpOD::ColumnGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-02-15T12:38:28';
+our $VERSION                    = '1.003';
+use constant PACKAGE_DATE       => '2011-06-06T08:32:22';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -126,11 +126,11 @@ sub     _create		{ ODF::lpOD::ColumnGroup->create(@_) }
 
 #-----------------------------------------------------------------------------
 
-sub	create
-	{
-	my $caller	= shift;
-	return ODF::lpOD::Element->create('table:table-column-group', @_);
-	}
+sub     create
+        {
+        my $caller	= shift;
+        return ODF::lpOD::Element->create('table:table-column-group', @_);
+        }
 
 #-----------------------------------------------------------------------------
 
@@ -187,7 +187,7 @@ sub     get_column_count
                 $count += $col->get_repeated;
                 $col = $col->next($self);
                 }
-        return (defined $max_w and $max_w < $count) ? $max_w : $count;        
+        return (defined $max_w and $max_w < $count) ? $max_w : $count;
         }
 
 sub     get_position
@@ -229,18 +229,18 @@ sub     get_column
                 }
         my $col = $self->first_column or return undef;
 
-	my $p = $position;
-	my $r = $col->get_repeated;
-	while ($p >= $r)
-		{
-		$p -= $r;
-		$col = $col->next($self);
-		$r = $col->get_repeated;
-		}
-	if ($self->rw and $col->repeat($r, $p))
-		{
-		$col = $self->get_column($position);
-		}
+        my $p = $position;
+        my $r = $col->get_repeated;
+        while ($p >= $r)
+            {
+            $p -= $r;
+            $col = $col->next($self);
+            $r = $col->get_repeated;
+            }
+        if ($self->rw and $col->repeat($r, $p))
+            {
+            $col = $self->get_column($position);
+            }
 
         return $col;
         }
@@ -257,28 +257,28 @@ sub     get_columns
         $start //= 0; $end //= $self->get_column_count() - 1;
         my @list = ();
 
-	if ($self->ro)
-		{
-		my $col = $self->get_column($start);
-		my $n = $end - $start;
-		while ($n >= 0)
-			{
-			my $r = $col->get_repeated;
-			while ($r > 0 && $n >= 0)
-				{
-				push @list, $col;
-				$r--; $n--;
-				}
-			$col = $col->next($self);
-			}
-		}
-	else
-		{
-		for (my $i = $start ; $i <= $end ; $i++)
-			{
-			push @list, $self->get_column($i);
-			}
-		}
+        if ($self->ro)
+                {
+                my $col = $self->get_column($start);
+                my $n = $end - $start;
+                while ($n >= 0)
+                        {
+                        my $r = $col->get_repeated;
+                        while ($r > 0 && $n >= 0)
+                                {
+                                push @list, $col;
+                                $r--; $n--;
+                                }
+                        $col = $col->next($self);
+                        }
+                }
+        else
+                {
+                for (my $i = $start ; $i <= $end ; $i++)
+                        {
+                        push @list, $self->get_column($i);
+                        }
+                }
         return @list;
         }
 
@@ -449,7 +449,7 @@ sub     delete_column
                 }
         return TRUE;
         }
-        
+
 sub     set_column_group
         {
         my $self        = shift;
@@ -473,18 +473,18 @@ sub     get_cell
         return $col->get_cell($r);
         }
 
-sub	get_cells
-	{
-	my $self	= shift;
-	my ($r1, $c1, $r2, $c2) = translate_range(@_);
-	my @cells = (); my $i = 0;
+sub     get_cells
+        {
+        my $self	= shift;
+        my ($r1, $c1, $r2, $c2) = translate_range(@_);
+        my @cells = (); my $i = 0;
 
-	foreach my $col ($self->get_columns($c1, $c2))
-		{
-		@{$cells[$i]} = $col->get_cells($c1, $c2); $i++;
-		}
-	return @cells;
-	}
+        foreach my $col ($self->get_columns($c1, $c2))
+                {
+                @{$cells[$i]} = $col->get_cells($c1, $c2); $i++;
+                }
+        return @cells;
+        }
 
 sub     collapse
         {
@@ -498,12 +498,12 @@ sub     uncollapse
         $_->set_visibility(undef) for $self->get_columns;
         }
 
-sub	set_default_cell_style
-	{
-	my $self	= shift;
-	my $style	= shift;
-	$_->set_default_cell_style($style) for $self->all_columns;
-	}
+sub     set_default_cell_style
+        {
+        my $self	= shift;
+        my $style	= shift;
+        $_->set_default_cell_style($style) for $self->all_columns;
+        }
 
 #-----------------------------------------------------------------------------
 
@@ -517,8 +517,8 @@ sub     clear
 #=============================================================================
 package ODF::lpOD::RowGroup;
 use base 'ODF::lpOD::Matrix';
-our $VERSION    = '1.005';
-use constant PACKAGE_DATE => '2011-03-11T08:57:12';
+our $VERSION                    = '1.005';
+use constant PACKAGE_DATE       => '2011-06-06T08:37:31';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -526,19 +526,19 @@ sub     _create  { ODF::lpOD::RowGroup->create(@_) }
 
 #-----------------------------------------------------------------------------
 
-sub	create
-	{
-	my $caller	= shift;
-	return ODF::lpOD::Element->create('table:table-row-group', @_);
-	}
+sub     create
+        {
+        my $caller	= shift;
+        return ODF::lpOD::Element->create('table:table-row-group', @_);
+        }
 
 #-----------------------------------------------------------------------------
 
-sub	read_optimize
-	{
-	my $self	= shift;
-	return $self->ro(shift);
-	}
+sub     read_optimize
+        {
+        my $self	= shift;
+        return $self->ro(shift);
+        }
 
 sub     all_rows
         {
@@ -643,18 +643,18 @@ sub     get_row
                 return undef;
                 }
         my $row = $self->first_row or return undef;
-	my $p = $position;
-	my $r = $row->get_repeated;
-	while ($p >= $r)
-		{
-		$p -= $r;
-		$row = $row->next($self);
-		$r = $row->get_repeated;
-		}
-	if ($self->rw and $row->repeat($r, $p))
-		{
-		$row = $self->get_row($position);
-		}
+        my $p = $position;
+        my $r = $row->get_repeated;
+        while ($p >= $r)
+                {
+                $p -= $r;
+                $row = $row->next($self);
+                $r = $row->get_repeated;
+                }
+        if ($self->rw and $row->repeat($r, $p))
+                {
+                $row = $self->get_row($position);
+                }
 
         return $row;
         }
@@ -671,28 +671,28 @@ sub     get_rows
         $start //= 0; $end //= $self->get_size() - 1;
         my @list = ();
 
-	if ($self->ro)
-		{
-		my $row = $self->get_row($start);
-		my $n = $end - $start;
-		while ($n >= 0 && $row)
-			{
-			my $r = $row->get_repeated;
-			while ($r > 0 && $n >= 0)
-				{
-				push @list, $row;
-				$r--; $n--;
-				}
-			$row = $row->next($self);
-			}
-		}
-	else
-		{
-		for (my $i = $start ; $i <= $end ; $i++)
-			{
-			push @list, $self->get_row($i);
-			}
-		}
+        if ($self->ro)
+                {
+                my $row = $self->get_row($start);
+                my $n = $end - $start;
+                while ($n >= 0 && $row)
+                        {
+                        my $r = $row->get_repeated;
+                        while ($r > 0 && $n >= 0)
+                                {
+                                push @list, $row;
+                                $r--; $n--;
+                                }
+                        $row = $row->next($self);
+                        }
+                }
+        else
+                {
+                for (my $i = $start ; $i <= $end ; $i++)
+                        {
+                        push @list, $self->get_row($i);
+                        }
+                }
         return @list;
         }
 
@@ -885,31 +885,31 @@ sub     get_cell
         return $row->get_cell($c);
         }
 
-sub	get_cells
-	{
-	my $self	= shift;
-	my ($r1, $c1, $r2, $c2) = translate_range(@_);
-	my @cells = (); my $i = 0;
-	foreach my $row ($self->get_rows($r1, $r2))
-		{
-		@{$cells[$i]} = $row->get_cells($c1, $c2); $i++;
-		}
-	return @cells;
-	}
+sub     get_cells
+        {
+        my $self	= shift;
+        my ($r1, $c1, $r2, $c2) = translate_range(@_);
+        my @cells = (); my $i = 0;
+        foreach my $row ($self->get_rows($r1, $r2))
+                {
+                @{$cells[$i]} = $row->get_cells($c1, $c2); $i++;
+                }
+        return @cells;
+        }
 
-sub	get_cell_values
-	{
-	my $self	= shift;
+sub     get_cell_values
+        {
+        my $self	= shift;
         my $type        = shift;
         unless ($type)
                 {
                 alert "Missing cell data type"; return undef;
                 }
-	my ($r1, $c1, $r2, $c2) = translate_range(@_);
+        my ($r1, $c1, $r2, $c2) = translate_range(@_);
         my $old_status = $self->read_optimize;
-        $self->read_optimize(TRUE);        
+        $self->read_optimize(TRUE);
         my $row;
-	if (wantarray)
+        if (wantarray)
                 {
                 my @values = ();
                 my $i = 0;
@@ -939,7 +939,7 @@ sub	get_cell_values
                         $self->ODF::lpOD::TableElement::_get_cell_values
                                                         ($type, @cells);
                 }
-	}
+        }
 
 sub     get_text
         {
@@ -974,12 +974,12 @@ sub     uncollapse
         $_->set_visibility('visible') for $self->get_rows;
         }
 
-sub	set_default_cell_style
-	{
-	my $self	= shift;
-	my $style	= shift;
-	$_->set_default_cell_style($style) for $self->all_rows;
-	}
+sub     set_default_cell_style
+        {
+        my $self	= shift;
+        my $style	= shift;
+        $_->set_default_cell_style($style) for $self->all_rows;
+        }
 
 #-----------------------------------------------------------------------------
 
@@ -1009,19 +1009,19 @@ sub     clear
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Table;
 use base ('ODF::lpOD::RowGroup', 'ODF::lpOD::ColumnGroup');
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-01-10T11:37:34';
+our $VERSION                    = '1.002';
+use constant PACKAGE_DATE       => '2011-06-06T08:46:58';
 use ODF::lpOD::Common;
 #=============================================================================
 #--- constructor -------------------------------------------------------------
 
-sub	_create         { ODF::lpOD::Table->create(@_) }
+sub     _create         { ODF::lpOD::Table->create(@_) }
 
 #-----------------------------------------------------------------------------
 
 sub     create
         {
-	my $caller	= shift;
+        my $caller	= shift;
         my $name        = shift;
         unless ($name)
                 {
@@ -1040,11 +1040,11 @@ sub     create
 
         my $width       = $opt{width};
         my $height      = $opt{length} // $opt{height};
-	unless (defined $width && defined $height)
-		{
-		($height, $width) = input_2d_value($opt{size}, "");
-		}
-	$width  // 0; $height // 0;
+        unless (defined $width && defined $height)
+                {
+                ($height, $width) = input_2d_value($opt{size}, "");
+                }
+        $width  // 0; $height // 0;
         if ($width < 0 || $height < 0)
                 {
                 alert "Wrong table size ($height x $width)";
@@ -1059,7 +1059,7 @@ sub     create
         $t->set_attribute('display', odf_boolean($opt{display}));
         $t->set_attribute('print', odf_boolean($opt{print}));
         $t->set_attribute('print ranges', $opt{print_ranges});
-        
+
         $t->add_column(
                 number          => $width,
                 expand          => $opt{expand},
@@ -1077,7 +1077,7 @@ sub     create
                 $r->repeat($height);
                 }
 
-	$t->set_default_cell_style($opt{cell_style}) if ($opt{cell_style});
+        $t->set_default_cell_style($opt{cell_style}) if ($opt{cell_style});
 
         return $t;
         }
@@ -1144,99 +1144,99 @@ sub	set_default_cell_style
 
 #-----------------------------------------------------------------------------
 
-sub	get_cell_value
-	{
-	my $self	= shift;
+sub     get_cell_value
+        {
+        my $self	= shift;
         my $old_status = $self->read_optimize;
         my $cell = $self->get_cell(@_);
         $self->read_optimize($old_status);
         return wantarray ?
                 ($cell->get_value(), $cell->get_type()) :
                 $cell->get_value;
-	}
+        }
 
 #=============================================================================
 package ODF::lpOD::TableElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.004';
-use constant PACKAGE_DATE => '2011-02-22T14:31:42';
+our $VERSION                    = '1.004';
+use constant PACKAGE_DATE       => '2011-06-06T08:49:11';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub	table
-	{
-	my $self	= shift;
-	return $self->get_ancestor('table:table');
-	}
+sub     table
+        {
+        my $self	= shift;
+        return $self->get_ancestor('table:table');
+        }
 
-sub	tro
-	{
-	my $self	= shift;
-	my $table = $self->table or return FALSE;
-	return is_true($table->ro);
-	}
+sub     tro
+        {
+        my $self	= shift;
+        my $table = $self->table or return FALSE;
+        return is_true($table->ro);
+        }
 
-sub	trw
-	{
-	my $self	= shift;
-	my $table = $self->table or return TRUE;
-	return is_false($table->ro);
-	}
+sub     trw
+        {
+        my $self	= shift;
+        my $table = $self->table or return TRUE;
+        return is_false($table->ro);
+        }
 
 sub     repeat
         {
         my $self        = shift;
         my $r		= shift // $self->get_repeated;
-	return undef unless $r > 1;
-	my $p		= shift;
-	unless (defined $p)
-		{
-		$self->set_repeated(undef);
-		return $self->SUPER::repeat($r);
-		}
-	else
-		{
-		if (($p < 0) or ($p >= $r))
-			{
-			return undef;
-			}
-		elsif ($p == 0)
-			{
-			$self->set_repeated(undef);
-			my $c1 = $self->clone; $c1->paste_after($self);
-			$c1->set_repeated($r - 1);
-			}
-		else
-			{
-			$self->set_repeated($p);
-			my $c1 = $self->clone; $c1->paste_after($self);
-			$c1->set_repeated(undef); $p++;
-			if ($p < $r)
-				{
-				my $c2 = $c1->clone; $c2->paste_after($c1);
-				$c2->set_repeated($r - $p);
-				}
-			}
-			
-		return TRUE;
-		}
+        return undef unless $r > 1;
+        my $p		= shift;
+        unless (defined $p)
+                {
+                $self->set_repeated(undef);
+                return $self->SUPER::repeat($r);
+                }
+        else
+                {
+                if (($p < 0) or ($p >= $r))
+                        {
+                        return undef;
+                        }
+                elsif ($p == 0)
+                        {
+                        $self->set_repeated(undef);
+                        my $c1 = $self->clone; $c1->paste_after($self);
+                        $c1->set_repeated($r - 1);
+                        }
+                else
+                        {
+                        $self->set_repeated($p);
+                        my $c1 = $self->clone; $c1->paste_after($self);
+                        $c1->set_repeated(undef); $p++;
+                        if ($p < $r)
+                                {
+                                my $c2 = $c1->clone; $c2->paste_after($c1);
+                                $c2->set_repeated($r - $p);
+                                }
+                        }
+
+                return TRUE;
+                }
         }
 
-sub	get_cell_value
-	{
-	my $self	= shift;
-	my $table = $self->table;
-	unless ($table)
-		{
-		alert "Not in table"; return undef;		
-		}
+sub     get_cell_value
+        {
+        my $self	= shift;
+        my $table = $self->table;
+        unless ($table)
+                {
+                alert "Not in table"; return undef;
+                }
         my $old_status = $table->read_optimize;
         my $cell = $self->get_cell(@_);
         $table->read_optimize($old_status);
         return wantarray ?
                 ($cell->get_value(), $cell->get_type()) :
                 $cell->get_value;
-	}
+        }
 
 sub     _get_cell_values
         {
@@ -1290,14 +1290,14 @@ sub     _get_cell_values
         return wantarray ? @values : [ $count, $min, $max, $sum ];
         }
 
-sub	get_cell_values
-	{
-	my $self	= shift;
+sub     get_cell_values
+        {
+        my $self	= shift;
         my $table = $self->table;
-	unless ($table)
-		{
-		alert "Not in table"; return undef;		
-		}
+        unless ($table)
+                {
+                alert "Not in table"; return undef;
+                }
         my $type = shift;
         unless ($type)
                 {
@@ -1308,13 +1308,13 @@ sub	get_cell_values
         my @cells = $self->get_cells(@_);
         $table->read_optimize($old_status);
         return $self->_get_cell_values($type, @cells);
-	}
+        }
 
-sub	set_default_cell_style
-	{
-	my $self	= shift;
-	$self->set_attribute('table:default-cell-style-name' => shift);
-	}
+sub     set_default_cell_style
+        {
+        my $self	= shift;
+        $self->set_attribute('table:default-cell-style-name' => shift);
+        }
 
 #-----------------------------------------------------------------------------
 
@@ -1355,18 +1355,18 @@ sub     clear
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Column;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '1.004';
-use constant PACKAGE_DATE => '2011-02-21T19:12:25';
+our $VERSION                    = '1.004';
+use constant PACKAGE_DATE       => '2011-06-06T08:53:28';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub	_create         { ODF::lpOD::Column->create(@_) }
+sub     _create         { ODF::lpOD::Column->create(@_) }
 
 #-----------------------------------------------------------------------------
 
 sub     create
         {
-	my $caller	= shift;
+        my $caller	= shift;
         my %opt = process_options
                 (
                 style   => undef,
@@ -1377,12 +1377,12 @@ sub     create
 					or return undef;
         $col->set_attribute('style name', $opt{style})
                         if defined $opt{style};
-	$col->set_default_cell_style($opt{cell_style})
-			if defined $opt{cell_style};
-	delete @opt{qw(style cell_style)};
+        $col->set_default_cell_style($opt{cell_style})
+                if defined $opt{cell_style};
+        delete @opt{qw(style cell_style)};
         foreach my $a (keys %opt)
                 {
-                $col->set_attribute($a, $opt{$a});    
+                $col->set_attribute($a, $opt{$a});
                 }
         return $col;
         }
@@ -1412,17 +1412,17 @@ sub     clear
 
 #-----------------------------------------------------------------------------
 
-sub	get_length
-	{
-	my $self	= shift;
-	my $parent = $self->table;
-	unless ($parent)
-		{
-		alert "No defined length for a non attached column";
-		return undef;
-		}
-	return scalar $parent->get_height;
-	}
+sub     get_length
+        {
+        my $self	= shift;
+        my $parent = $self->table;
+        unless ($parent)
+                {
+                alert "No defined length for a non attached column";
+                return undef;
+                }
+        return scalar $parent->get_height;
+        }
 
 sub     get_repeated
         {
@@ -1433,7 +1433,7 @@ sub     get_repeated
 sub     set_repeated
         {
         my $self        = shift;
-	my $rep         = shift;
+        my $rep         = shift;
         $rep = undef unless $rep && $rep > 1;
         return $self->set_attribute('table:number-columns-repeated' => $rep);
         }
@@ -1445,7 +1445,7 @@ sub     next
         my $filter      = shift || qr'column';
         my $elt = $self->next_elt($context, $filter);
         while ($elt)
-                {              
+                {
                 if      ($elt->isa('ODF::lpOD::Column'))
                         {
                         return $elt;
@@ -1482,40 +1482,40 @@ sub     previous
         return undef;
         }
 
-sub	set_cell_style
-	{
-	my $self	= shift;
-	my $style	= shift;
-	$_->set_style($style) for $self->get_cells;
-	}
+sub     set_cell_style
+        {
+        my $self	= shift;
+        my $style	= shift;
+        $_->set_style($style) for $self->get_cells;
+        }
 
 #-----------------------------------------------------------------------------
 
-sub	get_cell
-	{
-	my $self	= shift;
-	my $table	= $self->table;
-	unless ($table)
-		{
-		alert "Not in table"; return undef;		
-		}
+sub     get_cell
+        {
+        my $self	= shift;
+        my $table	= $self->table;
+        unless ($table)
+                {
+                alert "Not in table"; return undef;
+                }
         if ($self->get_repeated() > 1)
                 {
                 alert "Not supported in this mode"; return undef;
                 }
-	my $col_num = $self->get_position;
-	my $row_num = alpha_to_num(shift) // 0;
-	return $table->get_cell($row_num, $col_num);
-	}
+        my $col_num = $self->get_position;
+        my $row_num = alpha_to_num(shift) // 0;
+        return $table->get_cell($row_num, $col_num);
+        }
 
-sub	get_cells
+sub     get_cells
 	{
-	my $self	= shift;
-	my $table	= $self->table;
-	unless ($table)
-		{
-		alert "Not in table"; return undef;		
-		}
+        my $self	= shift;
+        my $table	= $self->table;
+        unless ($table)
+                {
+                alert "Not in table"; return undef;
+                }
         if ($self->get_repeated() > 1)
                 {
                 alert "Not supported in this mode"; return undef;
@@ -1532,11 +1532,11 @@ sub	get_cells
                 }
         $start //= 0; $end //= $self->get_length() - 1;
         my @cells = ();
-	for (my $i = $start ; $i <= $end ; $i++)
-		{
+        for (my $i = $start ; $i <= $end ; $i++)
+                {
                 my $c = $self->get_cell($i) or last;
-		push @cells, $c;
-		}
+                push @cells, $c;
+                }
 	return @cells;
 	}
 
@@ -1545,18 +1545,18 @@ sub	get_cells
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Row;
 use base 'ODF::lpOD::TableElement';
-our $VERSION    = '1.005';
-use constant PACKAGE_DATE => '2011-03-21T09:13:28';
+our $VERSION                    = '1.005';
+use constant PACKAGE_DATE       => '2011-06-06T08:57:37';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub	_create         { ODF::lpOD::Row->create(@_) }
+sub     _create         { ODF::lpOD::Row->create(@_) }
 
 #-----------------------------------------------------------------------------
 
 sub     create
         {
-	my $caller	= shift;
+        my $caller	= shift;
         my %opt = process_options
                 (
                 style   => undef,
@@ -1567,13 +1567,13 @@ sub     create
                         or return undef;
         $row->set_attribute('style name', $opt{style})
                         if defined $opt{style};
-	$row->set_default_cell_style($opt{cell_style})
-			if defined $opt{cell_style};
-	delete @opt{qw(style cell_style)};
+        $row->set_default_cell_style($opt{cell_style})
+                if defined $opt{cell_style};
+        delete @opt{qw(style cell_style)};
 
         foreach my $a (keys %opt)
                 {
-                $row->set_attribute($a, $opt{$a});    
+                $row->set_attribute($a, $opt{$a});
                 }
         return $row;
         }
@@ -1588,18 +1588,18 @@ sub     clean
         $cell->set_repeated(undef);
         }
 
-sub	all_cells
-	{
-	my $self	= shift;
-	return $self->descendants(ODF::lpOD::Matrix->CELL_FILTER);
-	}
+sub     all_cells
+        {
+        my $self	= shift;
+        return $self->descendants(ODF::lpOD::Matrix->CELL_FILTER);
+        }
 
-sub	set_cell_style
-	{
-	my $self	= shift;
-	my $style	= shift;
-	$_->set_style($style) for $self->all_cells;
-	}
+sub     set_cell_style
+        {
+        my $self	= shift;
+        my $style	= shift;
+        $_->set_style($style) for $self->all_cells;
+        }
 
 sub     empty_cells
         {
@@ -1631,20 +1631,20 @@ sub     get_cell
         my $cell = $self->first_child(ODF::lpOD::Matrix->CELL_FILTER)
                 or return undef;
 
-	my $p = $position;
-	my $r = $cell->get_repeated;
-	while ($p >= $r)
-		{
-		$p -= $r;
-		$cell = $cell->next($self);
-		$r = $cell->get_repeated;
-		}
-	if ($self->trw and $cell->repeat($r, $p))
-		{
-		$cell = $self->get_cell($position);
-		}
+        my $p = $position;
+        my $r = $cell->get_repeated;
+        while ($p >= $r)
+                {
+                $p -= $r;
+                $cell = $cell->next($self);
+                $r = $cell->get_repeated;
+                }
+        if ($self->trw and $cell->repeat($r, $p))
+                {
+                $cell = $self->get_cell($position);
+                }
 
-	return $cell;
+        return $cell;
         }
 
 sub     get_cells
@@ -1662,34 +1662,34 @@ sub     get_cells
                 }
         $start //= 0; $end //= $self->get_width() - 1;
         my @list = ();
-	if ($self->tro)
-		{
-		my $cell = $self->get_cell($start);
-		my $n = $end - $start;
-                my $sp = $start - $cell->get_position;
-		while ($n >= 0 && $cell)
-			{
-			my $r = $cell->get_repeated() - $sp;
-			while ($r > 0 && $n >= 0)
-				{
-				push @list, $cell;
-				$r--; $n--;
-				}
-			$cell = $cell->next
-					(
-					$self,
-					ODF::lpOD::Matrix->CELL_FILTER
-					);
-                        $sp = 0;
-			}
-		}
-	else
-		{
-		for (my $i = $start ; $i <= $end ; $i++)
-			{
-			push @list, $self->get_cell($i);
-			}
-		}
+        if ($self->tro)
+                {
+                my $cell = $self->get_cell($start);
+                my $n = $end - $start;
+                        my $sp = $start - $cell->get_position;
+                while ($n >= 0 && $cell)
+                        {
+                        my $r = $cell->get_repeated() - $sp;
+                        while ($r > 0 && $n >= 0)
+                                {
+                                push @list, $cell;
+                                $r--; $n--;
+                                }
+                        $cell = $cell->next
+                                (
+                                $self,
+                                ODF::lpOD::Matrix->CELL_FILTER
+                                );
+                                $sp = 0;
+                        }
+                }
+        else
+                {
+                for (my $i = $start ; $i <= $end ; $i++)
+                        {
+                        push @list, $self->get_cell($i);
+                        }
+                }
 
         return @list;
         }
@@ -1714,7 +1714,7 @@ sub     get_width
         my $self        = shift;
         my $width       = 0;
         my $cell        = $self->first_child(ODF::lpOD::Matrix->CELL_FILTER);
-	my $tbl		= $self->table;
+        my $tbl		= $self->table;
         my $max_w       = $tbl ? $tbl->att('#lpod:w') : undef;
         while ($cell)
                 {
@@ -1787,7 +1787,7 @@ sub     add_cell
                 {
                 my $proto = $self->last_child(ODF::lpOD::Matrix->CELL_FILTER);
                 $elt = $proto ?
-			$proto->clone() : ODF::lpOD::Cell->create(%opt);
+                $proto->clone() : ODF::lpOD::Cell->create(%opt);
                 }
         else
                 {
@@ -1836,7 +1836,7 @@ sub     get_repeated
 sub     set_repeated
         {
         my $self        = shift;
-	my $rep         = shift;
+        my $rep         = shift;
         $rep = undef unless $rep && $rep > 1;
         return $self->set_attribute('table:number-rows-repeated' => $rep);
         }
@@ -1895,15 +1895,15 @@ sub     previous
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
 use base ('ODF::lpOD::Field', 'ODF::lpOD::TableElement');
-our $VERSION    = '1.004';
-use constant PACKAGE_DATE => '2011-02-27T13:04:52';
+our $VERSION                    = '1.004';
+use constant PACKAGE_DATE       => '2011-06-06T09:02:35';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN	{
-	*repeat			= *ODF::lpOD::TableElement::repeat;
-        *get_parent_row         = *row;
-	}
+        *repeat         = *ODF::lpOD::TableElement::repeat;
+        *get_parent_row = *row;
+        }
 
 #-----------------------------------------------------------------------------
 our     %ATTRIBUTE;
@@ -1913,32 +1913,32 @@ sub     _create         { ODF::lpOD::Cell->create(@_) }
 
 #-----------------------------------------------------------------------------
 
-sub	create
-	{
-	my $caller	= shift;
-        my $cell = ODF::lpOD::Field->create('table:table-cell', @_);
-        return $cell ? bless($cell, __PACKAGE__) : undef;	
-	}
+sub     create
+        {
+        my $caller	= shift;
+                my $cell = ODF::lpOD::Field->create('table:table-cell', @_);
+                return $cell ? bless($cell, __PACKAGE__) : undef;
+        }
 
 #-----------------------------------------------------------------------------
 
-sub	row
-	{
-	my $self	= shift;
-	return $self->parent('table:table-row');
-	}
+sub     row
+        {
+        my $self	= shift;
+        return $self->parent('table:table-row');
+        }
 
-sub	column
-	{
-	my $self	= shift;
-	my $t = $self->table;
-	unless ($t)
-		{
-		alert "Not in table"; return undef;
-		}
-	my $pos = $self->get_position	or return undef;
-	return $t->get_column($pos);
-	}
+sub     column
+        {
+        my $self	= shift;
+        my $t = $self->table;
+        unless ($t)
+                {
+                alert "Not in table"; return undef;
+                }
+        my $pos = $self->get_position	or return undef;
+        return $t->get_column($pos);
+        }
 
 #-----------------------------------------------------------------------------
 
@@ -1951,7 +1951,7 @@ sub     get_repeated
 sub     set_repeated
         {
         my $self        = shift;
-	my $rep         = shift;
+        my $rep         = shift;
         $rep = undef unless $rep && $rep > 1;
         return $self->set_attribute('table:number-columns-repeated' => $rep);
         }
@@ -1981,7 +1981,7 @@ sub     previous
         unless ($row)
                 {
                 alert "Wrong context"; return FALSE;
-                }        
+                }
         return $self->prev_elt($row, ODF::lpOD::Matrix->CELL_FILTER);
         }
 
@@ -2008,7 +2008,7 @@ sub     get_position
                         $position
                         );
                 }
-        return $position;        
+        return $position;
         }
 
 #-----------------------------------------------------------------------------
@@ -2026,17 +2026,17 @@ sub     set_text
         return undef unless defined $text;
         $self->append_element
                 (
-		ODF::lpOD::Paragraph->create
-			(text => $text, style => $opt{style})
-		);
+                ODF::lpOD::Paragraph->create
+                        (text => $text, style => $opt{style})
+                );
         }
 
-sub	set_value
-	{
-	my $self	= shift;
-	return $self->get_type() ne 'string' ?
+sub     set_value
+        {
+        my $self	= shift;
+        return $self->get_type() ne 'string' ?
                 $self->SUPER::set_value(@_) : $self->set_text(@_);
-	}
+        }
 
 sub     get_text
         {
@@ -2074,8 +2074,8 @@ sub     remove_span
         my $table = $self->parent(ODF::lpOD::Matrix->TABLE_FILTER);
         my $vpos = $row->get_position;
         my $hpos = $self->get_position;
-	my $vend = $vpos + $vspan - 1;
-	my $hend = $hpos + $hspan - 1;
+        my $vend = $vpos + $vspan - 1;
+        my $hend = $hpos + $hspan - 1;
         ROW: for (my $i = $vpos ; $i <= $vend ; $i++)
                 {
                 my $cr = $table->get_row($i) or last ROW;
@@ -2106,22 +2106,22 @@ sub     set_span
         unless  (($hspan > 1) || ($vspan > 1))
                 {
                 return $self->remove_span;
-                } 
+                }
         unless  (($hspan != $old_hspan) || ($vspan != $old_vspan))
                 {
                 return ($old_vspan, $old_hspan);
                 }
         $self->remove_span;
-	$hspan	= $old_hspan unless $hspan;
-	$vspan	= $old_vspan unless $vspan;
+        $hspan	= $old_hspan unless $hspan;
+        $vspan	= $old_vspan unless $vspan;
         my $row = $self->parent(ODF::lpOD::Matrix->ROW_FILTER);
         my $table = $self->parent(ODF::lpOD::Matrix->TABLE_FILTER);
         my $vpos = $row->get_position;
         my $hpos = $self->get_position;
-	my $vend = $vpos + $vspan - 1;
-	my $hend = $hpos + $hspan - 1;
-	$self->set_attribute('number columns spanned', $hspan);
-	$self->set_attribute('number rows spanned', $vspan);
+        my $vend = $vpos + $vspan - 1;
+        my $hend = $hpos + $hspan - 1;
+        $self->set_attribute('number columns spanned', $hspan);
+        $self->set_attribute('number rows spanned', $vspan);
         ROW: for (my $i = $vpos ; $i <= $vend ; $i++)
                 {
                 my $cr = $table->get_row($i) or last ROW;

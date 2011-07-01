@@ -95,8 +95,15 @@ C<style>: the name of a section style, already existing or to be defined;
 
 =item
 
-C<url> : the URL of an external resource that will provide the content of the
-section;
+C<url>: the URL of an external resource that will provide the content of the
+section; if this option is set, the C<protected> option is set to C<TRUE> by
+default; note that lpOD doesn't check for the availability of the resource,
+which should be available when the processed document is displayed through
+an ODF viewer, but which is not needed to run the program;
+
+=item
+
+C<source>: same as C<url>;
 
 =item
 
@@ -115,14 +122,28 @@ is I<not> a security feature);
 
 =item
 
-C<display>: boolean, tells that the section should be visible (default is
-C<TRUE>).
+C<display>: tells that the section should be visible; legal values are C<TRUE>,
+C<FALSE>, and the string C<'condition'>; the default is C<TRUE>; note that if
+this option is set to C<'condition'> an additional C<condition> parameter
+should be provided according to the ODF specification (§4.4.1), but this
+parameter is neither checked nor documented in lpOD.
 
 =back
 
 A new section may be inserted or appended somewhere using C<insert_element>
 or C<append_element>. (Of course, an existing section may be copied and
 pasted thanks to the common C<clone> method.)
+
+The following code appends a new write-protected section whose content will
+come from an external ODF text document at the end of the document body:
+
+      $body = $doc->get_body;
+      $body->append_element(
+            odf_section->create(
+                  "ExternalDocument",
+                  url => "/home/documents/report.odt"
+                  )
+            );
 
 A section may be retrieved using C<get_section()> with the unique name of the
 needed section as argument, while C<get_sections()> returns all the
@@ -661,7 +682,8 @@ generated from index marks (default=C<FALSE>).
 =back
 
 A table of contents object, after creation, may be put somewhere in a
-document using a generic method such as C<insert_element()>.
+document using a generic method such as C<insert_element()>. Note that such
+an object should be inserted in the C<CONTENT> part of a text document only.
 
 =head2   TOC retrieval
 

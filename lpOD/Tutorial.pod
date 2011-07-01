@@ -44,9 +44,9 @@ goes wrong for any reason (for example, if the specified file is not
 available or doesn't contain a consistent ODF document), C<odf_get_document>
 returns C<undef>.
 
-In usual applications, you may have to select a particular workspace in the
-document. The workspaces are called I<parts> here. The most commonly used are
-represented by lpOD symbolic constants: C<CONTENT>, C<STYLES>, C<META>, and
+In typical applications, you may have to select a particular workspace in the
+document. The workspaces are called I<parts> here. The most commonly used parts
+are represented by lpOD symbolic constants: C<CONTENT>, C<STYLES>, C<META>, and
 others. If you need to insert, search, process or delete some document content,
 you need to select the C<CONTENT> part, through the C<get_part()> document
 method:
@@ -67,8 +67,9 @@ object that appear in the page bodies:
 
         my $context = $doc->get_body;
 
-This shortcut, which selects the I<body> element of the document content, is a
-synonym of:
+The document body always belongs to the C<CONTENT> part of the document. So the
+instruction above, which selects the I<body> element of the document content,
+is a shortcut for:
 
         my $context = $doc->get_part(CONTENT)->get_body;
 
@@ -78,8 +79,8 @@ executed through a method whose calling object is the I<context>. The document
 level of a hierarchy of I<contexts>. It contains I<parts>, that are level 2
 contexts. A part contains a main I<element>, so-called I<root>. The I<root> is
 the top of a hierarchy of I<elements>. Every element, including the I<root>,
-belongs to the C<odf_element> class and may be the context for a large set of
-operations regarding its own features or its sub-elements (so-called
+is an instance of the C<odf_element> class and may be the context for a large
+set of operations regarding its own features or its sub-elements (so-called
 I<children>). In the C<CONTENT> part, the I<body> (that is a particular child
 of the I<root>), is the most usual context for operations regarding the
 displayable content of a document. However each I<element> contains, or can
@@ -180,11 +181,11 @@ allows the programmer to select, read or write any piece of metadata.
 
 A document may contain some global metadata. The most commonly used ones are
 the I<title>, the I<subject>, the I<description>, the I<creation date>, the
-I<modification date>, the I<creator>, and others. All these data belong to the
-C<META> document part. We can get access to any of them through the C<META>
-context. Note that the C<META> document part is directly usable as the context
-for metadata access, so we don't need to look for a particular I<body> element
-in this part:
+I<modification date>, the I<creator>, and others. All that is stored in the
+C<META> document part. We can get access to any piece of metadata through the
+C<META> context. Note that the C<META> document part is directly usable as the
+context for metadata access, so we don't need to look for a particular I<body>
+element in this part:
 
         my $meta = $doc->get_part(META);
 
@@ -230,7 +231,7 @@ modification date, or decrement the editing cycle count, it's your choice.
 
 =head2  Document keywords
 
-In the C<META> context, you can use or change the document keywords.
+In the C<META> context, you can use or change the document I<keywords>.
 Assuming that C<$meta> is the result of a previous call to C<get_part(META)>,
 an instruction like C<$meta->get_keywords()> returns the full list of existing
 keywords. In scalar context, this list is produced as a single comma-separated
@@ -338,7 +339,7 @@ L<ODF::lpOD::Element>.
 Any visible text belongs to a I<paragraph> that in turn is attached somewhere
 in a context.
 
-The most simple recipe is the "Hello World" example that creates and insert
+The most simple recipe is the "Hello World" example that creates and inserts
 a paragraph at the beginning of the document body.
 
 First we need to select a I<context>, i.e. a particular element that will
@@ -371,13 +372,12 @@ place of our choice, that is the document body:
         $context->insert_element($p);
 
 Note that C<insert_element()> allows us to insert any kind of element anywhere.
-Without explicit explicit option, the given object is inserted as the first
-child of the context, so the new paragraph will appear at the very beginning of
-our document (whatever the existing content). We could use C<append_element()>,
-that puts the new element at the end of the context. In addition,
-C<insert_element()> can take optional parameters allowing the user to specify
-a particular position, before or after another element, already existing in
-the context.
+Without explicit option, the given object is inserted as the first child of the
+context, so the new paragraph will appear at the very beginning of our document
+(whatever the existing content). We could use C<append_element()>, that puts
+the new element at the end of the context. In addition, C<insert_element()> can
+take optional parameters allowing the user to specify a particular position,
+before or after another element, already existing in the context.
 
 However, this paragraph is empty, because we created it without text. We can
 populate it later using the C<set_text()> method:
@@ -393,6 +393,9 @@ paragraph:
 
         $context->set_text("");
         $context->insert_element($p);
+
+However, for clarity you should prefer C<clear()> instead of C<set_text()>
+each time you just need to clear a context.
 
 The C<odf_create_paragraph()> constructor allows us to create a paragraph
 and initialize it with a content and/or a style, thanks to appropriate options:
@@ -434,13 +437,13 @@ Note that, by default, C<insert_element()> anchors the given object at the
 first position under the calling context, so after the instruction above the
 new paragraph becomes the first element of the document body. On the other
 hand, C<append_element()> puts the new element at the end of the context. Of
-course in real applications we need more flexibility. Fortunately there is an
-alternative use of C<insert_element()>. We can, for example, insert a new
-paragraph immediately before or after another paragraph. It's possible thanks
-to an alternative use of C<insert_element()>, that may be called from any
-kind of element instead of the document body. In the next example, we select
-a particular paragraph (say, the last one) then we insert a new paragraph
-before it:
+course in real applications lpOD provides more flexibility. We can, for
+example, insert a new paragraph immediately before or after another paragraph.
+It's possible thanks to an alternative use of C<insert_element()>, that may be
+called from any kind of element instead of the document body. In the next
+example, we select a particular paragraph (say, the last one) then we insert
+a new paragraph before it. We can call C<get_paragraph()> from our primary
+context with a C<position> option set to -1 in order to get the last paragraph:
 
         my $p = $context->get_paragraph(position => -1);
         $p->insert_element(
@@ -762,12 +765,21 @@ may specify particular choices through optional parameters, described in
 L<ODF::lpOD::Style>, but you can safely ignore such details and work with the
 default lpOD behavior for a time.
 
+You can use C<register_style()> as a synonym of C<insert_style()>.
+
 Note that c<insert_style()> returns the inserted style element, so the
 application can keep it in order to invoke it later. The instruction above
 produces the same effect as the sequence below:
 
         $ps1 = odf_create_style('paragraph', name => 'Bordered');
         $doc->insert_style($ps1);
+
+A more drastic shortcut is allowed:
+
+        odf_create_style('paragraph', name => 'Bordered')->register($doc);
+
+As shown in this last example, the C<odf_style> class provides a C<register()>
+method whose first (and mandatory) argument is a C<odf_document> object.
 
 Now "Bordered" is the name of a really available... but not really useful
 style, because we didn't specify its features. As a consequence, any paragraph
@@ -782,6 +794,15 @@ the document (if any). So we must create the style with the right definition:
                         padding         => '0.5cm'
                         )
                 );
+
+The same job could be done according a different style:
+
+        $ps1 = odf_style->create(
+                'paragraph',
+                name    => 'Bordered',
+                border  => '0.1cm dotted #000080',
+                padding => '0.5cm'
+                )->register($doc);
 
 The C<border> option must be set with a 3-part value: the first one is the
 thickness, the second one is a keyword that specifies the style of line, and
@@ -2361,7 +2382,7 @@ environment (ex: C<date>), from the general document metadata
 (ex: C<chapter>). In addition, a field may be associated to a user-defined
 variable.
 
-This first example, assuming that the calling object is a previously selected
+As a first example, assuming that the calling object is a previously selected
 paragraph, the following instruction inserts a the file name at the default
 position, i.e. the beginning of the paragraph:
 
@@ -2371,7 +2392,7 @@ The instruction below puts the same field at the end:
 
         $p->set_field('file name', offset => 'end');
 
-The thing may turn more complicated as soon as you want to display formatted
+The things may turn more complicated as soon as you want to display formatted
 fields. In order to illustrate the topic, the instruction below puts a date
 field which will be displayed according to the default date format:
 
@@ -2388,8 +2409,9 @@ a C<name> parameter must specify the variable (unique) name:
 
         $p->set_field('variable', name => 'InvoiceAmount');
 
-Many fields may be linked to the same variable: their role may be to display
-in several places a value stored once.
+Note that this parameter doesn't specify the name of the field itself; a text
+field is not a named object. In addition, many fields may be linked to the same
+variable: their role may be to display in several places a value stored once.
 
 lpOD allows you to define new variables, and not only to use existing
 variables in fields. Unlike fields, a variable is not located at a particular

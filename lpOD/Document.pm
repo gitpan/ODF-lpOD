@@ -11,8 +11,8 @@ use strict;
 #       The ODF Document class definition
 #=============================================================================
 package ODF::lpOD::Document;
-our     $VERSION    = '1.006';
-use     constant PACKAGE_DATE => '2011-03-17T19:39:05';
+our     $VERSION    = '1.007';
+use     constant PACKAGE_DATE => '2011-06-10T09:14:59';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -53,10 +53,10 @@ sub     get
         }
 
 sub	create
-	{
-	my $caller      = shift;
-	return ODF::lpOD::Document->new(type => shift, @_);
-	}
+        {
+        my $caller      = shift;
+        return ODF::lpOD::Document->new(type => shift, @_);
+        }
 
 sub     _create
         {
@@ -337,18 +337,18 @@ sub     get_required_context
 
 #--- context import & replacement --------------------------------------------
 
-sub	substitute_context
-	{
-	my $self	= shift;
+sub     substitute_context
+        {
+        my $self        = shift;
         my $doc         = shift;
-	my $part        = shift;
+        my $part        = shift;
         my $path        = shift;
         my $origin      = $doc->get_element($part, $path)
                                         or return undef;
         my $destination = $self->get_element($part, $path)
                                         or return undef;
         return $destination->substitute_children($origin);
-	}
+        }
 
 #--- direct element retrieval ------------------------------------------------
 
@@ -375,7 +375,13 @@ sub     get_elements
                 alert "Unknown or not available document part";
                 return undef;
                 }
-        return $part->get_elements(@_);      
+        return $part->get_elements(@_);
+        }
+
+sub     get_headings
+        {
+        my $self        = shift;
+        return $self->get_part(CONTENT)->get_headings(@_);
         }
 
 sub     get_changes
@@ -512,12 +518,12 @@ sub     get_styles
         return  (
                 $self->get_elements(STYLES, $xp),
                 $self->get_elements(CONTENT, $xp)
-                );        
+                );
         }
 
-sub	get_data_styles
-	{
-	my $self	= shift;
+sub     get_data_styles
+        {
+        my $self	= shift;
         my $family      = shift;
         my $filter = $family ?
                 'number:' . $family . '-style'  :
@@ -530,7 +536,7 @@ sub	get_data_styles
                         for $r->get_elements(qr'office:(automatic-|)styles');
                 }
         return @ns;
-	}
+        }
 
 sub     get_data_style
         {
@@ -664,10 +670,10 @@ sub     insert_outline_style
         return $context->insert_element($style);
         }
 
-sub	insert_default_style
-	{
-	my $self	= shift;
-	my $style       = shift;
+sub     insert_default_style
+        {
+        my $self	= shift;
+        my $style       = shift;
         my $context = $self->get_element(STYLES, '//office:styles');
         unless ($context)
                 {
@@ -679,7 +685,7 @@ sub	insert_default_style
         my $old = $self->get_style($family);
         $old->delete() if $old;
         return $context->insert_element($ds);
-	}
+        }
 
 sub     insert_style
         {
@@ -693,7 +699,7 @@ sub     insert_style
                         $style = ODF::lpOD::Style->create(@$style);
                         $class = ref $style;
                         }
-                }        
+                }
         unless ($class && $style->isa('ODF::lpOD::Style'))
                 {
                 alert "Missing or wrong style element";
@@ -779,21 +785,21 @@ sub     get_user_variables
         {
         my $self        = shift;
         my %opt         = @_;
-        my $context     = $opt{context} // $self->get_body;     
+        my $context     = $opt{context} // $self->get_body;
         return $context->get_elements('text:user-field-decl');
         }
 
 sub	get_simple_variables
-	{
-	my $self	= shift;
+        {
+        my $self	= shift;
         my %opt         = @_;
         my $context     = $opt{context} // $self->get_body;
         return $context->get_elements('text:variable-decl');
-	}
+        }
 
 sub	get_variables
-	{
-	my $self	= shift;
+        {
+        my $self	= shift;
         my %opt         = @_;
         given ($opt{class})
                 {
@@ -818,7 +824,7 @@ sub	get_variables
                         return undef;
                         }
                 }
-	}
+        }
 
 sub     get_variable
         {
@@ -848,7 +854,7 @@ sub     get_variable
                         alert "Wrong variable class"; return undef;
                         }
                 }
-        
+
         return $context->get_element
                 ($tag, attribute => 'name', value => $name);
         }
@@ -909,11 +915,11 @@ sub     set_variable
 
 #--- table of content handling -----------------------------------------------
 
-sub	get_tocs
-	{
-	my $self	= shift;
-        return $self->get_part(CONTENT)->get_tocs(@_);
-	}
+sub     get_tocs
+        {
+        my $self	= shift;
+            return $self->get_part(CONTENT)->get_tocs(@_);
+        }
 
 sub     get_toc
         {
@@ -923,14 +929,14 @@ sub     get_toc
 
 #--- font declaration --------------------------------------------------------
 
-sub	set_font_declaration
-	{
-	my $self	= shift;
-	return  (
+sub     set_font_declaration
+        {
+        my $self	= shift;
+        return  (
                 $self->get_part(CONTENT)->set_font_declaration(@_),
                 $self->get_part(STYLES)->set_font_declaration(@_)
                 );
-	}
+        }
 
 #=============================================================================
 package ODF::lpOD::Container;
@@ -1669,32 +1675,32 @@ sub     get_change
 package ODF::lpOD::StyleContainer;
 use base 'ODF::lpOD::XMLPart';
 our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-30T11:40:30';
+use constant PACKAGE_DATE => '2011-05-29T16:05:40';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub	get_font_declarations
-	{
-	my $self	= shift;
-	return $self->get_elements
+sub     get_font_declarations
+        {
+        my $self	= shift;
+        return $self->get_elements
                 ('//office:font-face-decls/style:font-face');
-	}
+        }
 
-sub	get_font_declaration
-	{
-	my $self	= shift;
-	my $name        = shift         or return undef;
+sub     get_font_declaration
+        {
+        my $self	= shift;
+        my $name        = shift         or return undef;
         my $xp =        '//office:font-face-decls'              .
                         '/style:font-face[@style:name="'        .
                         $name                                   .
                         '"]';
         return $self->get_element($xp);
-	}
+        }
 
-sub	set_font_declaration
-	{
-	my $self	= shift;
-	my $name        = shift;
+sub     set_font_declaration
+        {
+        my $self	= shift;
+        my $name        = shift;
         unless ($name)
                 {
                 alert "Missing font name"; return undef;
@@ -1708,11 +1714,11 @@ sub	set_font_declaration
                 ->set_child('office:font-face-decls')
                 ->append_element
                         (ODF::lpOD::FontDeclaration->create($name, %opt));
-	}
+        }
 
-sub	substitute_context
-	{
-	my $self	= shift;
+sub     substitute_context
+        {
+        my $self	= shift;
         my $doc         = shift;
         my $path        = shift;
 
@@ -1722,11 +1728,11 @@ sub	substitute_context
         my $destination = $self->get_element($path)
                                         or return undef;
         return $destination->substitute_children($origin);
-	}
+        }
 
 sub	substitute_styles
-	{
-	my $self	= shift;
+        {
+        my $self	= shift;
         my $from        = shift;
 
         my %opt         =
@@ -1781,22 +1787,22 @@ sub	substitute_styles
 
         $source->forget unless ref $from;
         return $count;
-	}
+        }
 
 #=============================================================================
 package ODF::lpOD::Content;
 use base 'ODF::lpOD::StyleContainer';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:51:31';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2011-06-10T09:11:42';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub	get_tocs
-	{
-	my $self	= shift;
-	my $context     = $self->get_body;
-        return $context->get_elements('text:table-of-content');
-	}
+sub     get_tocs
+        {
+        my $self	= shift;
+        my $context     = $self->get_body;
+            return $context->get_elements('text:table-of-content');
+        }
 
 sub     get_toc
         {
@@ -1813,6 +1819,12 @@ sub     get_toc
                 attribute       => 'name',
                 value           => $name
                 );
+        }
+
+sub     get_headings
+        {
+        my $self        = shift;
+        return $self->get_body->get_headings(@_);
         }
 
 #=============================================================================
@@ -2041,15 +2053,15 @@ sub     get_user_fields
         return @result;
         }
 
-sub	set_user_fields
-	{
-	my $self	= shift;
+sub     set_user_fields
+        {
+        my $self	= shift;
         foreach my $f (@_)
                 {
                 $self->set_user_field($f->{name}, $f->{value}, $f->{type});
                 }
         return $self->get_user_fields;
-	}
+        }
 
 #-----------------------------------------------------------------------------
 

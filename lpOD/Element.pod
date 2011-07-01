@@ -238,8 +238,10 @@ The methods described in this section allows the user to insert elements
 
 =head3  insert_element(element [options])
 
-Insert the given odf_element at a given position, that is defined according
-to a C<position> parameter, whose possible values are:
+Insert the given odf_element at a given location, that is defined according
+to a C<position> parameter. This parameter specifies the position of the element
+to be inserted (provided as the 1st argument) relatively to the calling element.
+The possible values are:
 
 =over
 
@@ -280,6 +282,19 @@ previous sibling of this child element.
 C<after>: like C<before>, but the new element will be inserted I<after> the
 value of this option.
 
+=item
+
+C<PARENT>: if this option is set, the calling element is moved and becomes the
+I<last child> of the element given as C<PARENT>. So the two instructions below
+are equivalent:
+
+        $e2->insert_element($e1, position => PARENT);
+        $e1->insert_element($e2, position => LAST_CHILD);
+
+Note that, with the C<PARENT> option, if the first argument is an element that
+already belongs to a tree, it's not really inserted: the calling element is
+just inserted inside it.
+
 =back
 
 The WITHIN option splits the text content of the container in two parts
@@ -311,20 +326,35 @@ the 5th characters of the text of the calling element:
 The next example inserts a new empty paragraph before the last paragraph of the
 calling context:
 
-        my $last_p = $context->get_element('text:p', position => -1);
+        my $last_p = $context->get_paragraph(position => -1);
+        my $new_p = odf_paragraph->create();
         $context->insert_element(
-                'text:p',
-                before          => $last_p
+                $new_p, before => $last_p
                 );
 
-(Note that smarter methods, described elsewhere, may produce the same results).
+The sequence below (that uses features described in L<ODF::lpOD::TextElement>),
+creates a protected section whose name is "Conclusion" and inserts it as the
+container of the last paragraph of the document:
+
+        $paragraph = $context->get_paragraph(position => -1);
+        $paragraph->insert_element(
+                odf_section->create("Conclusion", protected => TRUE),
+                position => PARENT
+                );
 
 =head3  insert_element(tag)
 
-Like the first version of C<insert_element>, but the argument is an XML tag
-(i.e. technically a text string instead of a C<odf_element> instance); in
-such a case a new element is created then inserted according to the same rules
-and options.
+Like the first version of C<insert_element>, but the argument is an arbitrary,
+application defined XML tag (i.e. technically a text string instead of a
+C<odf_element> instance); in such a case a new element is created then inserted
+according to the same rules and options, with the exception of the C<PARENT>
+option, that is supported only if the first argument is an existing element
+and not the tag of a element to be created.
+
+As an example, the next instruction creates and inserts a 'foo:bar' XML element
+at the end of the content of the calling element:
+
+        $context->insert_element('foo:bar', position => LAST_CHILD);
 
 =head3  append_element(element/tag)
 

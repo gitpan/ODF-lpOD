@@ -24,3 +24,8 @@
   - Common.pm: alert messages to STDERR only; more regular code indent.
   - StructuredContainer.pm: new get_title() draw page method.
   - Various doc clarifications.
+1.115   2011-06-30
+  - Cosmetic code & doc cleaning.
+  - Element.pm: ensured insert_element() always returns the inserted element;
+  prevented from inserting an already inserted element.
+  - StructuredContainer.pm: improved odf_section customization.

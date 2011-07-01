@@ -148,6 +148,16 @@ This instruction returns the last level 1 heading:
 Takes the same arguments as C<get_heading>, without the C<position>, and returns
 the list of the heading elements that meet the conditions.
 
+Alternatively, C<get_headings()> can return all the headings I<up to> a given
+level. To do so, the user must set a C<all> boolean option to C<TRUE> (knowing
+its default value is C<FALSE>). As an example, the following instruction returns
+all the headings whose level is not greater than 3:
+
+        @contents = $doc->get_headings(level => 3, all => TRUE);
+
+Without specified C<level>, C<get_headings()> returns all the headings
+whatever the value of the C<all> option.
+
 =head3  get_paragraph
 
 A paragraph can be retrieved in a given context using C<get_paragraph> with the

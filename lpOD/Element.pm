@@ -11,8 +11,8 @@ use     strict;
 #       Base ODF element class and some derivatives
 #=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.008';
-use constant PACKAGE_DATE => '2011-05-12T08:44:21';
+our     $VERSION        = '1.009';
+use constant PACKAGE_DATE => '2011-06-15T19:53:39';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -859,17 +859,17 @@ sub     get_text_elements
         return $self->get_elements($type, %opt);
         }
 
-sub		get_paragraphs
-		{
-		my $self	= shift;
-		return $self->get_text_elements(type => 'p', @_);
-		}
+sub	get_paragraphs
+        {
+        my $self	= shift;
+        return $self->get_text_elements(type => 'p', @_);
+        }
 
-sub		get_text_spans
-		{
-		my $self	= shift;
-		return $self->get_text_elements(type => 'span', @_);
-		}
+sub	get_text_spans
+        {
+        my $self	= shift;
+        return $self->get_text_elements(type => 'span', @_);
+        }
 
 sub     get_heading
         {
@@ -893,13 +893,32 @@ sub     get_headings
         {
         my $self        = shift;
         my %opt         = @_;
-        if (defined $opt{level})
+        unless (is_true($opt{all}))
                 {
-                $opt{attribute} = 'outline level';
-                $opt{value} = $opt{level};
-                delete $opt{level};
+                if (defined $opt{level})
+                        {
+                        $opt{attribute} = 'outline level';
+                        $opt{value} = $opt{level};
+                        delete $opt{level};
+                        }
+                return $self->get_elements('text:h', %opt);
                 }
-        return $self->get_elements('text:h', %opt);
+        else
+                {
+                unless (defined $opt{level})
+                        {
+                        return $self->get_elements('text:h');
+                        }
+                my @headings = ();
+                my $h = $self->first_child('text:h');
+                while ($h)
+                        {
+                        my $l = $h->get_level;
+                        push @headings, $h if $l > 0 and $l <= $opt{level};
+                        $h = $h->next_sibling('text:h');
+                        }
+                return @headings;
+                }
         }
 
 sub	get_hyperlinks
@@ -1849,22 +1868,36 @@ sub     insert_element
                         position        => 'FIRST_CHILD',
                         @_
                         );
-
-        my $new_elt = ref $tag ? $tag : ODF::lpOD::Element->new($tag);
+        my $position    = uc $opt{position};
+        $position =~ s/ /_/g;
+        my $new_elt;
+        if (ref $tag)
+                {
+                if ($tag->parent && $position ne 'PARENT')
+                        {
+                        alert "Element already belonging to a tree";
+                        return FALSE;
+                        }
+                $new_elt = $tag;
+                }
+        else
+                {
+                $new_elt = ODF::lpOD::Element->new($tag);
+                }
         if (defined $opt{after})
                 {
-                return $new_elt->paste_after($opt{after});
+                $new_elt->paste_after($opt{after}); return $new_elt;
                 }
         elsif (defined $opt{before})
                 {
-                return $new_elt->paste_before($opt{before});
+                $new_elt->paste_before($opt{before}); return $new_elt;
                 }
 
-        given($opt{position})
+        given($position)
                 {
                 when (/^(FIRST_CHILD|LAST_CHILD)$/)
                         {
-                        $new_elt->paste((lc $opt{position}) => $self);
+                        $new_elt->paste((lc $position) => $self);
                         }
                 when ('NEXT_SIBLING')
                         {
@@ -1887,12 +1920,19 @@ sub     insert_element
                         }
                 when ('PARENT')
                         {
-                        $new_elt->paste_before($self);
-                        $self->move(last_child => $new_elt);
+                        if ($self->parent)
+                                {
+                                $new_elt->paste_before($self);
+                                $self->move(last_child => $new_elt);
+                                }
+                        else
+                                {
+                                $self->paste_last_child($new_elt);
+                                }
                         }
                 default
                         {
-                        alert("Wrong position");
+                        alert("Wrong insertion option");
                         return FALSE;
                         }
                 }

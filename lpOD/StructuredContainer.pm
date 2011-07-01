@@ -18,10 +18,19 @@ use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Section;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:47:10';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-06-16T09:22:49';
 use ODF::lpOD::Common;
 #=============================================================================
+
+BEGIN   {
+        *set_hyperlink          = *set_source;
+        *get_hyperlink          = *get_source;
+        *set_url                = *set_source;
+        *get_url                = *get_source;
+        }
+
+#-----------------------------------------------------------------------------
 
 sub     _create  { ODF::lpOD::Section->create(@_) }
 
@@ -49,22 +58,58 @@ sub     create
                 );
 
         my $s = ODF::lpOD::Element->create('text:section');
-        if (defined $opt{url})
+        if (defined $opt{url} or defined $opt{source})
                 {
-                $s->set_source($opt{url});
+                my $link = $opt{url} || $opt{source};
+                $s->set_source($link);
                 $opt{protected} = TRUE;
                 }
-        $s->set_attribute('protected', odf_boolean($opt{protected}));
-        $s->set_attribute('name', $name);
-        $s->set_attribute('style name', $opt{style});
+        $s->set_protected($opt{protected});
+        $s->set_name($name);
+        $s->set_style($opt{style});
         $s->set_attribute('protection key', $opt{key});
-        $s->set_attribute('display', $opt{display});
+        $s->set_display($opt{display});
         $s->set_attribute('condition', $opt{condition});
 
         return $s;
         }
 
 #-----------------------------------------------------------------------------
+
+sub     set_display
+        {
+        my $self        = shift;
+        my $value       = shift // 'true';
+        unless ($value ~~ ['true', 'none', 'condition'])
+                {
+                if ($value == TRUE)
+                        {
+                        $value = 'true';
+                        }
+                elsif ($value == FALSE)
+                        {
+                        $value = 'none';
+                        }
+                else
+                        {
+                        alert "Wrong display parameter"; return undef;
+                        }
+                }
+        $self->set_attribute('display' => $value);
+        }
+
+sub     get_display
+        {
+        my $self        = shift;
+        my $value = $self->get_attribute('display');
+        given ($value)
+                {
+                when (undef)        { return TRUE   }
+                when ('true')       { return TRUE   }
+                when ('none')       { return FALSE  }
+                default             { return $value }
+                }
+        }
 
 sub     set_source
         {
@@ -75,13 +120,17 @@ sub     set_source
         my $source = $self->insert_element('section source');
         $source->set_attribute('xlink:href', $url);
         $source->set_attributes({%attr});
+        $self->set_protected(TRUE);
         return $source;
         }
 
-sub     set_hyperlink
+sub     get_source
         {
         my $self        = shift;
-        return $self->set_source(@_);
+        my $source = $self->get_element('section source') or return undef;
+        return wantarray ?
+                $source->get_attributes()               :
+                $source->get_attribute('xlink:href');
         }
 
 #=============================================================================
@@ -929,7 +978,7 @@ sub     get_content
 package ODF::lpOD::TOC;
 use base 'ODF::lpOD::Element';
 our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-04-05T08:20:21';
+use constant PACKAGE_DATE => '2011-05-27T19:06:30';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -962,29 +1011,29 @@ sub     create
 
 #-----------------------------------------------------------------------------
 
-sub	get_source
-	{
-	my $self	= shift;
-	return $self->first_child(TOC_SOURCE);
-	}
+sub     get_source
+        {
+        my $self	= shift;
+        return $self->first_child(TOC_SOURCE);
+        }
 
-sub	set_source
-	{
-	my $self	= shift;
-	return  $self->set_child(TOC_SOURCE);
-	}
+sub     set_source
+        {
+        my $self	= shift;
+        return  $self->set_child(TOC_SOURCE);
+        }
 
-sub	get_body
-	{
-	my $self	= shift;
-	return $self->first_child(TOC_BODY);
-	}
+sub     get_body
+        {
+        my $self	= shift;
+        return $self->first_child(TOC_BODY);
+        }
 
-sub	set_body
-	{
-	my $self	= shift;
-	return $self->set_child(TOC_BODY);
-	}
+sub     set_body
+        {
+        my $self	= shift;
+        return $self->set_child(TOC_BODY);
+        }
 
 sub     source_attribute
         {
@@ -1008,99 +1057,99 @@ sub     source_attribute
         return $val;
         }
 
-sub	get_title
-	{
-	my $self	= shift;
-        my $title = $self->first_descendant(TOC_TITLE_TEMPLATE);
-        return $title ? $title->get_text : undef;
-	}
+sub     get_title
+        {
+        my $self	= shift;
+            my $title = $self->first_descendant(TOC_TITLE_TEMPLATE);
+            return $title ? $title->get_text : undef;
+        }
 
-sub	set_title
-	{
-	my $self	= shift;
-        my $text        = shift;
-        my %opt         = @_;
-	my $source = $self->set_source;
-        my $style = $opt{style}; delete $opt{style};
-        return $source->set_child
-                        (
-                        TOC_TITLE_TEMPLATE,
-                        $text,
-                        'style name'    => $style,
-                        @_
-                        );
-	}
-
-sub	get_outline_level
-	{
-	my $self	= shift;
-        return $self->source_attribute('outline level');
-	}
-
-sub	set_outline_level
-	{
-	my $self	= shift;
-        my $level       = shift;
+sub     set_title
+        {
+        my $self	= shift;
+            my $text        = shift;
+            my %opt         = @_;
         my $source = $self->set_source;
-        $source->set_attribute('outline level' => $level);
-        foreach my $l (1..$level)
-                {
-                my $t = $source->get_element
-                        (
-                        TOC_ENTRY_TEMPLATE,
-                        attribute       => 'outline level',
-                        value           => $l
-                        )
-                        //
-                $source->append_element(TOC_ENTRY_TEMPLATE);
+            my $style = $opt{style}; delete $opt{style};
+            return $source->set_child
+                            (
+                            TOC_TITLE_TEMPLATE,
+                            $text,
+                            'style name'    => $style,
+                            @_
+                            );
+        }
 
-                $t->set_attribute ('outline level' => $l);
+sub     get_outline_level
+        {
+        my $self	= shift;
+            return $self->source_attribute('outline level');
+        }
 
-                $t->append_element('text:index-entry-chapter');
-                $t->append_element('text:index-entry-span')
-                        ->set_text("  ");
-                $t->append_element('text:index-entry-text');
-                $t->append_element('text:index-entry-tab-stop')
-                        ->set_attributes
-                                (
-                                'style:type'            => 'right',
-                                'style:leader-char'     => '.'
-                                );
-                $t->append_element('text:index-entry-page-number');
-                }
-	return $level;
-	}
+sub     set_outline_level
+        {
+        my $self	= shift;
+            my $level       = shift;
+            my $source = $self->set_source;
+            $source->set_attribute('outline level' => $level);
+            foreach my $l (1..$level)
+                    {
+                    my $t = $source->get_element
+                            (
+                            TOC_ENTRY_TEMPLATE,
+                            attribute       => 'outline level',
+                            value           => $l
+                            )
+                            //
+                    $source->append_element(TOC_ENTRY_TEMPLATE);
 
-sub	get_protected
-	{
-	my $self	= shift;
-	return is_true($self->get_attribute('protected'));
-	}
+                    $t->set_attribute ('outline level' => $l);
 
-sub	set_protected
-	{
-	my $self	= shift;
-	$self->set_attribute(protected => odf_boolean(shift));
-        return $self->get_protected;
-	}
+                    $t->append_element('text:index-entry-chapter');
+                    $t->append_element('text:index-entry-span')
+                            ->set_text("  ");
+                    $t->append_element('text:index-entry-text');
+                    $t->append_element('text:index-entry-tab-stop')
+                            ->set_attributes
+                                    (
+                                    'style:type'            => 'right',
+                                    'style:leader-char'     => '.'
+                                    );
+                    $t->append_element('text:index-entry-page-number');
+                    }
+        return $level;
+        }
 
-sub	get_use_index_marks
-	{
-	my $self	= shift;
-	return $self->source_attribute('use index marks');
-	}
+sub     get_protected
+        {
+        my $self	= shift;
+        return is_true($self->get_attribute('protected'));
+        }
 
-sub	set_use_index_marks
-	{
-	my $self	= shift;
-	return $self->source_attribute('use index marks', value => shift);
-	}
+sub     set_protected
+        {
+        my $self	= shift;
+        $self->set_attribute(protected => odf_boolean(shift));
+            return $self->get_protected;
+        }
 
-sub	get_use_outline
-	{
-	my $self	= shift;
-	return $self->source_attribute('use outline');
-	}
+sub     get_use_index_marks
+        {
+        my $self	= shift;
+        return $self->source_attribute('use index marks');
+        }
+
+sub     set_use_index_marks
+        {
+        my $self	= shift;
+        return $self->source_attribute('use index marks', value => shift);
+        }
+
+sub     get_use_outline
+        {
+        my $self	= shift;
+        return $self->source_attribute('use outline');
+        }
 
 sub     set_use_outline
         {
@@ -1110,18 +1159,18 @@ sub     set_use_outline
 
 #-----------------------------------------------------------------------------
 
-sub	get_entry_template
-	{
-	my $self	= shift;
-        my $level       = shift;
-	my $source = $self->get_source;
-        return $source->get_element
-                (
-                TOC_ENTRY_TEMPLATE,
-                attribute       => 'outline level',
-                value           => $level
-                );
-	}
+sub     get_entry_template
+        {
+        my $self	= shift;
+            my $level       = shift;
+        my $source = $self->get_source;
+            return $source->get_element
+                    (
+                    TOC_ENTRY_TEMPLATE,
+                    attribute       => 'outline level',
+                    value           => $level
+                    );
+        }
 
 #=============================================================================
 1;
