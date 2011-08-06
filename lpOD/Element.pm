@@ -11,8 +11,8 @@ use     strict;
 #       Base ODF element class and some derivatives
 #=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.009';
-use constant PACKAGE_DATE => '2011-06-15T19:53:39';
+our     $VERSION        = '1.010';
+use constant PACKAGE_DATE => '2011-08-06T12:55:24';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -736,12 +736,6 @@ sub     _get_elements
         $tag = $self->normalize_name($tag);
         my $xpath = './/' . ($tag // "");
 
-        if (defined $opt{content})
-                {
-                $xpath .=       '[string()=~/' .
-                                input_conversion($opt{content}) .
-                                '/]';
-                }
         if (defined $opt{attribute})
                 {
                 my $a = $opt{attribute};
@@ -754,20 +748,57 @@ sub     _get_elements
                 $xpath .= '[@' . $a . '="' . $v . '"]';
                 }
 
-        return defined $opt{position} ?
-                $self->get_xpath($xpath, $opt{position}) :
-                $self->get_xpath($xpath);
+        my $pos = $opt{position};
+        my $expr = $opt{content};
+        unless (defined $opt{content})
+                {
+                return defined $pos ?
+                        $self->get_xpath($xpath, $pos) :
+                        $self->get_xpath($xpath);
+                }
+        else
+                {
+                my $elt;
+                my @elts = ();
+                my $count = 0;
+                unless (defined $pos)
+                        {
+                        foreach $elt ($self->get_xpath($xpath))
+                                {
+                                push @elts, $elt if $elt->count_matches($expr);
+                                }
+                        return @elts;
+                        }
+                elsif ($pos >= 0)
+                        {
+                        foreach $elt ($self->get_xpath($xpath))
+                                {
+                                if ($elt->count_matches($expr))
+                                        {
+                                        $count++;
+                                        return $elt if $count > $pos;
+                                        }
+                                }
+                        return undef;
+                        }
+                else
+                        {
+                        foreach $elt ($self->get_xpath($xpath))
+                                {
+                                push @elts, $elt if $elt->count_matches($expr);
+                                }
+                        my $size = scalar @elts;
+                        return ($size >= abs($pos)) ? $elts[$pos] : undef;
+                        }
+                }
         }
 
 sub     get_element
         {
         my $self        = shift;
         my $tag         = shift;
-        my %opt         =
-                (
-                position        => 0,
-                @_
-                );
+        my %opt         = @_;
+        $opt{position} //= 0;
         if ($opt{bookmark})
                 {
                 return $self->get_element_by_bookmark
@@ -2174,7 +2205,6 @@ sub     search
                 alert("Missing search argument");
                 return undef;
                 }
-
         my $backward = $opt{backward}; delete $opt{backward};
         if (defined $opt{offset} && $opt{offset} < 0)
                 {
@@ -2202,18 +2232,36 @@ sub     replace
         return $self->replace_element(@_) if caller() eq 'XML::Twig::Elt';
         my $expr        = shift;
         my $repl        = shift;
+        return $self->count_matches($expr, @_) unless defined $repl;
         my %opt         =
                 (
                 deep    => TRUE,
                 @_
                 );
-
         my $deep = $opt{deep}; delete $opt{deep};
         my $count = 0;
         foreach my $segment ($self->text_segments(deep => $deep))
                 {
                 $count += $segment->replace_in_text_segment
-                                                ($expr, $repl, %opt);
+                                ($expr, $repl, %opt);
+                }
+        return $count;
+        }
+
+sub     count_matches
+        {
+        my $self        = shift;
+        my $expr        = shift;
+        my %opt         =
+                (
+                deep    => TRUE,
+                @_
+                );
+        my $count = 0;
+        foreach my $segment ($self->text_segments(deep => $opt{deep}))
+                {
+                my $t = $segment->get_text;
+                $count += count_substrings($t, $expr);
                 }
         return $count;
         }

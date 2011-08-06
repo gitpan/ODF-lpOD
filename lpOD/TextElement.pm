@@ -12,8 +12,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.004';
-use constant PACKAGE_DATE => '2011-05-10T10:42:10';
+our $VERSION    = '1.005';
+use constant PACKAGE_DATE => '2011-08-06T19:04:35';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -147,7 +147,8 @@ sub     split_content
                 $e->set_class;
                 return $e;
                 }
-        if ($position == 0 && ! defined $search)
+        my $range = $opt{length};
+        if ($position == 0 && ! defined $search && ! defined $range)
                 {
                 my $e = $self->insert_element($tag);
                 $e->set_attributes($opt{attributes});
@@ -155,7 +156,6 @@ sub     split_content
                 $e->set_class;
                 return $e;
                 }
-        my $range = $opt{length};
         my %r = $self->search
                         (
                         $search,
@@ -282,6 +282,16 @@ sub     set_text_mark
         {
         my $self        = shift;
         my %opt         = @_;
+        if (defined $opt{length} && $opt{length} > 0)
+                {
+                unless (ref $opt{offset})
+                        {
+                        my $start = $opt{offset} // 0;
+                        my $end = $start + $opt{length};
+                        $opt{offset} = [ $start, $end ];
+                        }
+                delete $opt{length};
+                }
         if (defined $opt{content} || ref $opt{offset})
                 {
                 my $content = $opt{content};
@@ -459,13 +469,14 @@ sub     set_span
         $opt{search} = $opt{filter} if exists $opt{filter};
         $opt{attributes} = { 'style name' => $opt{style} };
         delete @opt{qw(filter style)};
-        unless (defined $opt{length}) { $opt{search} //= ".*" }
+        unless (defined $opt{length})   { $opt{search} //= ".*" }
+        else                            { $opt{offset} //= 0    }
         return $self->split_content(tag => 'span', %opt);
         }
 
-sub	remove_spans
-	{
-	my $self	= shift;
+sub     remove_spans
+        {
+        my $self	= shift;
 
         my $tmp = $self->clone;
         $self->delete_children;
@@ -483,7 +494,7 @@ sub	remove_spans
                 }
         $tmp->delete;
         return $count;
-	}
+        }
 
 sub     set_hyperlink
         {
@@ -505,7 +516,8 @@ sub     set_hyperlink
                 'visited style name'    => $opt{visited_style}
                 };
         delete @opt{qw(filter name title style visited_style)};
-        unless (defined $opt{length}) { $opt{search} //= ".*" }
+        unless (defined $opt{length})   { $opt{search} //= ".*" }
+        else                            { $opt{offset} //= 0    }
         return $self->split_content(tag => 'a', %opt);
         }
 
@@ -721,15 +733,15 @@ sub     set_annotation
 
 #=== text fields =============================================================
 
-sub	set_field
-	{
-	my $self	= shift;
+sub     set_field
+        {
+        my $self	= shift;
         my $type        = shift;
         unless ($type)
                 {
                 alert "Missing field type"; return undef;
                 }
-	my %opt         = process_options(@_);
+        my %opt         = process_options(@_);
         $opt{search} //= $opt{replace}; delete $opt{replace};
         $type = 'user field get' if $type eq 'variable';
         if ($type =~ /^user field/)
@@ -798,8 +810,8 @@ sub	set_field
 #=============================================================================
 package ODF::lpOD::TextHyperlink;
 use base 'ODF::lpOD::TextElement';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2011-02-24T22:21:03';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2011-08-04T20:52:37';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -809,11 +821,11 @@ sub     set_type
         return $self->get_attribute('xlink:type');
         }
 
-sub	get_type
-	{
-	my $self	= shift;
-	return $self->get_attribute('xlink:type');
-	}
+sub     get_type
+        {
+        my $self	= shift;
+        return $self->get_attribute('xlink:type');
+        }
 
 sub     set_style       {}
 sub     get_style       {}

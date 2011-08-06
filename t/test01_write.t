@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #=============================================================================
-# test01_write.t        lpOD-Perl installation test     2011-03-25T09:06:27
+# test01_write.t        lpOD-Perl installation test     2011-08-05T17:17:37
 #=============================================================================
 use 5.010_000;
 use strict;
@@ -96,7 +96,7 @@ my $heading_style = $doc->insert_style(
         odf_create_style(
                 'paragraph',
                 name            => "Level 2 Heading",
-                keep_with_next  => 'always', 
+                keep_with_next  => 'always',
                 margin_top      => '1cm',
                 margin_bottom   => '4mm'
                 )
@@ -271,7 +271,7 @@ my $fr = $ht->get_cell("A1")
                 odf_create_image_frame(
                         $img,
                         name    => "Logo",
-                        size    => image_size($img_path),
+                        size    => "170pt, 251pt",
                         title   => "OASIS ODF logo"
                         )
                 );
@@ -368,4 +368,3 @@ ok($doc->save(target => $filename, pretty => TRUE));
 exit 0;
 
 #=== END
-

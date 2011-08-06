@@ -11,8 +11,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #=============================================================================
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.007';
-use constant PACKAGE_DATE       => '2011-05-23T09:15:07';
+our	$VERSION	        = '1.008';
+use constant PACKAGE_DATE       => '2011-08-04T21:36:49';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -80,7 +80,7 @@ our @EXPORT     = qw
 
         text_segment TEXT_SEGMENT
 
-        input_conversion output_conversion search_string
+        input_conversion output_conversion search_string count_substrings
         color_code color_name load_color_map unload_color_map
         is_numeric iso_date numeric_date check_odf_value odf_value
         file_parse file_type image_size input_2d_value
@@ -620,6 +620,15 @@ sub     numeric_date                            # in progress
         }
 
 #-----------------------------------------------------------------------------
+
+sub     count_substrings
+        {
+        my $content     = shift;
+        my $expr        = shift;
+        return undef unless defined $expr;
+        my @matches = ($content =~ /$expr/g);
+        return scalar @matches;
+        }
 
 sub     search_string
         {

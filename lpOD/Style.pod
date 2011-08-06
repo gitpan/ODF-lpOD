@@ -313,7 +313,7 @@ a yellow background:
                         style           => 'italic',
                         color           => '#000080'
                         );
-   $s->set_background(color => '#ffff00')
+   $s->set_background(color => '#ffff00');
 
 This new style could be inserted using C<insert_style()> then retrieved and
 changed later using C<get_style()> then the C<set_properties()> method of the

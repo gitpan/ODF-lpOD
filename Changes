@@ -1,3 +1,34 @@
+1.116   2011-08-05
+  - TextElement.pm: bug fix #70100; positioning logic change in the
+  split_content() utility, affecting set_span() and set_hyperlink().
+  - TextElement.pm: allowed 'length' with set_bookmark(), set_index_mark()...
+  - t/test01_write.t: no longer uses Image::Size.
+  - Element.pm: bug fix #69989; get_element() now allows '/' in search strings.
+  - Element.pm: improved replace(), created count_matches().
+  - Common.pm: added count_substrings() internal utility.
+  - Doc cleaning.
+1.115   2011-06-30
+  - Cosmetic code & doc cleaning.
+  - Element.pm: ensured insert_element() always returns the inserted element;
+  prevented from inserting an already inserted element.
+  - StructuredContainer.pm: improved odf_section customization.
+1.114   2011-05-23
+  - Common.pm: alert messages to STDERR only; more regular code indent.
+  - StructuredContainer.pm: new get_title() draw page method.
+  - Various doc clarifications.
+1.113   2011-05-11
+  - TextElement.pm: bug fix in set_note(), improved get_text() recursive.
+  - StructuredContainer.pm: new odf_toc methods.
+  - Style.pm: underline options improvement, doc error fix (#67409),
+  added register()/insert() method, 'stroke-.*' attribute handling improvement.
+  - Documentation: clarified some details, fixed errors and typos.
+1.111   2011-03-30
+  - Table.pm: Added out of range security to get_rows() and get_cells();
+  improved cell span handling.
+  - Document.pm: Added the 'handlers' and 'roots' options with get_part().
+  - TextElement.pm: Added reference mark support methods.
+  - Detail change in t/test01_write.t.
+  - Doc improvements.
 1.110   2011-03-10
   - Added change log in the distribution.
   - TextStyle: added 'variant' option.
@@ -7,25 +38,3 @@
   - Style.pm : Number style handling improvement.
   - All: many comment changes.
   - Doc updates.
-1.111   2011-03-30
-  - Table.pm: Added out of range security to get_rows() and get_cells();
-  improved cell span handling.
-  - Document.pm: Added the 'handlers' and 'roots' options with get_part().
-  - TextElement.pm: Added reference mark support methods.
-  - Detail change in t/test01_write.t.
-  - Doc improvements.
-1.113   2011-05-11
-  - TextElement.pm: bug fix in set_note(), improved get_text() recursive.
-  - StructuredContainer.pm: new odf_toc methods.
-  - Style.pm: underline options improvement, doc error fix (#67409),
-  added register()/insert() method, 'stroke-.*' attribute handling improvement.
-  - Documentation: clarified some details, fixed errors and typos.
-1.114   2011-05-23
-  - Common.pm: alert messages to STDERR only; more regular code indent.
-  - StructuredContainer.pm: new get_title() draw page method.
-  - Various doc clarifications.
-1.115   2011-06-30
-  - Cosmetic code & doc cleaning.
-  - Element.pm: ensured insert_element() always returns the inserted element;
-  prevented from inserting an already inserted element.
-  - StructuredContainer.pm: improved odf_section customization.

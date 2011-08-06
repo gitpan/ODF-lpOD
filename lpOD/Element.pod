@@ -62,6 +62,10 @@ If the given string starts with C<'http:'>, then it's regarded as the URL of
 an XML resource available through the web. If L<LWP::Simple> is installed and
 if the remote resource is available, then this resource is parsed as XML.
 
+If the given string doesn't start with C<'http:'> but ends with C<'.xml'>, then
+it's regarded as the path to an XML file in the local filesystem, and the
+content of this file is parsed as the XML definition of the new element.
+
 If the argument is a reference (and not a string), it's regarded as a text file
 handle; if it's really a file handle, the content of this file is loaded and
 parsed as XML.
@@ -378,7 +382,7 @@ from any element, if the methods described below don't meet all their needs.
 =head3  clear
 
 Erases the text of an element and all its children. Beware that this method
-is overiden by some specialized element classes.
+is overriden by some specialized element classes.
 
 =head3  clone
 

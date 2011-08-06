@@ -247,12 +247,17 @@ being a search string like with C<search()>, the second one a text which will
 replace any substring matching the search string. The return value of the
 method is the total number of matches. If the second argument is an empty
 string, every matching substring is just deleted without replacement. If the
-second argument is missing, then nothing is changed, and the method just counts
-the number of matches. This method is context-based, so it recursively works on
-all the paragraphs, headers and spans below the calling element; the calling
-element may be any ODF element, including the elements that can't directly own a
-text content. It may be called at the document level. The return value is the
-number of replacements done.
+second argument is missing, then nothing is changed, and the method just behaves
+as C<count_matches()> (see below). This method is context-based, so it
+recursively works on all the paragraphs, headers and spans below the calling
+element; the calling element may be any ODF element, including the elements
+that can't directly own a text content. It may be called at the document level.
+The return value is the number of replacements done.
+
+C<count_matches()>, whose argument is a search expression, returns the number
+of matches in the context. Note that this number is not the number of elements
+whose content matches the expression, because several matches may occur in the
+content of the same element.
 
 =head1  Text spans and hyperlinks
 
@@ -325,7 +330,11 @@ create a span covering the whole content of the calling paragraph, will stop
 at the first visible or invisible internal markup, because ".*" means the
 whole content of a text node, not the whole content of the paragraph:
 
-        $p->set_span(filter => ".*", repeat => FALSE);
+        $p->set_span(
+                filter  => ".*",
+                style   => "HighLight",
+                repeat  => FALSE
+                );
 
 The numeric C<offset> is not the only area restriction parameter. Thanks to
 the C<start mark> and/or C<end mark> options, this area may be delimited by
@@ -617,6 +626,16 @@ When two offsets are provided, the second offset can't be before the first
 one and the method fails if one of the given offsets is off limits, so the
 consistency of the bookmark is secured as soon as C<set_bookmark()> returns a
 non-null value with this parameter.
+
+Alternatively, it's possible to provide a C<length> option. If this option
+is set and greater than 0, it's regarded as the range. As an example, the
+two following instructions produce the same effect:
+
+        $paragraph->set_bookmark("MyRange", offset => [3, 8]);
+        $paragraph->set_bookmark("MyRange", offset => 3, length => 5);
+
+Note that if C<length> is set while C<offset> is not set, the range bookmark
+will start at offset 0.
 
 The C<offset> and C<content> parameters may be combined in order to create a
 range bookmark whose content matches a given filter string in a delimited
