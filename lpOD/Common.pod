@@ -16,23 +16,32 @@ They may be used without package or object reference.
 =head3  is_true(value),
 
 Returns C<TRUE> if the given value may be regarded as true (in the Perl lpOD
-implementation). The usual Perl true values are interpreted as C<TRUE>, with the
-a few exceptions. The strings C<'false'>, C<'no'>, and C<'off'>, like 0,
+implementation). The usual Perl true values are interpreted as C<TRUE>, with a
+few exceptions. The strings C<'false'>, C<'no'>, and C<'off'>, like 0,
 C<undef>, and the empty string, are regarded as C<FALSE>.
+
+Note that the standard ODF false value is the string C<'false'>; so it's
+correctly interpreted as false by C<is_true()>.
 
 The common constants C<TRUE> and C<FALSE> (corresponding to 1 and 0) may be
 used by the applications.
 
 =head3  is_false(value)
 
-Returns C<TRUE> if the given value is C<undef>, zero, an empty string,
-C<'false'>, C<'no'>, C<'off'>. Returns C<FALSE> otherwise.
+Returns C<TRUE> if the given value is either a regular Perl false value or one
+of the strings C<'false'>, C<'no'>, C<'off'>. Returns C<FALSE> otherwise.
 
 =head3  odf_boolean(value)
 
-Translates in an ODF-compliant boolean value (i.e. C<'true'> or C<'false'>)
-a Perl/lpOD boolean value. The result may be used as the value of any ODF
-boolean attribute.
+Translates into an ODF-compliant boolean value (i.e. C<'true'> or C<'false'>)
+an arbitrary value. The result may be used as the value of any ODF
+boolean attribute. Examples:
+
+        say odf_boolean(0);             # "false"
+        say odf_boolean(undef);         # "false"
+        say odf_boolean("All right");   # "true"
+        say odf_boolean('no');          # "false"
+        say odf_boolean(123);           # "true"
 
 =head3  is_odf_datatype(type)
 
@@ -52,6 +61,11 @@ The following example formats the current system date so the result may be
 used as the value of a date field in a document:
 
         $odf_date = odf_value(time(), 'date');
+
+The following instruction returns C<"2011-09-30T19:55:03">, i.e. it translates
+a numeric time into a ISO-8601, ODF-compliant alphanumeric date:
+
+        $d = odf_value(1317405303, 'date');
 
 This function returns C<undef> if the given value is not compatible with the
 given type.
@@ -87,12 +101,32 @@ same logic as C<translate_coordinates()>, producing a list of 4 values.
 
 =head1  External file control
 
+These functions are provided for specific physical operations of ODF
+document parts.
+
 =head3  file_parse(file_path)
 
-Returns the base name and the directory path extracted from the given file path.
-The following example will return C<("logo.png", "/usr/share/images/")>:
+This utility is a variant of the standard C<File::Basename::fileparse>
+function, mainly for internal use by lpOD.
 
-        ($dir, $base) = file_parse("/usr/share/images/logo.png");
+In scalar context, extracts the full file name (i.e. including the suffix, if
+any) from the given string, that is supposed to be a full path (URL or local).
+
+In array context, returns the path, then the full name (including the suffix,
+if any), then the suffix itself (without the dot). Beware that such a behavior
+is not exactly the same as C<File::Basename::fileparse>.
+
+The following example will return C<("logo.png", "/usr/share/images/", "png")>:
+
+        ($base, $path, $suffix) = file_parse("/usr/share/images/logo.png");
+
+This one will return C<("mydoc.odt", "http://mydomain.com/", "odt"):
+
+        ($base, $path, $suffix) = file_parse("http://mydomain.com/mydoc.odt");
+
+This last one will just return C<"mydoc.odt">:
+
+        $base = file_parse("http://mydomain.com/mydoc.odt");
 
 =head3  file_type(file_path)
 
@@ -214,13 +248,18 @@ The "lpod->debug()" method, when called with C<TRUE> of C<FALSE> as argument,
 switches on or off the debug flag. If this flag is I<on>, the call stack is
 displayed with every error message of the lpOD API.
 
+A so-called C<alert()> function may be used by the applications with one or
+more strings as arguments; if the debug flag is C<FALSE>, it just produces a
+C<warn> (with a line break) for each argument; if the debug flag is C<TRUE>,
+it's a wrapper for C<Carp::cluck()> (so it outputs the call stack trace).
+
 =head1	AUTHOR/COPYRIGHT
 
 Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
 Contact: jmgdoc@cpan.org
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-Copyright (c) 2011 Jean-Marie Gouarné.
+Copyright (c) 2011 Jean-Marie Gouarne.
 
 This work was sponsored by the Agence Nationale de la Recherche
 (L<http://www.agence-nationale-recherche.fr>).

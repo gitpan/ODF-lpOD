@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #=============================================================================
-# test02_read.t         lpOD-Perl installation test     2011-01-02T14:01:20
+# test02_read.t         lpOD-Perl installation test     2012-01-20T12:24:37
 #=============================================================================
 use 5.010_000;
 use strict;
@@ -17,7 +17,7 @@ our $subject    = "lpOD generated test document";
 
 our %desc = (
         "lpOD version"                  => $ODF::lpOD::VERSION,
-        "lpOD build date"               => ODF::lpOD->PACKAGE_DATE,
+        "lpOD build"                    => ODF::lpOD->PACKAGE_DATE,
         "lpOD installation path"        => lpod->installation_path,
         "XML::Twig version"             => $XML::Twig::VERSION,
         "Perl version"                  => $],

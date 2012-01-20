@@ -16,8 +16,7 @@ C<odf_element> is an alias for C<ODF::lpOD::Element> package.
 
 Every XML element (loaded from an existing ODF document or created by any
 lpOD-based application) is a C<odf_element>. This class is the base class
-for any document element; its features are inherited by other, more specialized
-element classes.
+for any document element.
 
 An element may be explicitly created using the C<odf_create_element> class
 constructor (or a the constructor of any derivative of C<odf_element> (such
@@ -74,6 +73,9 @@ The use of file handles or HTTP links allows the applications to easily import
 ODF element definitions from remote locations and/or to reuse element
 definitions stored in application-specific XML files or databases.
 
+Note that the provided XML content must be UTF8-encoded as soon as it contains
+one or more characters that don't belong to the 7-bit ASCII character set.
+
 The new element is not attached to a document; it's free for later use.
 
 C<odf_create_element()> is an alias for one of the following instructions,
@@ -82,7 +84,7 @@ which are equivalent:
         odf_element->create();
         ODF::lpOD::Element->create();
 
-The same principle applies for every subclass of C<ODF::lpOD::Element>; as a
+The same principle applies for every subclass of C<ODF::lpOD::Element>; as
 a consequence, whatever C<"xxx"> in the name of a particular lpOD element
 constructor, the two following instructions are equivalent:
 
@@ -97,11 +99,18 @@ It's the most generic context-based retrieval method.
 The given tag may be replaced by a regular expression, so the search space will
 include all the elements whose tags match the expression.
 
-For example, the following instruction (assuming C<$context> is a previously
-retrieved element) returns the first element that is either a paragraph or a
-heading (knowing that the corresponding tags are C<text:p> and C<text:h>):
+For example, the following instruction, assuming C<$context> is a previously
+retrieved element, returns the first element in C<$context> that is either a
+paragraph or a heading (knowing that the corresponding tags are C<text:p> and
+C<text:h>):
 
         my $text_element = $context->get_element(qr'text:(p|h)');
+
+A lot of more specialized and more user-friendly element retrieval methods are
+provided by lpOD, so the direct use of C<get_element()> (that implies some XML
+awareness) may and should be avoided in most situations. This method is just
+intended to allow arbitrary search operations that are not explicitly covered
+by lpOD.
 
 The allowed options are:
 
@@ -115,7 +124,7 @@ backward from the end.
 
 =item
 
-C<attribute>: The name of an attribute used as a selection criterium; if this
+C<attribute>: The name of an attribute used as a selection criterion; if this
 option is set, the C<value> option is required.
 
 =item
@@ -141,6 +150,10 @@ heading before the end of the current context:
 
 I<Caution: the C<get_element> method of C<odf_part> is not the same as the
 C<get_element> method of C<odf_element>.>
+
+Note that such an instruction should not appear in a real application, knowing
+that C<get_paragraph()>, introduced in L<ODF::lpOD::TextElement>, does the job
+in a more user-friendly way.
 
 =head3  get_elements(tag)
 
@@ -186,7 +199,7 @@ of the calling C<$destination> element:
 In this example, both C<$destination> and C<$source> are elements. The source
 context may belong to the same document as the destination context, or not, so
 this method may be used for content replication across documents. Knowing that
-the imported elements are clones of the original ones, the source contexte is
+the imported elements are clones of the original ones, the source context is
 unchanged. The imported elements are appended at the end of the calling context
 in the same order as in the source context.
 
@@ -382,7 +395,7 @@ from any element, if the methods described below don't meet all their needs.
 =head3  clear
 
 Erases the text of an element and all its children. Beware that this method
-is overriden by some specialized element classes.
+is overridden by some specialized element classes.
 
 =head3  clone
 
@@ -583,7 +596,7 @@ class instead of C<ODF::lpOD::Paragraph>:
         1;
 
 This extensibility mechanism must be used very cautiously if the specified tag
-is already associated with a lpOD class, knowing that a wrongly overriden
+is already associated with a lpOD class, knowing that a wrongly overridden
 method could produce destructive side effects.
 
 =head1	AUTHOR/COPYRIGHT
@@ -592,7 +605,7 @@ Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
 Contact: jmgdoc@cpan.org
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-Copyright (c) 2011 Jean-Marie Gouarné.
+Copyright (c) 2011 Jean-Marie Gouarne.
 
 This work was sponsored by the Agence Nationale de la Recherche
 (L<http://www.agence-nationale-recherche.fr>).

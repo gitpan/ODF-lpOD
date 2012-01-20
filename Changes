@@ -1,3 +1,13 @@
+1.117   2012-01-20
+  - Makefile.PL, MANIFEST: File::Type, Image::Size, LWP::Simple now required;
+  XML::Twig 3.37 required; lpod_test utility added.
+  - StructuredContainer.pm: improved image frame accessor.
+  - Table.pm: specific insert_element() method for cells.
+  - Common.pm: file_parse improvement.
+  - Document.pm: add_image_file() improvement & doc fix.
+  - StrucruredContainer.pm, Common.pm: odf_structured_container really used
+  - Doc cleaning.
+  - Element.pm: code indent cleaning.
 1.116   2011-08-05
   - TextElement.pm: bug fix #70100; positioning logic change in the
   split_content() utility, affecting set_span() and set_hyperlink().

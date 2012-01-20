@@ -7,9 +7,10 @@ System requirements:
 
 - Perl 5.10.0 or later
 - Archive::Zip 1.30 or later
-- XML::Twig 3.34 or later
-
-The File::Type and Image::Size Perl modules are recommended.
+- XML::Twig 3.37 or later
+- File::Type
+- Image::Size
+- LWP::Simple
 
 Usage
 =====
@@ -37,3 +38,8 @@ nnn is the version number);
 5) If nothing looks wrong, execute "make install" as system administrator from
 the same directory.
 
+The installation may be checked later using the "lpod_test" utility, that is
+provided with the distribution. Without argument, this script just displays
+the ODF::lpOD version, build date and installation path. If an arbitrary file
+path/name is given as an argument, it generates a new test document (.odt)
+that may be checked using any ODF-compatible text processor.

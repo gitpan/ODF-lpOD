@@ -12,14 +12,14 @@ use     strict;
 #-----------------------------------------------------------------------------
 package ODF::lpOD::StructuredContainer;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.000';
-use constant PACKAGE_DATE => '2010-12-24T13:53:15';
+our $VERSION    = '1.001';
+use constant PACKAGE_DATE => '2011-11-15T19:52:49';
 use ODF::lpOD::Common;
 #=============================================================================
 package ODF::lpOD::Section;
-use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-06-16T09:22:49';
+use base 'ODF::lpOD::StructuredContainer';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-11-15T19:52:49';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -57,7 +57,7 @@ sub     create
                 @_
                 );
 
-        my $s = ODF::lpOD::Element->create('text:section');
+        my $s = ODF::lpOD::StructuredContainer->create('text:section');
         if (defined $opt{url} or defined $opt{source})
                 {
                 my $link = $opt{url} || $opt{source};
@@ -135,9 +135,9 @@ sub     get_source
 
 #=============================================================================
 package ODF::lpOD::List;
-use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:47:57';
+use base 'ODF::lpOD::StructuredContainer';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-11-15T19:52:49';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -149,7 +149,7 @@ sub     create
         {
         my $caller      = shift;
         my %opt         = process_options(@_);
-        my $list = ODF::lpOD::Element->create('text:list');
+        my $list = ODF::lpOD::StrucruredContainer->create('text:list');
         $list->set_style($opt{style});
         $list->set_id($opt{id});
         return $list;
@@ -281,9 +281,9 @@ sub     set_header
 
 #=============================================================================
 package ODF::lpOD::DrawPage;
-use base 'ODF::lpOD::Element';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-05-12T08:48:56';
+use base 'ODF::lpOD::StructuredContainer';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2011-11-15T19:52:49';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -300,7 +300,7 @@ sub     create
                 alert "Missing draw page identifier"; return FALSE;
                 }
         my %opt         = @_;
-        my $dp = ODF::lpOD::Element->create('draw:page');
+        my $dp = ODF::lpOD::StructuredContainer->create('draw:page');
         $dp->set_id($id);
         $dp->set_name($opt{'name'});
         $dp->set_style($opt{style});
@@ -358,9 +358,9 @@ sub     get_title
 
 #=============================================================================
 package ODF::lpOD::Shape;
-use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-02-17T13:22:53';
+use base 'ODF::lpOD::StructuredContainer';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-11-15T19:52:49';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -373,7 +373,7 @@ sub     create
         my $caller      = shift;
         my %opt         = process_options(@_);
         my $tag = $opt{tag}; $tag = 'draw:' . $tag unless $tag =~ /:/;
-        my $f = ODF::lpOD::Element->create($tag);
+        my $f = ODF::lpOD::StructuredContainer->create($tag);
         $f->set_attribute('name' => $opt{name});
         $f->set_style($opt{style});
         $f->set_text_style($opt{text_style});
@@ -722,8 +722,8 @@ sub     get_type
 #=============================================================================
 package ODF::lpOD::Frame;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '1.004';
-use constant PACKAGE_DATE => '2011-05-12T09:06:16';
+our $VERSION    = '1.005';
+use constant PACKAGE_DATE => '2012-01-19T19:51:16';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -813,7 +813,9 @@ sub     set_image
                 my $doc = $self->document;
                 if ($doc && $doc->{container})
                         {
-                        $link = $doc->add_file($source);
+                        my $size    = undef;
+                        ($link, $size) = $doc->add_image_file($source);
+                        $opt{size} //= $size;
                         }
                 else
                         {
@@ -826,7 +828,6 @@ sub     set_image
                 $link = $source;
                 }
         my $image = $self->set_first_child('draw:image');
-                my ($w, $h) = $self->get_size;
         if (defined $opt{size})
                 {
                 $self->set_size($opt{size});
@@ -902,9 +903,9 @@ sub     get_hyperlink
 
 #=============================================================================
 package ODF::lpOD::Image;
-use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T23:04:28';
+use base 'ODF::lpOD::StructuredContainer';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2011-11-15T19:52:49';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -916,7 +917,7 @@ sub     create
         {
         my $caller      = shift;
         my %opt         = @_;
-        my $image       = ODF::lpOD::Element->create('draw:image');
+        my $image       = ODF::lpOD::StructuredContainer->create('draw:image');
         my $uri         = $opt{url} || $opt{uri};
         if ($uri)
                 {
@@ -976,9 +977,9 @@ sub     get_content
 
 #=============================================================================
 package ODF::lpOD::TOC;
-use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-05-27T19:06:30';
+use base 'ODF::lpOD::StructuredContainer';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2011-11-15T19:52:49';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -998,7 +999,8 @@ sub     create
         my $caller      = shift;
         my $name        = shift;
         my %opt         = process_options(@_);
-        my $toc = ODF::lpOD::Element->create('text:table-of-content');
+        my $toc = ODF::lpOD::StructuredContainer->create
+                ('text:table-of-content');
         $toc->set_name($name);
         $toc->set_style($opt{style});
         $toc->set_protected($opt{protected} // TRUE);

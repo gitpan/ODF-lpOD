@@ -1895,8 +1895,8 @@ sub     previous
 #-----------------------------------------------------------------------------
 package ODF::lpOD::Cell;
 use base ('ODF::lpOD::Field', 'ODF::lpOD::TableElement');
-our $VERSION                    = '1.004';
-use constant PACKAGE_DATE       => '2011-06-06T09:02:35';
+our $VERSION                    = '1.005';
+use constant PACKAGE_DATE       => '2012-01-19T18:09:35';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1938,6 +1938,34 @@ sub     column
                 }
         my $pos = $self->get_position	or return undef;
         return $t->get_column($pos);
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     insert_element
+        {
+        my $context     = shift;
+        my $e           = shift;
+        my %opt		= @_;
+        my $position	= lc $opt{position} || 'first_child';
+        if (UNIVERSAL::isa($e, "ODF::lpOD::Frame"))
+                {
+                if (my $doc = $context->document)
+                        {
+                        if ($doc->get_type() eq 'spreadsheet')
+                                {
+                                $e->paste($position => $context);
+                                }
+			else
+				{
+                        	my $p = ODF::lpOD::Paragraph->create;
+                        	$p->paste($position => $context);
+				$e->paste_first_child($p);
+				}
+			return $e;
+			}
+                }
+        return $context->SUPER::insert_element($e, %opt);
         }
 
 #-----------------------------------------------------------------------------

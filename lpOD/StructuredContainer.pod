@@ -744,7 +744,7 @@ Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
 Contact: jmgdoc@cpan.org
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-Copyright (c) 2011 Jean-Marie Gouarné.
+Copyright (c) 2011 Jean-Marie Gouarne.
 
 This work was sponsored by the Agence Nationale de la Recherche
 (L<http://www.agence-nationale-recherche.fr>).

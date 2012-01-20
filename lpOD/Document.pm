@@ -11,8 +11,8 @@ use strict;
 #       The ODF Document class definition
 #=============================================================================
 package ODF::lpOD::Document;
-our     $VERSION    = '1.007';
-use     constant PACKAGE_DATE => '2011-06-10T09:14:59';
+our     $VERSION    = '1.008';
+use     constant PACKAGE_DATE => '2012-01-19T19:41:59';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -267,10 +267,39 @@ sub     add_file
 sub     add_image_file
         {
         my $self        = shift;
-        my $source      = shift;
-        my $image = $self->add_file($source) or return undef;
-        my $size  = image_size($source);
-        return wantarray ? ($image, $size) : $image;
+        my $source      = shift         or return undef;
+        unless ($self->{container})
+                {
+                alert "No available container";
+                return FALSE;
+                }
+        my %opt         = @_;
+        my ($filename, $sourcepath, $suffix) = file_parse($source);
+        unless ($filename)
+                {
+                alert "No valid file name in $source";
+                return FALSE;
+                }
+        my $path  = 'Pictures/' . $filename;
+        $suffix //= 'unknown';
+
+        my $image = $self->add_file($source, path => $path, @_)
+                or return undef;
+
+        my $manifest = $self->get_part(MANIFEST);
+        $manifest->set_entry
+                (
+                $path,
+                type => $opt{type} || file_type($source) || "image/$suffix"
+                )
+                if $manifest;
+
+        if (wantarray)
+                {
+                my $size = image_size($source);
+                return ($image, $size);
+                }
+        return $image;
         }
 
 sub     get_mimetype

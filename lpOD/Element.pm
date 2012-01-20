@@ -11,8 +11,8 @@ use     strict;
 #       Base ODF element class and some derivatives
 #=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.010';
-use constant PACKAGE_DATE => '2011-08-06T12:55:24';
+our     $VERSION        = '1.011';
+use constant PACKAGE_DATE => '2011-08-09T08:27:53';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -856,21 +856,21 @@ sub     get_text_element
         }
 
 sub	get_paragraph
-		{
-		my $self	= shift;
-		return $self->get_text_element(type => 'p', @_);
-		}
+        {
+        my $self	= shift;
+        return $self->get_text_element(type => 'p', @_);
+        }
 
 sub	get_text_span
-		{
-		my $self	= shift;
-		return $self->get_text_element(type => 'span', @_);
-		}
+        {
+        my $self	= shift;
+        return $self->get_text_element(type => 'span', @_);
+        }
 
 sub     get_parent_paragraph
         {
-		my $self	= shift;
-		return $self->parent(qr'text:(p|h)');
+        my $self	= shift;
+        return $self->parent(qr'text:(p|h)');
         }
 
 sub     get_text_elements

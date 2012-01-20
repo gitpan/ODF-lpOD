@@ -186,9 +186,6 @@ The style of a paragraph or a header may be read or changed at any time using
 C<get_style> or C<set_style>. With C<set_style>, the argument is the name of
 a paragraph style that may exist or that will be created later.
 
-I<With the present version, style creation is not supported (or more exactly
-requires low-level programming).>
-
 =head2  Text content
 
 =head3  set_text
@@ -418,6 +415,8 @@ C<visited style>: a text style, to apply when the state is "visited".
 
 Note that the two style-related options, if set, override the default styling
 for the "visited" and "unvisited" states.
+
+=back
 
 =head1  Bookmarks and index marks
 
@@ -1767,7 +1766,7 @@ Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
 Contact: jmgdoc@cpan.org
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-Copyright (c) 2011 Jean-Marie Gouarné.
+Copyright (c) 2011 Jean-Marie Gouarne.
 
 This work was sponsored by the Agence Nationale de la Recherche
 (L<http://www.agence-nationale-recherche.fr>).

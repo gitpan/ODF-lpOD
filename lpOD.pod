@@ -211,14 +211,16 @@ The numeric argument specifies the order number of the required element among
 the set of elements matching the XPath. If the order number is negative, the
 position is regarded as counted backward from the end. The position is zero-
 based (i.e. a zero value means the first matching element). As an example, the
-instruction below returns the last paragraph of the document.
+code below returns the last paragraph of the document.
 
         my $document = odf_document->get($source);
         my $content = $document->get_part(CONTENT);
         my $p = $part->get_element("//text:p", -1);
 
 However, this way is not the smartest one because it requires the knowledge
-of the ODF schema (and some XPath skills for more complicated cases).
+of the ODF schema (and some XPath skills for more complicated cases). There
+are better ways to select the last paragraph of a document (and various other
+objects at any position in a document).
 
 lpOD provides more user-friendly, XPath-free methods for the most used elements
 in the C<CONTENT> part of a document. These methods are provided through the
@@ -372,18 +374,14 @@ If this script runs without warning, open the "helloworld.odt" file using your
 favorite ODF-compliant text processor, and look at the text content. You may
 then introduce more sophistication using the metadata part of the document.
 To do so, you can (for example) insert the lines below somewhere before the
-C<save> instruction (and after the C<odf_new_document> one).
+C<save> instruction (and after the C<odf_document->create()> one).
 
         my $meta = $doc->get_part(META);
         $meta->set_title("Hello World Test");
         $meta->set_creator("Me");
-        $meta->set_creation_date(iso_date);
-        $meta->set_modification_date(iso_date);
-        $meta->store;
 
 After execution of the extended version, check the author's name and the
-creation & modification dates through the I<File/Properties> dialog of your
-text editor.
+title through the I<File/Properties> dialog of your ODF text editor.
 
 =head2  Using the documentation
 
@@ -435,7 +433,7 @@ Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
 Contact: jmgdoc@cpan.org
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-Copyright (c) 2011 Jean-Marie Gouarné.
+Copyright (c) 2011 Jean-Marie Gouarne.
 
 This work was sponsored by the Agence Nationale de la Recherche
 (L<http://www.agence-nationale-recherche.fr>).

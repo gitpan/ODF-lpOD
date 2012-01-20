@@ -11,8 +11,18 @@ the big picture and allow the user to get started and produce something before
 going through the man pages for details. The features described here are only
 a subset of the lpOD functional coverage.
 
-Note that our code examples use some Perl 5.10 features (and remember that
-lpOD requires Perl 5.10 or later).
+First of all, you should check your ODF::lpOD installation. To do so, just
+try to execute the C<lpod_test> utility provided in the lpOD package. Without
+argument, it will just display the ODF::lpOD version number, the distribution
+build date, and the installation path of the module. If you launch it with an
+arbitrary file name, say "foo.odt", it creates a new document that you should
+immediately check through your usual ODF-compatible text processor. If it
+works, your lpOD installation is OK. Of course, you could later use this script
+as a set of code examples to illustrate various features introduced in this
+tutorial.
+
+Note that our code examples use some Perl 5.10 features (remember that lpOD
+requires Perl 5.10 or later).
 
 Note: An alternative tutorial, intended for french-reading users, is available
 at L<http://jean.marie.gouarne.online.fr/doc/introduction_lpod_perl.pdf>.
@@ -22,6 +32,7 @@ at L<http://jean.marie.gouarne.online.fr/doc/introduction_lpod_perl.pdf>.
 This chapter introduces ways to get a global access to a document, to create
 a new document, to get or set the global document metadata. It illustrates
 features that are documented in L<ODF::lpOD::Document>.
+
 
 =head2  Loading documents and parts
 
@@ -37,7 +48,7 @@ C<odf_document> class, and that the instruction above could be written as
 shown below:
 
         my $doc = odf_document->get("olddoc.odt")
-                or die "Failed to load the document";
+                or die "Failed to load the document\n";
 
 In a real application, don't forget to check the return value. If something
 goes wrong for any reason (for example, if the specified file is not
@@ -54,7 +65,7 @@ method:
         my $content = $doc->get_part(CONTENT);
 
 We'll see how to go through document parts and deal with the various components
-later in this introduction.
+later in this tutorial.
 
 The most part of the content-oriented operations are I<context-based>, i.e.
 they are executed from previously selected I<elements> and not at the global
@@ -88,9 +99,9 @@ contain, one or more I<elements>, and so on; as a consequence, each element,
 once selected, may become the context for further element searching or
 processing operations.
 
-The I<"document body"> is the subspace that contains or can contain the
+The I<document body> is the subspace that contains or can contain the
 various objects that populate the document content (text paragraphs, tables,
-images, lists, and so on). We can use it as the I<"context"> for subsequent
+images, lists, and so on). We can use it as the I<context> for subsequent
 operations regarding such objects.
 
 =head2  Saving a document
@@ -118,8 +129,8 @@ accessor (that is available for each part):
         $doc->save;
 
 The C<save()> method is prevented from writing back any part whose update
-flag is C<FALSE>. Of course this flag may be reset to C<TRUE> through at any
-time through a subsequent use of C<needs_update()>.
+flag is C<FALSE>. Of course this flag may be reset to C<TRUE> at any time
+through a subsequent use of C<needs_update()>.
 
 Note that it's a good practice to switch off the update flag of the C<CONTENT>
 part as long as you just need it for read only, in order to avoid useless
@@ -172,8 +183,8 @@ leaks.
 
 =head1  Playing with document metadata
 
-An office document owns a set of so-called "metadata". Metadata is "data about
-the document". For the end user, it may be got (and sometimes changed)
+An office document owns a set of so-called I<"metadata">. Metadata is "data
+about the document". For the end user, it may be got (and sometimes changed)
 through the "File/Properties" sub menu of a typical desktop software. lpOD
 allows the programmer to select, read or write any piece of metadata.
 
@@ -200,7 +211,7 @@ The one-liner below displays the document title:
 
         say odf_get_document("mydoc.ods")->get_part(META)->get_title;
 
-Some C<set_xxx> metadata accessors provide default values when called without
+Some C<set_xxx()> metadata accessors provide default values when called without
 argument. As examples, C<set_modification_date()>, that sets the date/time
 of last modification, automatically puts the current system date, while
 C<set_editing_cycles()> automatically increments the document revision count
@@ -211,8 +222,8 @@ by one, when called without explicit values:
 
 The C<set_creator()> accessor specifies the author of the last modification.
 It may be used in order to write any arbitrary string but, without argument,
-if uses the name of the system user of the current process (provided that Perl
-can get such an information from the operating system).
+if uses the system user name of the current process (provided that Perl can get
+such an information from the operating system).
 
 Note that lpOD provides such accessors as C<set_creation_date()> or
 C<set_initial_creator()> that allows the programmer to change the date and
@@ -254,6 +265,21 @@ whose metadata include a keyword provided through the command line:
                                 ->check_keyword($ARGV[0]);
                 }
 
+Note that a more robust variant, with protection against bad files and explicit
+deletion of every document instance, should be preferred for long running
+processes in production:
+
+        DOCUMENT: foreach my $file (glob "*.od?") {
+                my $doc = odf_get_document($file);
+                unless ($doc) {
+                        alert("Wrong or unreadable ODF file $file");
+                        next DOCUMENT;
+                        }
+                say "$file is OK !" if
+                        $doc->get_part(META)->check_keyword($ARGV[0]);
+                $doc->forget;
+                }
+
 Of course it's possible to add a new keyword:
 
         $meta->set_keyword("ODF");
@@ -269,8 +295,8 @@ set custom, so called I<user defined> metadata, through C<get_user_fields()>
 and C<set_user_fields()>. The user defined metadata look like a 3-column table
 whose properties are I<name>, I<value>, and I<type>.
 
-C<get_user_fields()> returns a list whose each item is 3-element a hash ref
-containing these informations. So, the example below displays the full set of
+C<get_user_fields()> returns a list whose each item is a 3-element hash ref
+containing these properties. So, the example below displays the full set of
 user-defined metadata (names, values and types):
 
         my $meta = $doc->get_part(META);
@@ -418,7 +444,7 @@ can choose between the functional and object notations for any instance
 construction.
 
 The C<style> option requires the name of a paragraph style (that is, or will
-be, defined elsewhere). We'll have a look to text styles in another recipe.
+be, defined elsewhere). We'll have a look at text styles in another recipe.
 You can create text element without explicit style name as long as the default
 presentation of your favorite viewing/editing software is convenient for you.
 
@@ -2041,7 +2067,7 @@ a regular paragraph style:
                         size    => "6cm, 5cm"
                 );
 
-We have probably introduced the simplest way to insert an frame; it consists
+We have probably introduced the simplest way to insert a frame; it consists
 of using a text container to host the frame. But it's not convenient in any
 situation.
 
@@ -2117,18 +2143,18 @@ image should be properly embedded in the document as long as you launch you
 ODF text processor from the same location. But the image resource will no
 longer be reachable if the document is viewed elsewhere. So it could be
 useful to include the image in the physical ODF file. To do so, you may use
-the C<add_file()> document-based method, that allows you to store almost
+the C<add_image_file()> document-based method, that allows you to store almost
 anything in your office document files. Example:
 
-        $doc->add_file("logo.png");
+        $doc->add_image_file("logo.png");
 
 The looks simple, but it's not OK. When we created the image frame, we
 provided an I<external> file path/name. We must tell the image frame that
 the resource is an internal one. To do so, we must capture the return value
-of C<add_file()> and use it as the image resource identifier in place of the
-file name:
+of C<add_image_file()> and use it as the image resource identifier in place of
+the file name:
 
-        $link = $doc->add_file("logo.png");
+        $link = $doc->add_image_file("logo.png");
         $doc->get_body->append_element(
                 odf_create_image_frame(
                         $link,
@@ -2161,6 +2187,23 @@ accordingly. Alternatively, you can force an explicit value with
 C<set_image()> through a C<size> optional parameter, so the original size
 will not be looked for.
 
+Alternatively, a frame may be originally sized in order to fit with an
+image previously loaded using C<add_image_file()> that, in array context,
+returns not only a resource identifier but also an image size. So, the example
+below produces the same result as the previous one:
+
+        ($image, $size) = $doc->add_image_file("logo.png");
+        $fr = $doc->get_body->append_element(
+                odf_frame->create(
+                        image           => $image,
+                        size            => $size,
+                        name            => "Logo",
+                        style           => "Classic",
+                        position        => "4cm, 8cm",
+                        page            => 1
+                        )
+                );
+
 Of course, you don't need to include the image resource in the ODF package
 if this resource is available through an absolute URL and if the user's
 viewing/printing application is always connected:
@@ -2176,8 +2219,9 @@ viewing/printing application is always connected:
                         )
                 );
 
-Some details about other possible uses of C<add_file()> are provided in
-L<ODF::lpOD::Document>.
+However, remember that lpOD can't automatically detect the original image
+size unless the image file is not local; so, as soon as you associate a frame
+to an external content you should provide an explicit size.
 
 =head2  Inserting a text box
 

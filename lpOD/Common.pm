@@ -11,179 +11,180 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #=============================================================================
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.008';
-use constant PACKAGE_DATE       => '2011-08-04T21:36:49';
+our	$VERSION	        = '1.009';
+use constant PACKAGE_DATE       => '2012-01-19T09:13:00';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
 use base 'Exporter';
 our @EXPORT     = qw
-        (
-        lpod_common lpod
+    (
+    lpod_common lpod
 
-        odf_get_document odf_new_document odf_create_document
-        odf_new_document_from_template odf_new_document_from_type
+    odf_get_document odf_new_document odf_create_document
+    odf_new_document_from_template odf_new_document_from_type
 
-        odf_get_container odf_new_container
-        odf_new_container_from_template odf_new_container_from_type
+    odf_get_container odf_new_container
+    odf_new_container_from_template odf_new_container_from_type
 
-        odf_get_xmlpart
+    odf_get_xmlpart
 
-        odf_create_element odf_create_paragraph odf_create_heading
-        odf_create_section odf_create_draw_page
-        odf_create_shape
-        odf_create_area odf_create_rectangle odf_create_ellipse
-        odf_create_vector odf_create_line odf_create_connector
-        odf_create_frame odf_create_text_frame odf_create_image_frame
-        odf_create_image
-        odf_create_list
-        odf_create_table odf_create_column odf_create_row odf_create_cell
-        odf_create_column_group odf_create_row_group
-        odf_create_field odf_create_simple_variable odf_create_user_variable
-        odf_create_note odf_create_annotation
-        odf_create_style odf_create_font_declaration
-        odf_create_toc
+    odf_create_element odf_create_paragraph odf_create_heading
+    odf_create_section odf_create_draw_page
+    odf_create_shape
+    odf_create_area odf_create_rectangle odf_create_ellipse
+    odf_create_vector odf_create_line odf_create_connector
+    odf_create_frame odf_create_text_frame odf_create_image_frame
+    odf_create_image
+    odf_create_list
+    odf_create_table odf_create_column odf_create_row odf_create_cell
+    odf_create_column_group odf_create_row_group
+    odf_create_field odf_create_simple_variable odf_create_user_variable
+    odf_create_note odf_create_annotation
+    odf_create_style odf_create_font_declaration
+    odf_create_toc
 
-        odf_document odf_container
-        odf_xmlpart odf_content odf_styles odf_meta odf_settings odf_manifest
+    odf_document odf_container
+    odf_xmlpart odf_content odf_styles odf_meta odf_settings odf_manifest
 
-        odf_element odf_text_node
-        odf_text_element odf_text_hyperlink
-        odf_bibliography_mark odf_note odf_annotation odf_changed_region
-        odf_paragraph odf_heading odf_draw_page odf_image odf_shape odf_frame
-        odf_area odf_rectangle odf_ellipse odf_vector odf_line odf_connector
-        odf_field odf_variable odf_simple_variable odf_user_variable
-        odf_text_field odf_classify_text_field
-        odf_list odf_table odf_column odf_row odf_cell
-        odf_matrix odf_column_group odf_row_group odf_table_element
-        odf_section odf_toc
-        odf_file_entry
+    odf_element odf_text_node
+    odf_text_element odf_text_hyperlink
+    odf_bibliography_mark odf_note odf_annotation odf_changed_region
+    odf_paragraph odf_heading odf_draw_page odf_image odf_shape odf_frame
+    odf_area odf_rectangle odf_ellipse odf_vector odf_line odf_connector
+    odf_field odf_variable odf_simple_variable odf_user_variable
+    odf_text_field odf_classify_text_field
+    odf_list odf_table odf_column odf_row odf_cell
+    odf_matrix odf_column_group odf_row_group odf_table_element
+    odf_structured_container
+    odf_section odf_toc
+    odf_file_entry
 
-        odf_style
-        odf_text_style odf_paragraph_style
-        odf_list_style odf_list_level_style odf_outline_style
-        odf_table_style odf_column_style odf_row_style odf_cell_style
-        odf_data_style
-        odf_master_page odf_page_end_style odf_drawing_page_style
-        odf_page_layout odf_presentation_page_layout
-        odf_graphic_style odf_gradient
-        odf_font_declaration
+    odf_style
+    odf_text_style odf_paragraph_style
+    odf_list_style odf_list_level_style odf_outline_style
+    odf_table_style odf_column_style odf_row_style odf_cell_style
+    odf_data_style
+    odf_master_page odf_page_end_style odf_drawing_page_style
+    odf_page_layout odf_presentation_page_layout
+    odf_graphic_style odf_gradient
+    odf_font_declaration
 
-        TRUE FALSE PRETTY
-        is_true is_false defined_false
-        is_odf_datatype odf_boolean process_options
-        alpha_to_num translate_coordinates translate_range
+    TRUE FALSE PRETTY
+    is_true is_false defined_false
+    is_odf_datatype odf_boolean process_options
+    alpha_to_num translate_coordinates translate_range
 
-        xelt xtwig
+    xelt xtwig
 
-        META CONTENT STYLES SETTINGS MANIFEST MIMETYPE
+    META CONTENT STYLES SETTINGS MANIFEST MIMETYPE
 
-        text_segment TEXT_SEGMENT
+    text_segment TEXT_SEGMENT
 
-        input_conversion output_conversion search_string count_substrings
-        color_code color_name load_color_map unload_color_map
-        is_numeric iso_date numeric_date check_odf_value odf_value
-        file_parse file_type image_size input_2d_value
-        alert not_implemented
+    input_conversion output_conversion search_string count_substrings
+    color_code color_name load_color_map unload_color_map
+    is_numeric iso_date numeric_date check_odf_value odf_value
+    file_parse file_type image_size input_2d_value
+    alert not_implemented
 
-        PRETTY_PRINT EMPTY_TAGS
+    PRETTY_PRINT EMPTY_TAGS
 
-        FIRST_CHILD LAST_CHILD NEXT_SIBLING PREV_SIBLING WITHIN PARENT
-        );
+    FIRST_CHILD LAST_CHILD NEXT_SIBLING PREV_SIBLING WITHIN PARENT
+    );
 
 #=== package name aliases ====================================================
 #--- ODF package & parts -----------------------------------------------------
 
 use constant
-        {
-        odf_document            => 'ODF::lpOD::Document',
-        odf_container           => 'ODF::lpOD::Container',
-        odf_xmlpart             => 'ODF::lpOD::XMLPart',
-        odf_content             => 'ODF::lpOD::Content',
-        odf_styles              => 'ODF::lpOD::Styles',
-        odf_meta                => 'ODF::lpOD::Meta',
-        odf_settings            => 'ODF::lpOD::Settings',
-        odf_manifest            => 'ODF::lpOD::Manifest'
-        };
+    {
+    odf_document                => 'ODF::lpOD::Document',
+    odf_container               => 'ODF::lpOD::Container',
+    odf_xmlpart                 => 'ODF::lpOD::XMLPart',
+    odf_content                 => 'ODF::lpOD::Content',
+    odf_styles                  => 'ODF::lpOD::Styles',
+    odf_meta                    => 'ODF::lpOD::Meta',
+    odf_settings                => 'ODF::lpOD::Settings',
+    odf_manifest                => 'ODF::lpOD::Manifest'
+    };
 
 #--- ODF element -------------------------------------------------------------
 
 use constant
-        {
-        odf_element             => 'ODF::lpOD::Element',
-        odf_text_node           => 'ODF::lpOD::TextNode',
-        odf_text_element        => 'ODF::lpOD::TextElement',
-        odf_text_hyperlink      => 'ODF::lpOD::TextHyperlink',
-        odf_paragraph           => 'ODF::lpOD::Paragraph',
-        odf_heading             => 'ODF::lpOD::Heading',
-        odf_list                => 'ODF::lpOD::List',
-        odf_field               => 'ODF::lpOD::Field',
-        odf_variable            => 'ODF::lpOD::Variable',
-        odf_simple_variable     => 'ODF::lpOD::SimpleVariable',
-        odf_user_variable       => 'ODF::lpOD::UserVariable',
-        odf_text_field          => 'ODF::lpOD::TextField',
-        odf_table               => 'ODF::lpOD::Table',
-        odf_table_element       => 'ODF::lpOD::TableElement',
-        odf_matrix              => 'ODF::lpOD::Matrix',
-        odf_column_group        => 'ODF::lpOD::ColumnGroup',
-        odf_row_group           => 'ODF::lpOD::RowGroup',
-        odf_column              => 'ODF::lpOD::Column',
-        odf_row                 => 'ODF::lpOD::Row',
-        odf_cell                => 'ODF::lpOD::Cell',
-        odf_draw_page           => 'ODF::lpOD::DrawPage',
-        odf_shape               => 'ODF::lpOD::Shape',
-        odf_area                => 'ODF::lpOD::Area',
-        odf_rectangle           => 'ODF::lpOD::Rectangle',
-        odf_ellipse             => 'ODF::lpOD::Ellipse',
-        odf_vector              => 'ODF::lpOD::Vector',
-        odf_line                => 'ODF::lpOD::Line',
-        odf_connector           => 'ODF::lpOD::Connector',
-        odf_frame               => 'ODF::lpOD::Frame',
-        odf_image               => 'ODF::lpOD::Image',
-        odf_section             => 'ODF::lpOD::Section',
-        odf_bibliography_mark   => 'ODF::lpOD::BibliographyMark',
-        odf_note                => 'ODF::lpOD::Note',
-        odf_annotation          => 'ODF::lpOD::Annotation',
-        odf_changed_region      => 'ODF::lpOD::ChangedRegion',
-        odf_font_declaration    => 'ODF::lpOD::FontDeclaration',
-        odf_style               => 'ODF::lpOD::Style',
-        odf_text_style          => 'ODF::lpOD::TextStyle',
-        odf_paragraph_style     => 'ODF::lpOD::ParagraphStyle',
-        odf_list_style          => 'ODF::lpOD::ListStyle',
-        odf_list_level_style    => 'ODF::lpOD::ListLevelStyle',
-        odf_outline_style       => 'ODF::lpOD::OutlineStyle',
-        odf_table_style         => 'ODF::lpOD::TableStyle',
-        odf_column_style        => 'ODF::lpOD::ColumnStyle',
-        odf_row_style           => 'ODF::lpOD::RowStyle',
-        odf_cell_style          => 'ODF::lpOD::CellStyle',
-        odf_data_style          => 'ODF::lpOD::DataStyle',
-        odf_master_page         => 'ODF::lpOD::MasterPage',
-        odf_page_layout         => 'ODF::lpOD::PageLayout',
-        odf_presentation_page_layout
-                                => 'ODF::lpOD::PresentationPageLayout',
-        odf_graphic_style       => 'ODF::lpOD::GraphicStyle',
-        odf_gradient            => 'ODF::lpOD::Gradient',
-        odf_page_end_style      => 'ODF::lpOD::PageEndStyle',
-        odf_drawing_page_style  => 'ODF::lpOD::DrawingPageStyle',
-        odf_file_entry          => 'ODF::lpOD::FileEntry',
-        odf_toc                 => 'ODF::lpOD::TOC'
-        };
+    {
+    odf_element                     => 'ODF::lpOD::Element',
+    odf_text_node                   => 'ODF::lpOD::TextNode',
+    odf_text_element                => 'ODF::lpOD::TextElement',
+    odf_text_hyperlink              => 'ODF::lpOD::TextHyperlink',
+    odf_paragraph                   => 'ODF::lpOD::Paragraph',
+    odf_heading                     => 'ODF::lpOD::Heading',
+    odf_list                        => 'ODF::lpOD::List',
+    odf_field                       => 'ODF::lpOD::Field',
+    odf_variable                    => 'ODF::lpOD::Variable',
+    odf_simple_variable             => 'ODF::lpOD::SimpleVariable',
+    odf_user_variable               => 'ODF::lpOD::UserVariable',
+    odf_text_field                  => 'ODF::lpOD::TextField',
+    odf_table                       => 'ODF::lpOD::Table',
+    odf_table_element               => 'ODF::lpOD::TableElement',
+    odf_matrix                      => 'ODF::lpOD::Matrix',
+    odf_column_group                => 'ODF::lpOD::ColumnGroup',
+    odf_row_group                   => 'ODF::lpOD::RowGroup',
+    odf_column                      => 'ODF::lpOD::Column',
+    odf_row                         => 'ODF::lpOD::Row',
+    odf_cell                        => 'ODF::lpOD::Cell',
+    odf_draw_page                   => 'ODF::lpOD::DrawPage',
+    odf_shape                       => 'ODF::lpOD::Shape',
+    odf_area                        => 'ODF::lpOD::Area',
+    odf_rectangle                   => 'ODF::lpOD::Rectangle',
+    odf_ellipse                     => 'ODF::lpOD::Ellipse',
+    odf_vector                      => 'ODF::lpOD::Vector',
+    odf_line                        => 'ODF::lpOD::Line',
+    odf_connector                   => 'ODF::lpOD::Connector',
+    odf_frame                       => 'ODF::lpOD::Frame',
+    odf_image                       => 'ODF::lpOD::Image',
+    odf_section                     => 'ODF::lpOD::Section',
+    odf_bibliography_mark           => 'ODF::lpOD::BibliographyMark',
+    odf_note                        => 'ODF::lpOD::Note',
+    odf_annotation                  => 'ODF::lpOD::Annotation',
+    odf_changed_region              => 'ODF::lpOD::ChangedRegion',
+    odf_font_declaration            => 'ODF::lpOD::FontDeclaration',
+    odf_style                       => 'ODF::lpOD::Style',
+    odf_text_style                  => 'ODF::lpOD::TextStyle',
+    odf_paragraph_style             => 'ODF::lpOD::ParagraphStyle',
+    odf_list_style                  => 'ODF::lpOD::ListStyle',
+    odf_list_level_style            => 'ODF::lpOD::ListLevelStyle',
+    odf_outline_style               => 'ODF::lpOD::OutlineStyle',
+    odf_table_style                 => 'ODF::lpOD::TableStyle',
+    odf_column_style                => 'ODF::lpOD::ColumnStyle',
+    odf_row_style                   => 'ODF::lpOD::RowStyle',
+    odf_cell_style                  => 'ODF::lpOD::CellStyle',
+    odf_data_style                  => 'ODF::lpOD::DataStyle',
+    odf_master_page                 => 'ODF::lpOD::MasterPage',
+    odf_page_layout                 => 'ODF::lpOD::PageLayout',
+    odf_presentation_page_layout    => 'ODF::lpOD::PresentationPageLayout',
+    odf_graphic_style               => 'ODF::lpOD::GraphicStyle',
+    odf_gradient                    => 'ODF::lpOD::Gradient',
+    odf_page_end_style              => 'ODF::lpOD::PageEndStyle',
+    odf_drawing_page_style          => 'ODF::lpOD::DrawingPageStyle',
+    odf_file_entry                  => 'ODF::lpOD::FileEntry',
+    odf_toc                         => 'ODF::lpOD::TOC',
+    odf_structured_container        => 'ODF::lpOD::StructuredContainer'
+    };
 
 #--- basic API shortcuts -----------------------------------------------------
 
 use constant
-        {
-        xelt                    => 'XML::Twig::Elt',
-        xtwig                   => 'XML::Twig'
-        };
+    {
+    xelt                            => 'XML::Twig::Elt',
+    xtwig                           => 'XML::Twig'
+    };
 
 #--- lpOD common tools and parameters ----------------------------------------
 
 use constant
-        {
-        lpod_common             => 'ODF::lpOD::Common',
-        lpod                    => 'ODF::lpOD::Common'
-        };
+    {
+    lpod_common                     => 'ODF::lpOD::Common',
+    lpod                            => 'ODF::lpOD::Common'
+    };
 
 #--- ODF data types ----------------------------------------------------------
 
@@ -196,50 +197,50 @@ our $COMPARE = sub { shift cmp shift };
 #=== common parameters =======================================================
 
 use constant                            # common constants
-        {
-        TRUE            => 1,
-        FALSE           => 0,
-        };
+    {
+    TRUE                => 1,
+    FALSE               => 0,
+    };
 
 use constant                            # ODF package parts
-        {
-        META            => 'meta.xml',
-        CONTENT         => 'content.xml',
-        STYLES          => 'styles.xml',
-        SETTINGS        => 'settings.xml',
-        MANIFEST        => 'META-INF/manifest.xml',
-        MIMETYPE        => 'mimetype'
-        };
+    {
+    META                => 'meta.xml',
+    CONTENT             => 'content.xml',
+    STYLES              => 'styles.xml',
+    SETTINGS            => 'settings.xml',
+    MANIFEST            => 'META-INF/manifest.xml',
+    MIMETYPE            => 'mimetype'
+    };
 
 use constant
-        {
-        TEXT_SEGMENT    => '#PCDATA',
-        text_segment    => '#PCDATA'
-        };
+    {
+    TEXT_SEGMENT        => '#PCDATA',
+    text_segment        => '#PCDATA'
+    };
 
 use constant                            # XML::Twig specific
-        {
-        PRETTY_PRINT    => 'indented',
-        EMPTY_TAGS      => 'normal'
-        };
+    {
+    PRETTY_PRINT        => 'indented',
+    EMPTY_TAGS          => 'normal'
+    };
 
 use constant                            # element insert positions
-        {
-        FIRST_CHILD     => 'FIRST_CHILD',
-        LAST_CHILD      => 'LAST_CHILD',
-        NEXT_SIBLING    => 'NEXT_SIBLING',
-        PREV_SIBLING    => 'PREV_SIBLING',
-        WITHIN          => 'WITHIN',
-        PARENT          => 'PARENT'
-        };
+    {
+    FIRST_CHILD         => 'FIRST_CHILD',
+    LAST_CHILD          => 'LAST_CHILD',
+    NEXT_SIBLING        => 'NEXT_SIBLING',
+    PREV_SIBLING        => 'PREV_SIBLING',
+    WITHIN              => 'WITHIN',
+    PARENT              => 'PARENT'
+    };
 
 our %ODF_TEMPLATE           =
-        (
-        'text'          => 'text.odt',
-        'spreadsheet'   => 'spreadsheet.ods',
-        'presentation'  => 'presentation.odp',
-        'drawing'       => 'drawing.odg'
-        );
+    (
+    'text'              => 'text.odt',
+    'spreadsheet'       => 'spreadsheet.ods',
+    'presentation'      => 'presentation.odp',
+    'drawing'           => 'drawing.odg'
+    );
 
 our $LINE_BREAK         = "\n";
 our $TAB_STOP           = "\t";
@@ -253,65 +254,65 @@ our $LPOD_PART          = '#lpod:part'; # lpOD link from element to xmlpart
 #=== common function aliases =================================================
 
 BEGIN   {
-        *odf_get_document       = *ODF::lpOD::Document::get_from_uri;
-        *odf_new_document_from_template
-                                = *ODF::lpOD::Document::create_from_template;
-        *odf_new_document_from_type
-                                = *ODF::lpOD::Document::_create;
-        *odf_new_document       = *ODF::lpOD::Document::_create;
-        *odf_create_document    = *ODF::lpOD::Document::_create;
-        *odf_get_container      = *ODF::lpOD::Container::get_from_uri;
-        *odf_new_container_from_template
-                                = *ODF::lpOD::Container::create_from_template;
-        *odf_new_container      = *ODF::lpOD::Container::create;
-        *odf_new_container_from_type
-                                = *ODF::lpOD::Container::create;
-        *odf_get_xmlpart        = *ODF::lpOD::XMLPart::get;
+    *odf_get_document       = *ODF::lpOD::Document::get_from_uri;
+    *odf_new_document_from_template
+                            = *ODF::lpOD::Document::create_from_template;
+    *odf_new_document_from_type
+                            = *ODF::lpOD::Document::_create;
+    *odf_new_document       = *ODF::lpOD::Document::_create;
+    *odf_create_document    = *ODF::lpOD::Document::_create;
+    *odf_get_container      = *ODF::lpOD::Container::get_from_uri;
+    *odf_new_container_from_template
+                            = *ODF::lpOD::Container::create_from_template;
+    *odf_new_container      = *ODF::lpOD::Container::create;
+    *odf_new_container_from_type
+                            = *ODF::lpOD::Container::create;
+    *odf_get_xmlpart        = *ODF::lpOD::XMLPart::get;
 
-        *odf_create_element     = *ODF::lpOD::Element::_create;
-        *odf_create_paragraph   = *ODF::lpOD::Paragraph::_create;
-        *odf_create_heading     = *ODF::lpOD::Heading::_create;
-        *odf_create_field       = *ODF::lpOD::Field::_create;
-        *odf_create_simple_variable
-                                = *ODF::lpOD::SimpleVariable::_create;
-        *odf_create_user_variable
-                                = *ODF::lpOD::UserVariable::_create;
-        *odf_create_table       = *ODF::lpOD::Table::_create;
-        *odf_create_row_group   = *ODF::lpOD::RowGroup::_create;
-        *odf_create_column_group
-                                = *ODF::lpOD::ColumnGroup::_create;
-        *odf_create_column      = *ODF::lpOD::Column::_create;
-        *odf_create_row         = *ODF::lpOD::Row::_create;
-        *odf_create_cell        = *ODF::lpOD::Cell::_create;
-        *odf_create_section     = *ODF::lpOD::Section::_create;
-        *odf_create_list        = *ODF::lpOD::List::_create;
-        *odf_create_draw_page   = *ODF::lpOD::DrawPage::_create;
-        *odf_create_shape       = *ODF::lpOD::Shape::_create;
-        *odf_create_area        = *ODF::lpOD::Area::_create;
-        *odf_create_rectangle   = *ODF::lpOD::Rectangle::_create;
-        *odf_create_ellipse     = *ODF::lpOD::Ellipse::_create;
-        *odf_create_vector      = *ODF::lpOD::Vector::_create;
-        *odf_create_line        = *ODF::lpOD::Line::_create;
-        *odf_create_connector   = *ODF::lpOD::Connector::_create;
-        *odf_create_frame       = *ODF::lpOD::Frame::_create;
-        *odf_create_image       = *ODF::lpOD::Image::_create;
-        *odf_create_text_frame  = *ODF::lpOD::Frame::_create_text;
-        *odf_create_image_frame = *ODF::lpOD::Frame::_create_image;
-        *odf_create_note        = *ODF::lpOD::Note::_create;
-        *odf_create_annotation  = *ODF::lpOD::Annotation::_create;
-        *odf_create_font_declaration
-                                = *ODF::lpOD::FontDeclaration::_create;
-        *odf_create_style       = *ODF::lpOD::Style::_create;
-        *odf_classify_text_field
-                                = *ODF::lpOD::TextField::classify;
-        *odf_create_toc         = *ODF::lpOD::TOC::_create;
+    *odf_create_element     = *ODF::lpOD::Element::_create;
+    *odf_create_paragraph   = *ODF::lpOD::Paragraph::_create;
+    *odf_create_heading     = *ODF::lpOD::Heading::_create;
+    *odf_create_field       = *ODF::lpOD::Field::_create;
+    *odf_create_simple_variable
+                            = *ODF::lpOD::SimpleVariable::_create;
+    *odf_create_user_variable
+                            = *ODF::lpOD::UserVariable::_create;
+    *odf_create_table       = *ODF::lpOD::Table::_create;
+    *odf_create_row_group   = *ODF::lpOD::RowGroup::_create;
+    *odf_create_column_group
+                            = *ODF::lpOD::ColumnGroup::_create;
+    *odf_create_column      = *ODF::lpOD::Column::_create;
+    *odf_create_row         = *ODF::lpOD::Row::_create;
+    *odf_create_cell        = *ODF::lpOD::Cell::_create;
+    *odf_create_section     = *ODF::lpOD::Section::_create;
+    *odf_create_list        = *ODF::lpOD::List::_create;
+    *odf_create_draw_page   = *ODF::lpOD::DrawPage::_create;
+    *odf_create_shape       = *ODF::lpOD::Shape::_create;
+    *odf_create_area        = *ODF::lpOD::Area::_create;
+    *odf_create_rectangle   = *ODF::lpOD::Rectangle::_create;
+    *odf_create_ellipse     = *ODF::lpOD::Ellipse::_create;
+    *odf_create_vector      = *ODF::lpOD::Vector::_create;
+    *odf_create_line        = *ODF::lpOD::Line::_create;
+    *odf_create_connector   = *ODF::lpOD::Connector::_create;
+    *odf_create_frame       = *ODF::lpOD::Frame::_create;
+    *odf_create_image       = *ODF::lpOD::Image::_create;
+    *odf_create_text_frame  = *ODF::lpOD::Frame::_create_text;
+    *odf_create_image_frame = *ODF::lpOD::Frame::_create_image;
+    *odf_create_note        = *ODF::lpOD::Note::_create;
+    *odf_create_annotation  = *ODF::lpOD::Annotation::_create;
+    *odf_create_font_declaration
+                            = *ODF::lpOD::FontDeclaration::_create;
+    *odf_create_style       = *ODF::lpOD::Style::_create;
+    *odf_classify_text_field
+                            = *ODF::lpOD::TextField::classify;
+    *odf_create_toc         = *ODF::lpOD::TOC::_create;
 
-        *is_numeric             = *Scalar::Util::looks_like_number;
-        *odf_value              = *check_odf_value;
+    *is_numeric             = *Scalar::Util::looks_like_number;
+    *odf_value              = *check_odf_value;
 
-        #initializations
+    #initializations
 
-        }
+    }
 
 #=== exported utilities ======================================================
 
@@ -702,7 +703,19 @@ sub     file_type
 sub     file_parse
         {
         require File::Basename;
-        return File::Basename::fileparse(shift, '\.*');
+        my $source  = shift;
+        if (wantarray)
+                {
+                my ($name,$path,$suffix) =
+                    File::Basename::fileparse($source, qr/\.[^.]*/);
+                if (defined $suffix)
+                        {
+                        $name   .= $suffix;
+                        $suffix =~ s/^\.//;
+                        }
+                return ($name, $path, $suffix);
+                }
+        return File::Basename::fileparse($source);
         }
 
 sub     image_size

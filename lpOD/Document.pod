@@ -395,19 +395,26 @@ increments the C<editing_cycles> indicator by 1.
 Both C<set_creation_date> and C<set_modification_date> allow the user to provide
 the date in the ODF-compliant (ISO-8601) format, or in numeric format (like the
 Perl C<time> format). In the second case, the provided time is automatically
-converted in the required format. The corresponding C<get_> accessors always
-return the dates in their storage format. However, the lpOD library provides
-a C<numeric_date> that translates a regular ISO date into a Perl numeric
-C<time> value (a symmetric C<iso_date> global function translates a Perl C<time>
-into a ISO date).
+converted in the required format. Of course, the numeric format is more
+convenient for time calculations.
+
+The instruction below, for example, sets the modification date to one hour
+earlier than the current system time:
+
+        $meta->set_modification_date(time() - 3600);
+
+The corresponding C<get_> accessors always return the dates in their storage
+format. However, the lpOD library provides a C<numeric_date> that translates a
+regular ISO date into a Perl numeric C<time> value (a symmetric C<iso_date>
+global function translates a Perl C<time> into a ISO date).
 
 Examples of use:
 
         $meta->set_title("The lpOD Cookbook");
         $meta->set_creator("The lpOD Project team");
-        $meta->set_modification_date(time);
+        $meta->set_modification_date;
         my $old_version = $meta->get_editing_cycles;
-        $meta->set_editing_cycles($old_version + 1);
+        $meta->set_editing_cycles;
 
 =head2  Document statistics
 
@@ -606,11 +613,12 @@ explicit use of the C<store()> part-based method remains always effective.
 
 This document-based method stores an external file "as is" in the document
 container, without interpretation. The mandatory argument is the path of the
-source file.
+source file in the local file system.
 
 Optional named parameters C<path> and C<type> are allowed; C<path> specifies
 the destination path in the ODF package, while C<type> is the MIME type of the
-added resource.
+added resource. Note that the C<path> parameter is by no mean related to the
+path of the source file.
 
 As an example, the instruction below inserts a binary image file available
 in the current directory in the "Thumbnails" folder of the document package:
@@ -630,7 +638,17 @@ The following example creates an entry whose every property is specified:
                 type    => "image/jpeg"
                 );
 
-The return value is the destination path.
+If the C<type> option is not provided, lpOD attempts to automatically determine
+the MIME type using C<File::Type>. If C<File::Type> is not installed of doesn't
+recognize the file format, lpOD doesn't provide any default value, so the mime
+type of the resource is not registered in the document. Note that right MIME
+types are not absolutely required by typical ODF-compatible software but that
+it's a good practice to provide them when possible.
+
+The return value is the destination path. If the imported file is an image,
+this return value may be used as a reference each time the corresponding image
+is inserted in the document through a C<frame> (for details about the ways to
+insert image frames in documents, see L<ODF::lpOD::StructuredContainer>).
 
 This method may be used in order to import an external XML file as a replacement
 of a conventional ODF XML part without interpretation. As an example, the
@@ -645,16 +663,40 @@ method, introduced below, is called. As a consequence, any update that could be
 done in a document part loaded using C<add_file()> is lost. According to the
 same logic, a document part loaded using C<add_file()> is never available in
 the current document instance; it becomes available if the current instance
-is made persistent through a C<save()> call then a new instance is created
+is made persistent through a C<save()> call and if a new instance is created
 using the saved package with C<odf_get_document>.
 
 =head3  add_image_file
 
-Same as C<add_file()> but, in array context, returns the destination path and
-(provided that C<Image::File> is installed and the image format is supported)
-the image size. This size (if defined) may be used to set the size of the
-corresponding image container in the document (see the "Frames" section in
-L<ODF::lpOD::StructuredContainer>).
+Specialized derivative of C<add_file()>, to be used in order to import image
+files used in the document without explicit C<type> and C<path> parameters.
+
+In scalar context, the return value is the same as C<add_file()>, so it may be
+used as the image reference in order to associate the image to a C<frame> that
+will make it visible in the document (see L<ODF::lpOD::StructuredContainer>).
+
+In array context, C<add_image_file()> returns the image reference then (if
+everything is right) the image size. This size (if defined) may be used to set
+the size of the corresponding image container in the document (see the "Frames"
+section in L<ODF::lpOD::StructuredContainer>).
+
+However, the returned image size is significant only if C<Image::Size> is
+installed and if the image format is recognized by this module (fortunately,
+the most popular formats, such as PNG, JPG, BMP, XPM, TIF and others are
+supported).
+
+If the C<type> option is not set, lpOD attempts to determine the MIME type
+using C<File::Type>, but a specific rule applies in case of failure.
+If C<File::Type> is not installed or if it fails, then lpOD arbitrarily
+concatenates the suffix of the file name to the "image/" string (so if the
+source file name is "foo.jpeg" then the supposed MIME type is "image/jpeg"),
+that may hopefully provide a correct MIME type in some situations. And if nothing works
+(i.e. if there is no application-provided type, if C<File::Type> doesn't
+answer, and it there is no file suffix), then the type is set to
+"image/unknown". Users are encouraged to avoid such a result, but, fortunately,
+a wrong MIME type doesn't prevent a typical ODF-compatible office software to
+coorectly render an image in a document (provided that the image format is
+really supported, that doesn't depend on lpOD).
 
 =head3  set_part
 
@@ -819,7 +861,7 @@ Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
 Contact: jmgdoc@cpan.org
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-Copyright (c) 2011 Jean-Marie Gouarné.
+Copyright (c) 2011 Jean-Marie Gouarne.
 
 This work was sponsored by the Agence Nationale de la Recherche
 (L<http://www.agence-nationale-recherche.fr>).
