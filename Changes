@@ -1,3 +1,15 @@
+1.118   2012-02-05
+  - StructuredContainer.pm: improved image frame related stuff.
+  - Document.pm: allowed remote part load.
+  - Makefile.PL: XML::Twig 3.34 allowed again.
+  - Element.pm: set_attribute(), get_attribute() made safe for call with undef
+  attribute name; added document_type(); added insert() and append(); allowed
+  XML loading from remote URLs.
+  - Common.pm: added signature(); remote file handling utilities.
+  - Style.pm: Added specific stuff for cell styles in presentations; added
+  fill() for GraphicStyle and CellStyle; added set_shadow() for graphic and
+  table styles; fixed some issues related to backgrounds and borders.
+  - Doc update.
 1.117   2012-01-20
   - Makefile.PL, MANIFEST: File::Type, Image::Size, LWP::Simple now required;
   XML::Twig 3.37 required; lpod_test utility added.

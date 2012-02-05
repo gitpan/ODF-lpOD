@@ -45,6 +45,8 @@ argument and the following optional parameters:
 
 =over
 
+=item
+
 C<width>, C<length>: the initial size of the new table (rows and columns),
 knowing that it's zero-sized by default (beware: because cells are contained
 in rows, no cell is created as long as C<width> is less than C<1>);
@@ -702,6 +704,28 @@ spreadsheet documents may contain tables whose size in potentially unlimited.
 As soon as you are faced to wrong response times and overloaded CPUs, you may
 consider using the following workarounds, which can (sometimes) improve the
 performances, possibly at the cost of a reduced functionality.
+
+=head2  New table creation
+
+Each time a new empty table is created through C<odf_create_table()> or
+C<odf_table->create()>, a C<expand> optional boolean parameter, whose default
+value is C<FALSE>, is available. This parameter controls the way the table
+is internally stored.
+
+If it's set to C<TRUE>, the table is stored in I<expanded> mode. It's a good
+choice for small tables or for large tables where cells spread over the largest
+part of its area will be populated by the application. On the other hand, large
+spreadsheet tables whose content will remain mostly empty (or filled with
+repetitive values and styles) should not be expanded at the creation time.
+
+The C<expand> option should generally not be changed for spreadsheets. However,
+the user should set it to C<TRUE> for tables included in presentation documents,
+because some ODF-compliant office products (such as LibreOffice Impress)
+apparently can't properly render tables stored in compact form.
+
+While the effect of this option is almost unnoticeable with small tables, the
+full storage expansion of a mid-sized or large table (i.e. thousands of cells)
+may have a significant impact on processing time and memory consumption.
 
 =head2  Accessing cells from rows
 

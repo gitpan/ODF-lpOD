@@ -57,9 +57,9 @@ of the element is "xyz":
 
         $e = odf_create_element('<foo bar="baz">xyz</foo>');
 
-If the given string starts with C<'http:'>, then it's regarded as the URL of
-an XML resource available through the web. If L<LWP::Simple> is installed and
-if the remote resource is available, then this resource is parsed as XML.
+If the given string contains a colon (such as "http://xy.z"), then it's
+regarded as the URL of an XML resource available through the web. If the
+resource is available, then it's parsed as XML.
 
 If the given string doesn't start with C<'http:'> but ends with C<'.xml'>, then
 it's regarded as the path to an XML file in the local filesystem, and the
@@ -170,22 +170,6 @@ The next example returns the list of paragraphs whose style is "Standard":
                 attribute       => 'style name',
                 value           => 'Standard'
                 );
-
-=head3  get_parent
-
-This method returns the immediate I<parent> of the calling element. Of course,
-it returns C<undef> if the context element is itself a C<root>, or if it's
-not included yet in a document.
-
-=head3  get_root
-
-Returns the top level element of the document part that contains the calling
-element.
-
-=head3  get_document
-
-Returns the C<odf_document> instance to which the element belongs.
-Returns C<undef> if the element is not attached to a C<odf_document>.
 
 =head1  Context import
 
@@ -388,9 +372,19 @@ own properties of the calling element. However, in some cases they may have
 indirect consequence on other elements.
 
 Note that C<odf_element> is a subclass of C<XML::Twig::Elt>. So, beyond the
-methods specifically described below, programmers familiar with C<XML::Twig>
+methods specifically described below, programmers familiar with L<XML::Twig>
 are allowed to directly (but cautiously) call any C<XML::Twig::Elt> method
 from any element, if the methods described below don't meet all their needs.
+
+=head3  append
+
+Appends the calling element to another element provided as argument. The calling
+element becomes the last child of the given one.
+
+Note that the two following instructions produce the same result:
+
+        $e1->append($e2);
+        $e2->append_element($e1);
 
 =head3  clear
 
@@ -439,6 +433,33 @@ set handling.
 Returns all the attributes of the calling element as a hash ref where keys are
 the full XML names of the attributes.
 
+=head3  get_document
+
+Returns the C<odf_document> object that owns the element, or C<undef> if the
+calling element doesn't belong to a document.
+
+=head3  get_document_part
+
+If the element belongs to a document, returns the C<odf_part> where it's
+registered, or returns C<undef> if the element is not in a document.
+
+=head3  get_document_type
+
+Returns the type of the C<odf_document> object that owns the element, or
+C<undef> if the calling element doesn't belong to a document.
+
+=head3  get_parent
+
+Returns the I<parent> of the calling element, if it's included in a hierarchy.
+Returns C<undef> if the calling element is free or if it's at the top level of
+a hierarchy. May be used to check if the element is free or not. This method
+is an alias for C<XML::Twig::Elt::parent> (see L<XML::Twig> for details).
+
+=head3  get_root
+
+Returns the top level element of the document part that contains the calling
+element.
+
 =head3  get_style
 
 Returns the name of the style used by the calling element (this accessor makes
@@ -468,6 +489,17 @@ L<ODF::lpOD::Common>.
 =head3  get_url
 
 Returns the URL if the element owns a hyperlink property, or C<undef> otherwise.
+
+=head3  insert
+
+Insert the calling element at a given location, depending on various options.
+The first argument must be any C<odf_element>, that will be a position
+reference. The other arguments may be the same as C<insert_element>.
+See C<insert_element> for details, knowing that the two following instructions
+are equivalent:
+
+        $e1->insert($e2 [, options]);
+        $e2->insert_element($e1 [, options]);
 
 =head3  serialize
 

@@ -11,8 +11,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #=============================================================================
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.009';
-use constant PACKAGE_DATE       => '2012-01-19T09:13:00';
+our	$VERSION	        = '1.011';
+use constant PACKAGE_DATE       => '2012-02-05T16:41:30';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -84,7 +84,7 @@ our @EXPORT     = qw
     input_conversion output_conversion search_string count_substrings
     color_code color_name load_color_map unload_color_map
     is_numeric iso_date numeric_date check_odf_value odf_value
-    file_parse file_type image_size input_2d_value
+    file_parse file_type load_file image_size input_2d_value
     alert not_implemented
 
     PRETTY_PRINT EMPTY_TAGS
@@ -342,6 +342,8 @@ sub     info
                 " " . ODF::lpOD->PACKAGE_DATE   .
                 " " . lpod->installation_path;
         }
+
+sub     signature   { scalar lpod->info }
 
 sub     debug
         {
@@ -694,7 +696,7 @@ sub     search_string
 
 sub     file_type
         {
-        return undef unless eval('require File::Type');
+        require File::Type;
         my $f   = shift;
         return undef    unless (-r $f && -f $f);
         return File::Type->new->mime_type($f);
@@ -718,15 +720,52 @@ sub     file_parse
         return File::Basename::fileparse($source);
         }
 
+sub     load_file
+        {
+        my $url         = shift         or return undef;
+        my $mode        = shift         // ':utf8';
+
+        if (ref $url || $url !~ /:/)
+                {
+                require File::Slurp;
+                return scalar File::Slurp::read_file
+                        ($url, binmode => $mode);
+                }
+        else
+                {
+                require LWP::Simple;
+                return LWP::Simple::get($url);
+                }
+        }
+
 sub     image_size
         {
-        return undef unless eval('require Image::Size');
-        my $f           = shift;
-        return undef    unless (-r $f && -f $f);
-        my ($w, $h) = Image::Size::imgsize($f);
-        return undef    unless defined $w;
-        $w .= 'pt'; $h .= 'pt';
-        return [$w, $h];
+        my $url         = shift       or return undef;
+        my $doc         = shift;
+        my $source;
+
+        if ($doc)
+                {
+                $source = \($doc->get_part($url));
+                }
+        else
+                {
+                $source = \(load_file($url, ':raw'));
+                }
+
+        if ($source)
+                {
+                require Image::Size;
+                my ($w, $h) = Image::Size::imgsize($source);
+                return undef    unless defined $w;
+                $w .= 'pt'; $h .= 'pt';
+                return wantarray ? ($w, $h) : [$w, $h];
+                }
+        else
+                {
+                alert "Image source not available";
+                return undef;
+                }
         }
 
 sub     input_2d_value

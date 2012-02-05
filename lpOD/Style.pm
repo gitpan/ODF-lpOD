@@ -12,8 +12,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Style;
 use base 'ODF::lpOD::Element';
-our $VERSION                    = '1.005';
-use constant PACKAGE_DATE       => '2011-06-14T08:45:30';
+our $VERSION                    = '1.006';
+use constant PACKAGE_DATE       => '2012-02-02T20:43:40';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -333,7 +333,8 @@ sub     create
         $style->set_name($opt{name});
         $style->set_display_name($opt{display_name});
         $style->set_parent_style($opt{parent});
-        delete @opt{qw(name display_name parent)};
+        $style->register($opt{register})        if $opt{register};
+        delete @opt{qw(register name display_name parent)};
         $style->initialize(%opt);
         return $style;
         }
@@ -347,7 +348,7 @@ sub     initialize
 sub     register
         {
         my $self        = shift;
-        my $document    = shift;
+        my $document    = shift         or return undef;
         return $document->register_style($self, @_);
         }
 
@@ -431,6 +432,8 @@ sub     set_background
         {
         my $self        = shift;
         my %opt         = @_;
+        $opt{url} //= $opt{image};
+        delete $opt{image};
         if (exists $opt{color})
                 {
                 $self->set_properties
@@ -882,8 +885,102 @@ sub     set_level_style
         }
 
 #=============================================================================
-package ODF::lpOD::TableStyle;
+package ODF::lpOD::AreaStyle;
 use base 'ODF::lpOD::Style';
+use strict;
+our $VERSION    = '1.000';
+use constant PACKAGE_DATE => '2012-02-01T16:17:09';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN   {
+        *set_frame_sides        = *set_area_sides;
+        *set_margin             = *set_margins;
+        *set_border             = *set_borders;
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     set_area_sides
+        {
+        my $self        = shift;
+        my %opt         =
+                (
+                prefix  => 'fo:',
+                option  => 'border',
+                area    => undef,
+                value   => undef,
+                @_
+                );
+
+        my %attr;
+        $attr{area}  = $opt{area};
+        $attr{$opt{prefix} . $opt{option} . '_' . $_} = $opt{value}
+                for ('left', 'right', 'top', 'bottom');
+        $self->set_properties(%attr);
+        }
+
+sub     set_borders
+        {
+        my $self        = shift;
+        return $self->set_area_sides
+                (option => 'border', value => shift, @_);
+        }
+
+sub     set_padding
+        {
+        my $self        = shift;
+        return $self->set_area_sides
+                (option => 'padding', value => shift, @_);
+        }
+
+sub     set_margins
+        {
+        my $self        = shift;
+        return $self->set_area_sides
+                (option => 'margin', value => shift, @_);
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     fill
+        {
+        my $self        = shift;
+        my $mode        = shift or return undef;
+        my $value       = shift;
+        my $attr = undef;
+        given ($mode)
+                {
+                when (['color', 'solid'])
+                        {
+                        $mode = 'solid';
+                        $attr = 'draw:fill-color';
+                        }
+                when (['bitmap', 'hatch'])
+                        {
+                        $attr = 'draw:fill-' . $mode . '-name';
+                        }
+                when (['none', 'empty'])
+                        {
+                        $mode = 'none';
+                        }
+                default
+                        {
+                        alert "Unknown shape fill mode";
+                        return undef;
+                        }
+                }
+        $self->set_properties
+                (
+                area            => 'graphic',
+                'draw:fill'     => $mode,
+                $attr           => $value
+                );
+        }
+
+#=============================================================================
+package ODF::lpOD::TableStyle;
+use base 'ODF::lpOD::AreaStyle';
 use strict;
 our $VERSION    = '1.000';
 use constant PACKAGE_DATE => '2011-05-27T09:08:16';
@@ -1001,6 +1098,22 @@ sub	set_properties
         return $self->get_properties();
         }
 
+sub     set_shadow
+        {
+        my $self        = shift;
+        my %opt         =
+                (
+                type            => 'visible',
+                offset          => ['3mm', '3mm'],
+                color           => '#000000',
+                @_
+                );
+        my $t = $opt{type};
+        my ($x, $y) = input_2d_value($opt{offset});
+        my $c = color_code($opt{color});
+        $self->set_properties(shadow => "$c $x $y");
+        }
+
 #=============================================================================
 package ODF::lpOD::ColumnStyle;
 use base 'ODF::lpOD::TableStyle';
@@ -1065,14 +1178,15 @@ sub     set_properties
 #=============================================================================
 package ODF::lpOD::CellStyle;
 use base 'ODF::lpOD::TableStyle';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2011-05-27T09:09:27';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2012-02-02T08:15:46';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN   {
         *set_text_properties    = *ODF::lpOD::TextStyle::set_properties;
         *p_attribute_name       = *ODF::lpOD::ParagraphStyle::attribute_name;
+        *g_attribute_name       = *ODF::lpOD::GraphicStyle::attribute_name;
         }
 
 #-----------------------------------------------------------------------------
@@ -1113,7 +1227,7 @@ sub     initialize
         return $self;
         }
 
-sub	set_properties
+sub     set_properties
         {
         my $self	= shift;
         my %opt         = process_options(@_);
@@ -1132,6 +1246,10 @@ sub	set_properties
                 when ('paragraph')
                         {
                         return $self->set_paragraph_properties(%opt);
+                        }
+                when ('graphic')
+                        {
+                        return $self->set_graphic_properties(%opt);
                         }
                 }
         return undef;
@@ -1182,16 +1300,49 @@ sub     set_paragraph_properties
                 }
         }
 
-sub	get_data_style
+sub     set_graphic_properties
+        {
+        my $self        = shift;
+        my %opt         = @_;
+        my $pt = 'style:graphic-properties';
+        my $pr = $self->set_child($pt);
+        if ($opt{clone})
+                {
+                my $proto = $opt{clone}->first_child($pt) or return undef;
+                $pr->delete() if $pr;
+                $proto->clone->paste_last_child($self);
+                }
+        else
+                {
+                foreach my $k (keys %opt)
+                        {
+                        my $a = $self->g_attribute_name($k);
+                        $pr->set_attribute($a => $opt{$k});
+                        }
+                }
+        }
+
+sub     get_data_style
         {
         my $self	= shift;
         return $self->get_attribute('style:data-style-name');
         }
 
-sub	set_data_style
+sub     set_data_style
         {
         my $self	= shift;
         return $self->set_attribute('style:data-style-name' => shift);
+        }
+
+sub     set_background
+        {
+        my $self        = shift;
+        my $doctype = $self->document_type;
+        if ($doctype && $doctype eq 'presentation')
+                {
+                return $self->fill(@_);
+                }
+        return $self->SUPER::set_background(@_);
         }
 
 #=============================================================================
@@ -1314,13 +1465,13 @@ sub     set_background
 #-----------------------------------------------------------------------------
 
 sub	initialize
-	{
-	my $self	= shift;
-	my %opt         = @_;
+        {
+        my $self	= shift;
+        my %opt         = @_;
         $self->set_layout($opt{layout});
         $self->set_next($opt{next});
         return $self;
-	}
+        }
 
 #-----------------------------------------------------------------------------
 
@@ -1696,10 +1847,18 @@ sub     attribute_name
 
 #=============================================================================
 package ODF::lpOD::GraphicStyle;
-use base 'ODF::lpOD::Style';
-our $VERSION    = '1.003';
-use constant PACKAGE_DATE => '2011-05-27T09:17:34';
+use base 'ODF::lpOD::AreaStyle';
+our $VERSION    = '1.004';
+use constant PACKAGE_DATE => '2012-02-01T16:18:58';
 use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+BEGIN   {
+        *set_borders            = *set_stroke;
+        *set_border             = *set_stroke;
+        *set_background         = *ODF::lpOD::AreaStyle::fill;
+        }
+
 #-----------------------------------------------------------------------------
 
 sub     initialize
@@ -1707,21 +1866,41 @@ sub     initialize
         my $self	= shift;
         my %opt         =
 		(
-		'clip'			        => 'rect(0cm 0cm 0cm 0cm)',
-		'style:vertical-rel'		=> 'paragraph',
-		'style:horizontal-rel'		=> 'paragraph',
-		'style:vertical-pos'		=> 'from-top',
-		'style:horizontal-pos'		=> 'from-left',
-		'color-mode'		        => 'standard',
-        'fill'                      => 'none',
-        'stroke'                    => 'none',
-        @_
+		'clip'			=> 'rect(0cm 0cm 0cm 0cm)',
+		'style:vertical-rel'	=> 'paragraph',
+		'style:horizontal-rel'	=> 'paragraph',
+		'style:vertical-pos'	=> 'from-top',
+		'style:horizontal-pos'	=> 'from-left',
+		'color-mode'		=> 'standard',
+                @_
 		);
 
         if ($opt{page})
                 {
                 $opt{'style:vertical-rel'} //= 'page-content';
                 $opt{'style:horizontal-rel'} //= 'page-content';
+                }
+        foreach my $k (keys %opt)
+                {
+                given ($k)
+                        {
+                        when (/^background.*color/)
+                                {
+                                $self->set_background(color => $opt{$k});
+                                delete $opt{$k};
+                                }
+                        when (['border', 'borders', 'stroke'])
+                                {
+                                my ($w, $t, $c) = split / +/, $opt{$k};
+                                $self->set_borders
+                                        (
+                                        type    => $t,
+                                        width   => $w,
+                                        color   => $c
+                                        );
+                                delete $opt{$k};
+                                }
+                        }
                 }
         $opt{area} = 'graphic';
         $self->set_properties(%opt);
@@ -1741,17 +1920,64 @@ sub     attribute_name
                         { return $p                     }
                 when (/:/)
                         { return $p                     }
+                when (/^(fill|shadow)/)
+                        { $prefix = 'draw'              }
                 when (/(pos$|rel$|wrap$|run|shadow)/)
                         { $prefix = 'style'             }
                 when (/^stroke[ -_]/)
                         { $prefix = 'svg'               }
-                when (/border|color|padding|margin|clip/)
+                when (/border|color|height|width|padding|margin|clip/)
                         { $prefix = 'fo'                }
                 default
                         { $prefix = 'draw'              }
                 }
         return $prefix . ':' . $p;
         }
+
+#-----------------------------------------------------------------------------
+
+sub     set_stroke
+        {
+        my $self        = shift;
+        my %opt         =
+                (
+                'type'  => 'solid',
+                'width' => '1pt',
+                'color' => '#000000',
+                @_
+                );
+        $self->set_properties
+                (
+                'draw:stroke'           => $opt{type}   // 'solid',
+                'svg:stroke-width'      => $opt{width}  // '1pt',
+                'svg:stroke-color'      => $opt{color}  // '#000000'
+                );
+        }
+
+sub     set_shadow
+        {
+        my $self        = shift;
+        my %opt         =
+                (
+                type            => 'visible',
+                offset          => ['3mm', '3mm'],
+                color           => '#000000',
+                @_
+                );
+        my $t = $opt{type};
+        my ($x, $y) = input_2d_value($opt{offset});
+        my $c = $opt{color};
+        delete @opt{qw(type offset color)};
+        $self->set_properties
+                (
+                'draw:shadow'           => $t,
+                'draw:shadow-offset-x'  => $x,
+                'draw:shadow-offset-y'  => $y,
+                'draw:shadow-color'     => $c,
+                %opt
+                );
+        }
+
 
 #=============================================================================
 package ODF::lpOD::Gradient;

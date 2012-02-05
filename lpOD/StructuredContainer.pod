@@ -374,11 +374,44 @@ whose URL may be read or changed using C<get_url()> or C<set_url()>.
 
 In a text document, a frame may be attached to the document body, as long as
 it's anchored to a page; as an consequence, a C<page> parameter must be
-provided with the page number.
+provided with the page number. The example below inserts a new frame that
+will appear in the first page, assuming that the document type is C<text>:
+
+        $doc->get_body->insert_element(
+                odf_frame->create(
+                        name            => "FR1",
+                        text            => "Example",
+                        size            => "8cm, 3cm",
+                        position        => "2cm, 3.5cm",
+                        page            => 1
+                )
+        );
+
+Note that a page-anchored frame should be attached to a text document body
+through C<insert_element()> without option, and not C<append_element()>,
+knowing that typical ODF viewers can't properly render if it's not stored
+I<before> any other visible content.
 
 Simply put, with the exception above, a frame is anchored to the calling
 context element. The ODF elements that may insert a frame in the present
 lpOD API are *draw pages*, *paragraphs*, *tables*, and *cells*.
+
+The sequence hereafter inserts a frame immediately after the 5th paragraph
+of a document; to do so, an empty paragraph is inserted at the right position
+then used to host the frame:
+
+        $context = $doc->get_body;
+        $p = $context->insert_element(
+                odf_paragraph->create,
+                after   => $context->get_paragraph(position => 4)
+        );
+        $p->insert_element(
+                odf_frame->create(
+                        name    => "FR2",
+                        size    => "12cm, 8cm",
+                        text    => "In the box"
+                )
+        );
 
 In a presentation or drawing document, the calling element is typically a draw
 page.
@@ -386,6 +419,13 @@ page.
 When C<insert_element()> is called from a paragraph, an optional C<offset>
 parameter, specifying the position in the text where the frame will be inserted,
 may be provided (the default position is the beginning of the paragraph).
+
+The way to attach a frame to a table cell is not the same in a text document
+as in a spreadsheet document. lpOD tries to hide the differences provided that
+the attachement is done when the cell itself is already attached to a document.
+On the other hand, if the target cell is not attached, lpOD doesn't know what
+will be the document type and silently selects the attachment method that works
+for text documents.
 
 An existing frame may be selected using C<get_frame()> from any context with
 the frame name as argument.
@@ -418,6 +458,11 @@ argument must be loaded in the ODF package (works only if the calling frame
 is attached to a document); a C<size> optional parameter allows the
 application to explicitly force a particular size.
 
+If no C<size> parameter is provided and if the calling frame has no previously
+defined size, then C<set_image()> tries to automatically detect the size of
+the given resource. Note that such detection may be very costly if the image
+resource is remote.
+
 =back
 
 =head1  Images
@@ -443,6 +488,12 @@ constructors allow the user to directly create a frame with the appropriate
 content. Each one requires a mandatory argument in first position (before the
 usual frame parameters).
 
+Note that C<odf_create_text_frame()> and C<odf_create_image_frame()> are
+just syntactic variants for the following instructions, respectively:
+
+        odf_frame->create(text => $text [, options]);
+        odf_frame->create(image => $resource [, options]);
+
 For C<odf_create_text_frame()> the first argument is either a text string or
 an ODF text element. In the first case the string is used as the content of
 the text box. In the second case the text element is used as is as the content
@@ -451,10 +502,10 @@ of the text box.
 For C<odf_create_image_frame()> the first argument is the link to the internal
 or external image resource.
 
-If the C<size> parameter is not set, lpOD attempts to set it to the original
-image size if C<Image::Size> is installed in your environment, if the given
-resource is a readable image file in the local file system, and if the image
-type is supported by C<Image::Size>.
+If the C<size> parameter is not set, lpOD internally uses L<Image::Size> in
+order to set it to the original image size of the given resource. Beware that
+such an automatic size detection may be very costly, so the user should
+provide explicit frame sizes in any intensive application.
 
 Note that the L<ODF::lpOD::Document> class provides a C<add_image_file()>
 method that can import external image files in the ODF package. In array

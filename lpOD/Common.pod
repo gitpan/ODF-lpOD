@@ -120,7 +120,7 @@ The following example will return C<("logo.png", "/usr/share/images/", "png")>:
 
         ($base, $path, $suffix) = file_parse("/usr/share/images/logo.png");
 
-This one will return C<("mydoc.odt", "http://mydomain.com/", "odt"):
+This one will return C<("mydoc.odt", "http://mydomain.com/", "odt")>:
 
         ($base, $path, $suffix) = file_parse("http://mydomain.com/mydoc.odt");
 
@@ -164,6 +164,9 @@ string containing "ODF::lpOD", the CPAN package build date, and the current
 installation path, like in the example below:
 
  ODF::lpOD 1.106 2011-02-15T15:07:39 /usr/lib/perl5/site_perl/5.10.0/ODF/lpOD
+
+There is a C<signature> method that produces the same result as C<info> as the
+scalar value of C<info>.
 
 The C<installation_path> method returns the path of the C<ODF::lpOD> module
 installation in the user's file system.

@@ -722,8 +722,8 @@ sub     get_type
 #=============================================================================
 package ODF::lpOD::Frame;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '1.005';
-use constant PACKAGE_DATE => '2012-01-19T19:51:16';
+our $VERSION    = '1.006';
+use constant PACKAGE_DATE => '2012-02-05T15:23:33';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -759,9 +759,8 @@ sub     create
                         return undef;
                         }
                 my $link = $opt{image}; delete $opt{image};
-                $opt{size} //= image_size($link) if $link;
                 $fr = ODF::lpOD::Area->create(%opt) or return undef;
-                $fr->set_image($link) if $link;
+                $link && $fr->set_image($link);
                 }
         elsif ($opt{text})
                 {
@@ -808,14 +807,22 @@ sub     set_image
                 alert "Missing image URL"; return FALSE;
                 }
         my %opt = @_;
+        my ($w, $h) = $self->get_size;
+        my $sized = (defined $w && defined $h);
         if (is_true($opt{load}))
                 {
                 my $doc = $self->document;
                 if ($doc && $doc->{container})
                         {
-                        my $size    = undef;
-                        ($link, $size) = $doc->add_image_file($source);
-                        $opt{size} //= $size;
+                        unless ($sized || defined $opt{size})
+                                {
+                                ($link, $opt{size}) =
+                                        $doc->add_image_file($source);
+                                }
+                        else
+                                {
+                                $link = $doc->add_image_file($source);
+                                }
                         }
                 else
                         {
@@ -831,12 +838,16 @@ sub     set_image
         if (defined $opt{size})
                 {
                 $self->set_size($opt{size});
+                delete $opt{size};
                 }
         else
                 {
-                my ($w, $h) = $self->get_size;
-                $self->set_size(image_size($source))
-                        unless (defined $w && defined $h);
+                unless ($sized)
+                        {
+                        my $doc = undef;
+                        $doc = $self->get_document if $source =~ /^Pictures\//;
+                        $self->set_size(image_size($source, $doc));
+                        }
                 }
         $image->set_attribute('xlink:href' => $link);
         foreach my $o (keys %opt)

@@ -7,8 +7,9 @@ System requirements:
 
 - Perl 5.10.0 or later
 - Archive::Zip 1.30 or later
-- XML::Twig 3.37 or later
+- XML::Twig 3.34 or later
 - File::Type
+- File::Slurp
 - Image::Size
 - LWP::Simple
 

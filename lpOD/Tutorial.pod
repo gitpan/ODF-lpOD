@@ -74,7 +74,7 @@ document level.
 As long as we just need, say, to deal with the document content, and we have
 nothing to do with styles, metadata and other stuff, we can use C<get_body()>
 that returns the so-called I<document body>, that is the top context for every
-object that appear in the page bodies:
+object that appears in the page bodies:
 
         my $context = $doc->get_body;
 
@@ -1921,7 +1921,7 @@ area of a cell style, a more compact form is allowed:
         $doc->insert_style(
                 odf_create_style(
                         'table cell',
-                        name                    => "YellowBox"
+                        name                    => "YellowBox",
                         border                  => "1mm solid #000080",
                         shadow                  => "#808080 1.25mm 1.25mm",
                         'background color'      => "yellow"
@@ -2078,7 +2078,7 @@ attachment to a paragraph. The frame must be attached to the document body
 specified. Assuming we want to put it at a given position in the first page,
 the following instruction could be right:
 
-        $doc->get_body->append_element(
+        $doc->get_body->insert_element(
                 odf_create_image_frame(
                         "logo.jpg",
                         name            => "Logo",
@@ -2096,7 +2096,7 @@ snippet:
         $doc->insert_style(
                 odf_create_style('graphic', name => "Classic")
                 );
-        $doc->get_body->append_element(
+        $doc->get_body->insert_element(
                 odf_create_image_frame(
                         "logo.jpg",
                         name            => "Logo",
@@ -2147,6 +2147,11 @@ the C<add_image_file()> document-based method, that allows you to store almost
 anything in your office document files. Example:
 
         $doc->add_image_file("logo.png");
+
+Note that you can import image files from remote locations as well as from the
+local file system:
+
+        $doc->add_image_file("http://some.where/logo.png");
 
 The looks simple, but it's not OK. When we created the image frame, we
 provided an I<external> file path/name. We must tell the image frame that
@@ -2218,10 +2223,6 @@ viewing/printing application is always connected:
                         page            => 1
                         )
                 );
-
-However, remember that lpOD can't automatically detect the original image
-size unless the image file is not local; so, as soon as you associate a frame
-to an external content you should provide an explicit size.
 
 =head2  Inserting a text box
 
@@ -2548,7 +2549,7 @@ option, to reuse an external style library). The creation and registration of
 a graphic style work exactly like with text documents.
 
 Of course, you can/must include the image file in your ODF package using
-C<add_file()> as previously shown with another kind of document.
+C<add_image_file()> as previously shown with another kind of document.
 
 As a consequence, as soon as you got a good presentation template you can
 easily generate new presentations according to any kind of content.

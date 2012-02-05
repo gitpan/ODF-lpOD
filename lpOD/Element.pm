@@ -11,8 +11,8 @@ use     strict;
 #       Base ODF element class and some derivatives
 #=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.011';
-use constant PACKAGE_DATE => '2011-08-09T08:27:53';
+our     $VERSION        = '1.012';
+use constant PACKAGE_DATE => '2012-02-03T09:59:23';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -106,7 +106,10 @@ BEGIN
         *get_table_list                 = *get_tables;
         *get_draw_page_list             = *get_draw_pages;
         *get_part                       = *lpod_part;
+        *document_part                  = *lpod_part;
+        *get_document_part              = *lpod_part;
         *get_document                   = *document;
+        *get_document_type              = *document_type;
         }
 
 #=== exported constructor ====================================================
@@ -121,28 +124,20 @@ sub     new
         {
 	my $caller	= shift;
 	my $class	= ref($caller) || $caller;
-        my $data        = shift;
+        my $data        = shift         or return undef;
         my $element;
-        if (ref $data)                  # load data from file handle
+        if (ref $data || $data =~ /\.xml$/i)    # load from file
                 {
-                $data = ODF::lpOD::Element->load_from_file($data);
+                $data = load_file($data);
                 }
-        elsif ($data =~ /^http:/i)      # load data from the www
-                {
-                $data = ODF::lpOD::Element->load_from_cloud($data);
-                }
-        elsif ($data =~ /\.xml$/i)      # load data from file
-                {
-                $data = ODF::lpOD::Element->load_from_file_path($data);
-                }
-                                        # remove leading and trailing spaces
         $data	=~ s/^\s+//;
         $data	=~ s/\s+$//;
-        if ($data =~ /^</)	        # create element from XML string
+        if ($data =~ /^</)	                # create from XML string
                 {
                 return ODF::lpOD::Element->parse_xml($data, @_);
                 }
                 # odf_element creation
+        return undef unless $data;
         $element     = $class->SUPER::new($data, @_);
                 # possible subclassing according to the tag
         my $tag = $element->tag;
@@ -163,37 +158,6 @@ sub     new
         }
 
 #-----------------------------------------------------------------------------
-
-sub	load_from_file
-	{
-	my $self	= shift;
-	my $source      = shift;
-        local $/;
-        my $data = <$source>;
-        return $data;
-	}
-
-sub     load_from_file_path
-        {
-        my $self        = shift;
-        my $source      = shift;
-        open(my $FH, '<:utf8', $source);
-        my $data = ODF::lpOD::Element->load_from_file($FH);
-        close $FH;
-        return $data;
-        }
-
-sub	load_from_cloud
-	{
-        unless (eval 'require LWP::Simple')
-                {
-                alert "HTTP import requires LWP::Simple";
-                return undef;
-                }
-	my $self	= shift;
-	my $url         = shift or return undef;
-        return LWP::Simple::get($url);
-	}
 
 sub	parse_xml
 	{
@@ -676,6 +640,13 @@ sub     document
         my $self        = shift;
         my $part        = $self->lpod_part      or return undef;
         return $part->document;
+        }
+
+sub     document_type
+        {
+        my $self        = shift;
+        my $doc = $self->document  or return undef;
+        return $doc->get_type;
         }
 
 #-----------------------------------------------------------------------------
@@ -1596,7 +1567,7 @@ sub     get_draw_pages
 sub     get_attribute
         {
         my $self        = shift;
-        my $name        = $self->normalize_name(shift);
+        my $name        = $self->normalize_name(shift) or return undef;
         my $value       = $self->att($name);
         return output_conversion($value);
         }
@@ -1616,7 +1587,7 @@ sub     get_attributes
 sub     set_attribute
         {
         my $self        = shift;
-        my $name        = $self->normalize_name(shift);
+        my $name        = $self->normalize_name(shift) or return undef;
         my $value       = input_conversion(shift);
         if ($name =~ /color$/)
                 {
@@ -1974,6 +1945,20 @@ sub     append_element
         {
         my $self        = shift;
         return $self->insert_element(shift, position => 'LAST_CHILD');
+        }
+
+sub     insert
+        {
+        my $self        = shift;
+        my $target      = shift         or return undef;
+        return $target->insert_element($self, @_);
+        }
+
+sub     append
+        {
+        my $self        = shift;
+        my $target      = shift         or return undef;
+        return $target->append_element($self);
         }
 
 sub	set_comment

@@ -11,8 +11,8 @@ use strict;
 #       The ODF Document class definition
 #=============================================================================
 package ODF::lpOD::Document;
-our     $VERSION    = '1.008';
-use     constant PACKAGE_DATE => '2012-01-19T19:41:59';
+our     $VERSION    = '1.009';
+use     constant PACKAGE_DATE => '2012-02-03T11:15:47';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -89,7 +89,7 @@ sub     new
                         $meta->set_creation_date($d);
                         $meta->set_modification_date($d);
                         $meta->set_editing_duration('PT00H00M00S');
-                        $meta->set_generator(scalar lpod->info);
+                        $meta->set_generator("ODF::lpOD $ODF::lpOD::VERSION");
                         $meta->set_initial_creator();
                         $meta->set_creator();
                         $meta->set_editing_cycles(1);
@@ -243,6 +243,7 @@ sub     add_file
                 }
         my $source      = shift;
         my %opt         = @_;
+        $opt{path}      ||= $opt{part};
         unless ($opt{path})
                 {
                 if ($opt{type} && $opt{type} =~ /^image/)
@@ -969,8 +970,8 @@ sub     set_font_declaration
 
 #=============================================================================
 package ODF::lpOD::Container;
-our	$VERSION	= '1.002';
-use constant PACKAGE_DATE => '2011-01-27T13:57:32';
+our	$VERSION	= '1.003';
+use constant PACKAGE_DATE => '2012-02-03T21:37:17';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use Archive::Zip        1.30    qw ( :DEFAULT :CONSTANTS :ERROR_CODES );
@@ -1158,15 +1159,30 @@ sub     raw_set_part
                 );
 
         my $compress = $opt{compress} // $COMPRESSION{$part_name} // FALSE;
-        my $p   = $opt{string} ?
-                        $self->{zip}->addString($data, $part_name)    :
-                        $self->{zip}->addFileOrDirectory($data, $part_name);
+        my $zip = $self->{zip};
+        my $p;
+        if ($opt{string})
+                {
+                $p = $zip->addString($data, $part_name);
+                }
+        else
+                {
+                unless ($data =~ /:/)
+                        {
+                        $p = $zip->addFileOrDirectory($data, $part_name);
+                        }
+                else
+                        {
+                        $p = $zip->addString(load_file($data), $part_name);
+                        }
+                }
+
         if ($p)
                 {
                 if (is_true($compress))
                         {
-		        $p->desiredCompressionMethod($opt{compression_method});
-		        $p->desiredCompressionLevel($opt{compression_level});
+                        $p->desiredCompressionMethod($opt{compression_method});
+                        $p->desiredCompressionLevel($opt{compression_level});
                         }
                 else
                         {

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               ODF-lpOD
-version:            1.117
+version:            1.118
 abstract:           An OpenDocument management interface
 author:
     - Jean-Marie Gouarne <jean-marie.gouarne@online.fr>
@@ -14,18 +14,19 @@ requires:
     Archive::Zip:    1.30
     File::Basename:  2.76
     File::Find:      1.01
+    File::Slurp:     0
     File::Temp:      0.12
     File::Type:      0
     Image::Size:     0
     IO::File:        1.14
     LWP::Simple:     0
     Time::Local:     1.07
-    XML::Twig:       3.37
+    XML::Twig:       3.34
 no_index:
     directory:
         - t
         - inc
-generated_by:       ExtUtils::MakeMaker version 6.56
+generated_by:       ExtUtils::MakeMaker version 6.55_02
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4

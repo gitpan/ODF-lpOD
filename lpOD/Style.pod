@@ -4,16 +4,24 @@ ODF::lpOD::Style - Styles management
 
 =head1  DESCRIPTION
 
-A style controls the formatting and/or layout properties of a family of
-content objects. It's identified by its own name and its family.
-In the lpOD API, the family has a larger acceptance than in the OpenDocument
-specification. In the underlying XML, the family is indicated sometimes
-by the value of an explicit C<style:family> attribute, and sometimes by the
-XML tag of the style element itself.
+This manual page describes the C<odf_style> class and its specialized
+derivatives.
 
-In order to hide the complexity of the ODF data structure, the level 1 API
-allows the user to handle any style as a high level C<ODF::lpOD::Style>, or
-C<odf_style>, object.
+C<odf_style> is an alias for C<ODF::lpOD::Style>.
+
+A style object controls the formatting and/or layout properties of a family of
+content objects. It's identified by its own name and its family.
+
+The lpOD API to update the properties of existing styles, and to replicate the
+features of existing styles. It allows the user to build new styles from
+scratch as well.
+
+The full styling of a graphically sophisticated document could require a lot
+of complex code, because a lot of layout graphical rendering options are
+available. As a consequence, it's recommended to reuse and customize existing
+styles each time it's possible, instead of hardcoding fully new styles, in
+order to maintain a reasonable ratio between the style related and the content
+related coding efforts.
 
 =head1 Common style features
 
@@ -29,24 +37,7 @@ properties are optionally passed as named parameters.
 
 Note that in order to be really available in a document, a style, once created,
 must be registered in this document using C<insert_style()>, that is a
-C<odf_document> method:
-
-   $doc->insert_style($s);
-
-Note that C<register_style()> is an alias of C<insert_style()>.
-
-Alternatively, it's possible to register a style using the C<register()> method
-of the C<odf_style> class. So, the two following instructions, assuming that
-C<$doc> is a C<odf_document> and C<$s> is a C<odf_style>, are equivalent:
-
-   $doc->register_style($s);
-   $s->register($doc);
-
-A style should not be registered in a document when it's already registered
-in another document. If you need to replicate a style in multiple documents,
-you should make copies:
-
-   $style->clone->register($_) for @many_documents;
+C<odf_document> method, introduced below.
 
 Additional named parameters may be required according to the family. An optional
 C<parent> argument, whose value is the name of another common style of
@@ -89,9 +80,10 @@ However, lpOD will not warn if you specify the name of an automatic style
 (or the name of a not yet registered style) as a parent, knowing that you are
 allowed to create, change or move the parent style later.
 
-The C<odf_create_style()> function creates a free element, not included in a
-document. This element (or a clone of it) is available to be attached later
-to a document through a generic, document-based C<insert_style()> method.
+Some styles may have a I<class> property, that is an informative attribute, and
+that should not be confused with the I<family>. A family is an application-
+defined property, used in order to identify a set of styles belonging to various
+families, for retrieval needs.
 
 When attached to a document, a style provides a C<get_parent_styles()> method
 that returns the full set of inherited styles, if any. Knowing that this method
@@ -101,10 +93,37 @@ style names. The main purpose of this method is to allow the applications to
 check and, if needed, to extract all the dependencies of a given style in order
 to replicate it in another document.
 
-The C<insert_style()> method requires a style object as its only one mandatory
-argument. It's return value is the style itself.
+The register a new style in a document, the generic C<insert_element()> and
+C<append_element()> method are not appropriate. The document-based
+C<insert_style()> method, that partly hides the complex ODF style storage
+logic, must be used instead:
 
-Note: a style may be created "in place" by C<insert_style()> if the first
+   $doc->insert_style($s);
+
+C<insert_style()> requires a style object as its only one mandatory argument.
+It's return value is the style itself.
+
+Note that C<register_style()> is an alias of C<insert_style()>.
+
+Alternatively, it's possible to register a style using the C<register()> method
+of the C<odf_style> class. So, the two following instructions, assuming that
+C<$doc> is a C<odf_document> and C<$s> is a C<odf_style>, are equivalent:
+
+   $doc->register_style($s);
+   $s->register($doc);
+
+Note that the C<register()> method of C<odf_style> allows the same optional
+parameters as the C<insert_style()> or C<register_style()> document-based
+method, provided that these parameters come after the mandatory argument that
+specifies the target document.
+
+A style should not be registered in a document when it's already registered
+in another document. If you need to replicate a style in multiple documents,
+you should make copies:
+
+   $style->clone->register($_) for @many_documents;
+
+A style may be created "in place" by C<insert_style()> if the first
 argument is an array ref instead of an existing style element. The array ref
 must contain the arguments of C<odf_create_style()> in the same order. So the
 two instructions below (that create and register a text style whose font weight
@@ -121,33 +140,24 @@ the style is registered as a I<default style>. A default style is a style that
 automatically applies to elements whose style is not explicitly specified. A
 document can contain at most one default style for a style family, so any
 registration of a default style replaces any existing default style of the same
-family.
+family. So the following example sets a default paragraph style whose alignment
+rule is C<'justify'>:
+
+   $ps = odf_create_style('paragraph', align => 'justify');
+   $doc->insert_style($ps, default => TRUE);
+
+Note that the instruction below is equivalent:
+
+   $ps = odf_create_style('paragraph', align => 'justify')
+            ->register($doc, default => TRUE);
+
+Such a default style definition means that, in the document, every paragraph
+without specified style will be justified.
 
 All styles can't be used as default styles. Default styles are allowed
 for the following families: C<paragraph>, C<text>, C<section>, C<table>,
 C<table column>, C<table row>, C<table cell>, C<table page>, C<chart>,
 C<drawing page>, C<graphic>, C<presentation>, C<control> and C<ruby>.
-
-The following example creates a paragraph style with a C<align> property, then
-registers it as the default paragraph style of a document (meaning that, in
-this document, every paragraph without specified style will be justified):
-
-   $ps = odf_create_style('paragraph', align => 'justify');
-   $doc->insert_style($ps, default => TRUE);
-
-Note that the C<register()> method of C<odf_style> allows the same optional
-parameters as the C<insert_style()> or C<register_style()> document-based
-method, provided that these parameters come after the mandatory argument that
-specifies the target document. So the example above could be replaced by the
-instruction below:
-
-   $ps = odf_create_style('paragraph', align => 'justify')
-            ->register($doc, default => TRUE);
-
-Some styles may have a I<class> property, that is an informative attribute, and
-that should not be confused with the I<family>. A family is an application-
-defined property, used in order to identify a set of styles belonging to various
-families, for retrieval needs.
 
 An existing style may be retrieved in a document using the C<get_style()>
 document-based method. This method requires a family as its first argument and
@@ -167,6 +177,33 @@ These two instructions may be replaced by the following:
    $doc1->get_style('paragraph', 'MyParagraphStyle')
             ->clone
             ->register($doc2, default => TRUE);
+
+Knowing that a style may be C<automatic> or not, and that it may be stored
+in the C<CONTENT> or C<STYLE> part of a document, C<insert_style()> silently
+selects the options that work in most typical situations according to the
+style family. However, it's sometimes useful or necessary to store a style
+in a specific, non default way. To do so, C<insert_style()> (and its
+derivatives) allows the following additional options:
+
+=over
+
+=item *
+
+C<automatic>: boolean; if C<TRUE>, the style is stored as automatic, if
+C<FALSE>, it's stored as common, and if C<undef>, it's stored according to
+the lpOD's choice (that depends on the style family);
+
+=item *
+
+C<part>: may be C<CONTENT> or C<STYLE> (note that as soon as the storage part
+is C<CONTENT>, the style will be I<automatic>, whatever the value of the
+C<automatic> parameter, if any).
+
+=back
+
+These two last options are ignored if C<default> is C<TRUE>.
+
+Now, back to the style customization.
 
 While a style is identified by name and family, it owns one or more sets of
 properties. A style property is a particular layout or formatting behavior.
@@ -941,6 +978,9 @@ C<shadow> property. However, while a table covers a rectangular area, the
 C<border xxx> properties are not defined at the table style level; the borders
 are cell properties.
 
+A C<set_shadow()> method is available; its options are the same as the
+C<set_shadow()> method for graphic styles.
+
 =head2   Cell styles
 
 A cell style is created using C<odf_create_style()> with C<table cell> as the
@@ -966,7 +1006,20 @@ C<shadow>: idem.
 
 =back
 
-The C<set_background()> method is allowed (with C<color> or C<uri>).
+The C<set_background()> method is allowed with C<color> or C<url> (while C<url>
+may be replaced by C<image>). Note that for this kind of style the C<url> or
+C<image> is not a standard link but a symbolic resource name depending on
+the viewer. More generally, C<set_background()> works with cell styles in the
+same way as with graphic styles.
+
+I<Caution>: The most used ODF presentation software tools don't handle tables
+and table-related styles in the same way as ODF text or spreadsheet processors.
+If C<set_background()> is executed when the cell style object is not registered
+in a document, lpOD doesn't know the type of the target document, so it selects
+a default behavior that is appropriate for text and spreadsheet documents. If
+the target document type is a presentation, the user should ensure that the
+style is registered before calling C<set_background()>. Alternatively, it's
+possible to use the C<fill()> method, that works for presentation table cells.
 
 =head2  Column styles
 
@@ -1054,22 +1107,59 @@ the surrounding text (number and length unit, like '1cm');
 
 =item
 
-C<padding>: the space between the border and the content (number and length
-unit, like '1cm');
+C<'red'>, C<'green'>, and/or C<'blue'> specify a color correction parameter,
+provided as a positive or negative percentage (a trailing percent sign should
+appear in the given value);
 
 =item
 
-C<background color>: self explained;
+C<padding>: the space between the border and the content (number and length
+unit, like '1cm');
 
 =back
 
-However, knowing that the most part of them belong to the ODF drawing ("draw")
-name space, the lpOD API automatically regards any property specified without
-name space prefix as a "draw" property (i.e. the C<draw:blue> color correction
-property may be wrote C<blue> when used as a C<set_properties()> parameter).
+A lot of other parameters are allowed; to get a full list, the user shoud have
+a look at the I<Graphic styles> chapter in the public ODF specification. Note
+that many ot them are C<draw> options, i.e. their names begin with the C<draw>
+prefix; so if an option is set without prefix, lpOD generally regard it as
+a C<draw> option. Among the exceptions, the C<wrap> and C<run through> options
+correspond to ODF attributes whose prefix is C<style>, while C<clip> stands for
+C<fo:clip>; lpOD can handle these exceptions, so the prefix is not required
+with these options, too.
 
-Among the exceptions, the C<wrap> and C<run through> options correspond to
-ODF attributes whose prefix is C<style>, while C<clip> stands for C<fo:clip>
+The C<set_background()> method may be used in the same way as with other style
+families. Example:
+
+      my $fs = odf_style->create(
+         'graphic',
+         name     => "MyFrameStyle",
+         border   => "1.5mm wave #00aa00"
+      );
+      $fs->set_background(color => 'yellow');
+
+A graphic style supports optional I<shadow> parameters. Thanks to the
+C<set_shadow()> method, the most used ones may be easily handled. This
+method may be used with the following options:
+
+=over
+
+=item
+
+C<color> specifies the color of the shadow; the default is black;
+
+=item
+
+C<offset> controls the horizontal and vertical offset of the shadow; these
+two values may be provided either as a comma-separated string or as a string
+list reference; each one may be positive ot negative and should include a
+trailing length unit string; the default is C<['3mm', '3mm']>, giving a
+bottom-right 3mm shadow. Starting from the previous example, the following
+instruction adds a light green shadow whose origin point is located 4mm west
+and 2mm south from the origin point of the related object.
+
+        $sc->set_shadow(color => 'light green', offset => '-4mm, 2mm');
+
+=back
 
 The following example creates a graphic style with 50% transparency, 10% green
 color adjustment and 5% luminance adjustment, for frames that will appear in
