@@ -458,10 +458,26 @@ argument must be loaded in the ODF package (works only if the calling frame
 is attached to a document); a C<size> optional parameter allows the
 application to explicitly force a particular size.
 
+The following example loads a image file according to a given URL in the
+document package, associates it to the calling C<odf_frame> object, and
+resizes the frame according to given width and height:
+
+        $frame->set_image(
+                "http://my.images/logo.png",
+                load    => TRUE,
+                size    => "5cm, 8cm"
+                );
+
 If no C<size> parameter is provided and if the calling frame has no previously
 defined size, then C<set_image()> tries to automatically detect the size of
-the given resource. Note that such detection may be very costly if the image
-resource is remote.
+the given resource. Note that such detection may be very costly, especially
+if the image resource is remote. The best option definitely consists of
+providing an explicit size each time this size may be known and/or fixed by the
+application.
+
+Caution: The C<load> option can't work if the calling frame is not in a
+document, because the storage space of the image is the document container, not
+the frame.
 
 =back
 
@@ -510,17 +526,38 @@ provide explicit frame sizes in any intensive application.
 Note that the L<ODF::lpOD::Document> class provides a C<add_image_file()>
 method that can import external image files in the ODF package. In array
 context, this method returns both the internal path of the image and, if
-possible, the image size.
+possible, the original image size.
+
+Caution: the automatic image sizing feature provided by lpOD uses the I<point>
+(pt) as length unit, not an absolute length unit (such as the millimeter or the
+inch); so it may ensure a correct aspect ratio but the real display size may
+depend on the rendering environment.
 
 The following sequence imports an image file, creates a frame that uses it,
 then attach the frame to a newly appended paragraph (so the image will appear
 at the very end of a text document):
 
-   my ($path, $size) = $doc->add_image_file('/home/images/logo.png');
-   my $frame = odf_create_image_frame($path, size => $size);
-   my $paragraph = $doc->get_body->append_element(odf_create_paragraph);
-   $paragraph->append_element($frame);
+        my ($path, $size) = $doc->add_image_file('/home/images/logo.png');
+        my $frame = odf_create_image_frame($path, size => $size);
+        my $paragraph = $doc->get_body->append_element(odf_create_paragraph);
+        $paragraph->append_element($frame);
 
+The same job could be done another way:
+
+        my $frame = odf_frame->create;
+        my $paragraph = $doc->get_body->append_element(odf_create_paragraph);
+        $paragraph->append_element($frame);
+        $frame->set_image('/home/images/logo.png', load => TRUE);
+
+Note that it's strongly recommended, each time it's possible, to set an
+application-provided size, in order to avoid the costly automatic size
+detection.
+
+Beware that a size of 0x0 is sometimes interpreted as "original size" by
+the office software. If so, the best option consists of providing a C<size>
+parameter set to C<"0,0">: it may avoid useless processing, because the
+frame is automatically sized by the rendering software, instead of being
+extracted by lpOD.
 
 =head1  Drawing shapes
 

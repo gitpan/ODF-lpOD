@@ -722,8 +722,8 @@ sub     get_type
 #=============================================================================
 package ODF::lpOD::Frame;
 use base 'ODF::lpOD::Area';
-our $VERSION    = '1.006';
-use constant PACKAGE_DATE => '2012-02-05T15:23:33';
+our $VERSION    = '1.007';
+use constant PACKAGE_DATE => '2012-02-20T08:25:26';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -844,9 +844,29 @@ sub     set_image
                 {
                 unless ($sized)
                         {
-                        my $doc = undef;
+                        my $doc;
+                        my $size;
                         $doc = $self->get_document if $source =~ /^Pictures\//;
-                        $self->set_size(image_size($source, $doc));
+                        if ($doc)
+                                {
+                                my $st = $doc->get_stored_part($source);
+                                if ($st->{data})
+                                        {
+                                        $size = is_true($st->{string}) ?
+                                                image_size(\$st->{data}) :
+                                                image_size($st->{data});
+                                        }
+                                else
+                                        {
+                                        $size = image_size
+                                                ($source, document => $doc);
+                                        }
+                                }
+                        else
+                                {
+                                $size = image_size($source);
+                                }
+                        $self->set_size($size);
                         }
                 }
         $image->set_attribute('xlink:href' => $link);

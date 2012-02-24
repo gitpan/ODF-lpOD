@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #=============================================================================
-# lpod_test        lpOD-Perl installation test     2012-01-20T10:47:00
+# lpod_test        lpOD-Perl installation test     2012-02-21T09:31:41
 #=============================================================================
 use 5.010_000;
 use strict;
@@ -263,14 +263,14 @@ my $ht = $header->append_element(
 
 # Image frame creation
 my $img_path = lpod->installation_path() . '/data/oasis_odf_logo.png';
-my $img = $doc->add_image_file($img_path);
+my ($img, $size) = $doc->add_image_file($img_path);
 my $fr = $ht->get_cell("A1")
         ->append_element(odf_create_paragraph(style => "Basic"))
         ->append_element(
                 odf_create_image_frame(
                         $img,
                         name    => "Logo",
-                        size    => "170pt, 251pt",
+			size    => $size,
                         title   => "OASIS ODF logo"
                         )
                 );

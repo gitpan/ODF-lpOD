@@ -11,8 +11,8 @@ use     strict;
 #       Common lpOD/Perl parameters and utility functions
 #=============================================================================
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.011';
-use constant PACKAGE_DATE       => '2012-02-05T16:41:30';
+our	$VERSION	        = '1.012';
+use constant PACKAGE_DATE       => '2012-02-21T08:57:44';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -725,28 +725,34 @@ sub     load_file
         my $url         = shift         or return undef;
         my $mode        = shift         // ':utf8';
 
-        if (ref $url || $url !~ /:/)
+        if (! ref $url and $url =~ /:/ and uc($url) !~ /^[A-Z]:/)
                 {
-                require File::Slurp;
-                return scalar File::Slurp::read_file
-                        ($url, binmode => $mode);
+                require LWP::Simple;
+                $url =~ s{\\}{/};
+                return LWP::Simple::get($url);
                 }
         else
                 {
-                require LWP::Simple;
-                return LWP::Simple::get($url);
+                return undef unless ref $url or -r -f -e $url;
+                require File::Slurp;
+                return scalar File::Slurp::read_file
+                        ($url, binmode => $mode);
                 }
         }
 
 sub     image_size
         {
         my $url         = shift       or return undef;
-        my $doc         = shift;
+        my %opt         = @_;
         my $source;
 
-        if ($doc)
+        if (ref $url eq 'SCALAR')
                 {
-                $source = \($doc->get_part($url));
+                $source = $url;
+                }
+        elsif ($opt{document})
+                {
+                $source = \($opt{document}->get_part($url));
                 }
         else
                 {
@@ -758,12 +764,18 @@ sub     image_size
                 require Image::Size;
                 my ($w, $h) = Image::Size::imgsize($source);
                 return undef    unless defined $w;
-                $w .= 'pt'; $h .= 'pt';
-                return wantarray ? ($w, $h) : [$w, $h];
+                if (wantarray)
+                        {
+                        return ($w, $h);
+                        }
+                else
+                        {
+                        $w .= 'pt'; $h .= 'pt';
+                        return [$w, $h];
+                        }
                 }
         else
                 {
-                alert "Image source not available";
                 return undef;
                 }
         }

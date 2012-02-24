@@ -1,3 +1,8 @@
+1.119   2012-02-21
+  - StructuredContainer.pm: image frames automatic sizing improved.
+  - Common.pm: image_size() and load_file() bug fix (#74974) and improvements.
+  - Document.pm: add_image_file() improved, file import through URLs now
+  supported.
 1.118   2012-02-05
   - StructuredContainer.pm: improved image frame related stuff.
   - Document.pm: allowed remote part load.

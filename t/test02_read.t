@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #=============================================================================
-# test02_read.t         lpOD-Perl installation test     2012-01-20T12:24:37
+# test02_read.t         lpOD-Perl installation test     2012-02-21T09:37:57
 #=============================================================================
 use 5.010_000;
 use strict;
@@ -20,6 +20,7 @@ our %desc = (
         "lpOD build"                    => ODF::lpOD->PACKAGE_DATE,
         "lpOD installation path"        => lpod->installation_path,
         "XML::Twig version"             => $XML::Twig::VERSION,
+        "Archive::Zip version"          => $Archive::Zip::VERSION,
         "Perl version"                  => $],
         "Platform"                      => $^O
         );

@@ -1,11 +1,11 @@
 #!/usr/bin/perl -w
 #=============================================================================
-# test01_write.t        lpOD-Perl installation test     2012-01-20T12:24:37
+# test01_write.t        lpOD-Perl installation test     2012-02-21T09:34:32
 #=============================================================================
 use 5.010_000;
 use strict;
 use Test;
-BEGIN   { plan tests => 15 }
+BEGIN   { plan tests => 16 }
 
 use ODF::lpOD;
 
@@ -20,6 +20,7 @@ our %desc = (
         "lpOD build"                    => ODF::lpOD->PACKAGE_DATE,
         "lpOD installation path"        => lpod->installation_path,
         "XML::Twig version"             => $XML::Twig::VERSION,
+        "Archive::Zip version"          => $Archive::Zip::VERSION,
         "Perl version"                  => $],
         "Platform"                      => $^O
         );
@@ -264,14 +265,15 @@ ok($ht && $ht->isa(odf_table));
 
 # Image frame creation
 my $img_path = lpod->installation_path() . '/data/oasis_odf_logo.png';
-my $img = $doc->add_image_file($img_path);
+my ($img, $size) = $doc->add_image_file($img_path);
+ok($size);
 my $fr = $ht->get_cell("A1")
         ->append_element(odf_create_paragraph(style => "Basic"))
         ->append_element(
                 odf_create_image_frame(
                         $img,
                         name    => "Logo",
-                        size    => "170pt, 251pt",
+                        size    => $size,
                         title   => "OASIS ODF logo"
                         )
                 );

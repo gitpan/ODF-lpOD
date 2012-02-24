@@ -11,8 +11,8 @@ use strict;
 #       The ODF Document class definition
 #=============================================================================
 package ODF::lpOD::Document;
-our     $VERSION    = '1.009';
-use     constant PACKAGE_DATE => '2012-02-03T11:15:47';
+our     $VERSION    = '1.010';
+use     constant PACKAGE_DATE => '2012-02-19T19:13:31';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -146,6 +146,27 @@ sub     get_container
         return $container;
         }
 
+sub     contains
+        {
+        my $self        = shift;
+        my $container   = $self->get_container  or return undef;
+        return $container->contains(@_);
+        }
+
+sub     parts
+        {
+        my $self        = shift;
+        my $container   = $self->get_container  or return undef;
+        return $container->parts;
+        }
+
+sub     get_stored_part
+        {
+        my $self        = shift;
+        my $container   = $self->get_container  or return undef;
+        return $container->get_stored_part(@_);
+        }
+
 sub     get_xmlpart
         {
         my $self        = shift;
@@ -243,16 +264,17 @@ sub     add_file
                 }
         my $source      = shift;
         my %opt         = @_;
-        $opt{path}      ||= $opt{part};
-        unless ($opt{path})
+        my $path        = $opt{path} || $opt{part};
+        delete @opt{qw(path part)};
+        unless ($path)
                 {
                 if ($opt{type} && $opt{type} =~ /^image/)
                         {
                         my $filename = file_parse($source);
-                        $opt{path} = 'Pictures/' . $filename;
+                        $path = 'Pictures/' . $filename;
                         }
                 }
-        my $path = $self->{container}->add_file($source, $opt{path});
+        $path = $self->{container}->add_file($source, $path, %opt);
         if ($path)
                 {
                 my $manifest = $self->get_part(MANIFEST);
@@ -271,7 +293,7 @@ sub     add_image_file
         my $source      = shift         or return undef;
         unless ($self->{container})
                 {
-                alert "No available container";
+                alert "No available ODF container";
                 return FALSE;
                 }
         my %opt         = @_;
@@ -281,26 +303,42 @@ sub     add_image_file
                 alert "No valid file name in $source";
                 return FALSE;
                 }
-        my $path  = 'Pictures/' . $filename;
-        $suffix //= 'unknown';
+        my $type        = $opt{type} || file_type($source) || "image/$suffix";
+        my $path        = 'Pictures/' . $filename;
+        $suffix         //= 'unknown';
 
-        my $image = $self->add_file($source, path => $path, @_)
-                or return undef;
-
-        my $manifest = $self->get_part(MANIFEST);
-        $manifest->set_entry
-                (
-                $path,
-                type => $opt{type} || file_type($source) || "image/$suffix"
-                )
-                if $manifest;
-
+        my ($link, $size);
         if (wantarray)
                 {
-                my $size = image_size($source);
-                return ($image, $size);
+                my $buffer = load_file($source, ':raw');
+                unless ($buffer)
+                        {
+                        alert "Resource $source not available";
+                        return undef;
+                        }
+                $size = image_size(\$buffer);
+                $link = $self->add_file
+                        (
+                        $buffer,
+                        string          => TRUE,
+                        path            => $path,
+                        type            => $type,
+                        @_
+                        );
+                return ($link, $size);
                 }
-        return $image;
+        else
+                {
+                $link = $self->add_file
+                        (
+                        $source,
+                        string          => FALSE,
+                        path            => $path,
+                        type            => $type,
+                        @_
+                        );
+                return $link;
+                }
         }
 
 sub     get_mimetype
@@ -970,8 +1008,8 @@ sub     set_font_declaration
 
 #=============================================================================
 package ODF::lpOD::Container;
-our	$VERSION	= '1.003';
-use constant PACKAGE_DATE => '2012-02-03T21:37:17';
+our	$VERSION	= '1.004';
+use constant PACKAGE_DATE => '2012-02-19T19:08:31';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use Archive::Zip        1.30    qw ( :DEFAULT :CONSTANTS :ERROR_CODES );
@@ -1160,22 +1198,8 @@ sub     raw_set_part
 
         my $compress = $opt{compress} // $COMPRESSION{$part_name} // FALSE;
         my $zip = $self->{zip};
-        my $p;
-        if ($opt{string})
-                {
-                $p = $zip->addString($data, $part_name);
-                }
-        else
-                {
-                unless ($data =~ /:/)
-                        {
-                        $p = $zip->addFileOrDirectory($data, $part_name);
-                        }
-                else
-                        {
-                        $p = $zip->addString(load_file($data), $part_name);
-                        }
-                }
+        my $buffer = is_true($opt{string}) ? $data : load_file($data, ':raw');
+        my $p = $zip->addString($buffer, $part_name);
 
         if ($p)
                 {
@@ -1268,6 +1292,13 @@ sub     add_file
         }
 
 #-----------------------------------------------------------------------------
+
+sub     get_stored_part
+        {
+        my $self        = shift;
+        my $part_name   = shift;
+        return $self->{stored}{$part_name};
+        }
 
 sub     get_part
         {

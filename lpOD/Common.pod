@@ -137,17 +137,33 @@ module is not installed, or if the resource is not supported by C<File::Type>.
 I<Beware: This function uses the C<File::Type> logic and don't determine the
 type according to the file name suffix.>
 
-=head3  image_size(file_path)
+=head3  image_size(image [, document => $doc])
 
 Returns the size, expressed in I<points> (C<pt>), of the image corresponding to
-the given file path (if any), or C<undef> (without error) if the C<Image::Size>
-module is not installed, if the given file is not available, or if the image
-type is not supported by C<Image::Size>.
+the given resurce, or C<undef> (without error) if the resource is not available,
+or if the image type is not supported by C<Image::Size>.
 
-The return value (if defined) is an array ref of 2 strings (the width and the
-height), each one containing a numeric value and terminated by "pt". This array
-ref may be directly used as the value of any size-related parameter or argument
-in the lpOD API.
+The argument may be a local file path, a regular URL, a file handle, or the
+reference of a in-memory buffer (scalar reference). If a C<document> optional
+parameter is provided, its value must be a C<odf_document> object and the first
+argument is interpreted as a I<document part identifier>; in such a situation,
+the image resource is looked for in the given document, allowing the user to
+get the orginal size of an image file previously loaded in the ODF file by
+another application.
+
+In scalar context, the return value (if defined) is an array ref of 2 strings
+(the width and the height), each one containing a numeric value and terminated
+by "pt". This array ref may be directly used as the value of any size-related
+parameter or argument in the lpOD API. In array context, C<image_size()>
+returns a list of 2 numeric values, namely the width and the height (both in
+points, but without the "pt" suffix).
+
+C<image_size()> may be used with a C<document> option whose value, if set, is
+an C<odf_document> object. When this option is provided, the image resource is
+looked for in the document container, and the first argument is regarded as the
+internal path in the ODF file. This option is intended to allow the user to
+get the original size of an image that was previously loaded in the document
+(probably by a desktop software or any other application).
 
 =head1  General configuration
 

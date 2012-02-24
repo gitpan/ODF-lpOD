@@ -64,6 +64,23 @@ handle files which comply with the ODF standard and whose type is I<text> (odt),
 I<spreadsheet> (ods), I<presentation> (odp) or I<drawing> (odg). It interacts
 directly with the files and doesn't depend on a particular office software.
 
+=head1  ABOUT lpOD
+
+This is the Perl implementation of the lpOD project.
+
+lpOD is a Free Software project that offers, for high level use cases, an
+application programming interface dedicated to document processing with the
+Python, Perl and Ruby languages. It's complying with the I<OASIS Open Document
+Format> (ODF), i.e. the I<ISO/IEC 26300> international standard.
+
+lpOD is designed according to a top-down approach. The API is bound to the
+document functional structure and the user's point of view. As a consequence,
+it may be used without full knowledge of the ODF specification, and allows the
+application developer to be focused on the business needs instead of the low
+level storage concerns.
+
+The lpOD API is object oriented.
+
 =head1  Basic document access principles
 
 The general access to the documents uses the C<odf_document> class. Before
