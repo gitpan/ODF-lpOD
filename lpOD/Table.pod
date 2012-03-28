@@ -270,6 +270,118 @@ underlying ODF cell.
 A column-based version of C<get_cells()> is available, too, but it should be
 avoided with large tables, and it may explicitly fail in C<read optimize> mode.
 
+=head1  Named cell ranges
+
+A spreadsheet may contain cell ranges identified by persistent names. lpOD
+allows the user to retrieve or create such named ranges in some situations.
+
+While it appear in a given table, a named range is not a table element; it's
+defined at the document level, so it's selected or inserted through document-
+based methods.
+
+An existing named range may be selected using C<get_named_range()> from the
+document. The name of the range is the only one required argument:
+
+        my $range = $doc->get_named_range("MyRange");
+
+The returned object is an C<ODF::lpOD::NamedRange>, whose description may be
+got through C<get_properties()>, that returns a hash (in array context) or
+a hash ref (in scalar context) that contains the following items:
+
+=over
+
+=item
+
+C<table>: the name of the table containing the range;
+
+=item
+
+C<start>: the alphanumeric coordinates of the first cell (ex: "C4");
+
+=item
+
+C<end>: the alphanumeric coordinates of the last cell (ex: "F12");
+
+=item
+
+C<range>: the alphanumeric range expression, including the C<start> and
+C<end> values, with a colon as separator (ex: "C4:F12"); this string may
+be used as the argument of the C<get_cells()> table-based method.
+
+=item
+
+C<usage>: the range usage, that can be either C<'none'> or a space-separated
+list that consists of any of the values C<'print-range'>, C<'filter'>,
+C<'repeat-row'> or C<'repeat-column'> (see the ODF specification for details
+about the effects of these options).
+
+=back
+
+The C<ODF::lpOD::NamedRange> class provides a C<get_cells()> method, that
+returns the same results as the table-based C<get_cells()>, but that doesn't
+require any argument. So, the two following sequences produce the same final
+result:
+
+        # first form
+        $p = $doc->get_named_range("RangeName");
+        $table = $doc->get_body->get_table($p->{table});
+        @cells = $table->get_cells($p->{range});
+
+        # second form
+        @cells = $doc->get_named_range("RangeName")->get_cells;
+
+A C<get_cell_values()> method is provided, too. It produces the same result
+as the table-based C<get_cell_values()> method, but, of course, it requires
+only one argument (the data type). Example:
+
+        $r = $doc->get_named_range("RangeName")->get_cell_values('float');
+        say "I found $r->[0] float values in the range";
+        say "...the min is $r->[1] and the max is $r->[2]";
+        say "...and the grand total is $r->[3]";
+
+The possible uses of C<get_cell_values()> are documented in the section
+dedicated to special cell value extractors in the present manual chapter.
+
+The document-based C<set_named_range()> method allows the applications to
+create new named ranges. It requires a unique range name as its first argument.
+The other parameters must be provides according to the same principles as the
+return value of C<get_properties()>, introduced above. As an example, the
+following instruction registers a new range running from "C4" to "F12", whose
+name is "MyArea" in the "Sheet1" table:
+
+        $doc->set_named_range(
+                "MyArea",
+                table   => "Sheet1",
+                range   => "C4:F12"
+        );
+
+The example below creates a named range whose properties are borrowed from
+an existing named range belonging to another document:
+
+        my $range_spec = $doc1->get_named_range("R1")->get_properties;
+        $doc2->set_named_range("R1", $range_spec);
+
+The C<'usage'> parameter is optional; it's default value is C<'none'>.
+
+The return value of C<set_named_range()> is the new named range object.
+
+The properties of an existing named range may be changed at any time using
+C<set_properties()>.
+
+Be careful: while the uniqueness of the name is checked by C<set_named_range()>
+there is no other consistency check. So the user is allowed to register a
+named range without table or range specification, or with a non existent table
+name, or with a range where the starting cell comes after the ending one.
+
+A named range, once retrieved, may be removed using the standard C<delete()>
+element-based method. Example:
+
+        $nr = $doc->get_named_range("MyRange");
+        $nr && $nr->delete;
+
+Note that C<get_named_range()> and C<set_named_range()> work in
+I<spreadsheet documents> only.
+
 =head1  Row and column customization
 
 The objects returned by C<get_row> and C<get_column> can be customized

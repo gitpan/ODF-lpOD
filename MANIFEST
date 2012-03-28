@@ -33,3 +33,4 @@ lpOD/Tutorial.pod
 t/test01_write.t
 t/test02_read.t
 META.yml                                 Module meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

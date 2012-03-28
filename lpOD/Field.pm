@@ -1,7 +1,7 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Copyright (c) 2012 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
@@ -12,8 +12,8 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Field;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-01-09T15:03:28';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2012-03-28T09:14:15';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -37,7 +37,6 @@ sub     create
                 text    => undef,
                 @_
                 );
-
         my $field = ODF::lpOD::Element->create($tag);
         unless ($field)
                 {
@@ -124,7 +123,7 @@ sub     get_value
                 {
                 when ('string')
                         {
-                        $value = $self->get_text;
+                        $value = $self->get_attribute('office:string-value');
                         }
                 when (['date', 'time'])
                         {
@@ -211,12 +210,13 @@ sub     get_text
 #=============================================================================
 package ODF::lpOD::UserVariable;
 use base 'ODF::lpOD::Variable';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:34:47';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2012-03-14T15:26:44';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub     context_path            { CONTENT, '//text:user-field-decls' }
+sub     context_tag     { 'text:user-field-decls' }
+sub     context_path    { CONTENT, ('//' . context_tag) }
 
 sub     _create { ODF::lpOD::UserVariable->create(@_) }
 
@@ -227,18 +227,19 @@ sub     create
         my $caller      = shift;
         return bless
                 ODF::lpOD::Field->create('text:user-field-decl', @_),
-                __PACKAGE__;        
+                __PACKAGE__;
         }
 
 #=============================================================================
 package ODF::lpOD::SimpleVariable;
 use base 'ODF::lpOD::Variable';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T22:34:38';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2012-03-14T15:28:42';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub     context_path            { CONTENT, '//text:variable-decls' }
+sub     context_tag     { 'text:variable-decls'}
+sub     context_path    { CONTENT, ('//' . context_tag) }
 
 #-----------------------------------------------------------------------------
 
@@ -315,7 +316,7 @@ sub	set_class
 	{
 	my $self	= shift;
 	return classify($self);
-	}        
+	}
 
 sub	set_style
 	{

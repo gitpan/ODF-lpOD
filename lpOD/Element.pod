@@ -410,6 +410,10 @@ the attribute doesn't exist. The argument may be the exact XML name of the
 attribute, or an "approximative" name according to the same logic as
 C<get_attribute> below.
 
+=head3  export
+
+Same as C<serialize()> introduced later.
+
 =head3  get_attribute(name)
 
 Returns the string value of the attribute having this name. The argument may
@@ -505,8 +509,9 @@ are equivalent:
 
 Returns an XML export of the calling element, allowing the lpOD applications to
 store and/or transmit particular pieces of documents, and not only full
-documents. The C<pretty> option is allowed, like with the C<serialize> method
-of C<odf_part> objects, described in L<ODF::lpOD::Document>.
+documents. The C<pretty> or C<indent> option is allowed, like with the
+C<serialize> method of C<odf_part> objects, described in
+L<ODF::lpOD::Document>.
 
 Note that this XML export is not affected by the content encoding/decoding
 mechanism that works for user content, so it's character doesn't depend on

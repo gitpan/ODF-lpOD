@@ -11,8 +11,8 @@ use     strict;
 #       Base ODF element class and some derivatives
 #=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.012';
-use constant PACKAGE_DATE => '2012-02-03T09:59:23';
+our     $VERSION        = '1.013';
+use constant PACKAGE_DATE => '2012-03-26T08:40:00';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -65,7 +65,8 @@ our %CLASS    =
                                         => odf_presentation_page_layout,
         'style:header-style'            => odf_page_end_style,
         'style:footer-style'            => odf_page_end_style,
-        'text:table-of-content'         => odf_toc
+        'text:table-of-content'         => odf_toc,
+        'table:named-range'             => odf_named_range
         );
 
 sub     get_class_map   { %CLASS }
@@ -110,6 +111,7 @@ BEGIN
         *get_document_part              = *lpod_part;
         *get_document                   = *document;
         *get_document_type              = *document_type;
+        *export                         = *serialize;
         }
 
 #=== exported constructor ====================================================
@@ -785,6 +787,17 @@ sub     get_element_by_id
         return $self->get_element($tag, attribute => 'id', value => shift);
         }
 
+sub     get_element_by_name
+        {
+        my $self        = shift;
+        my $name        = shift;
+        unless ($name)
+                {
+                alert "Missing object name"; return undef;
+                }
+        return $self->get_element($name, attribute => 'name', value => shift);
+        }
+
 sub     get_elements
         {
         my $self        = shift;
@@ -1012,13 +1025,7 @@ sub     get_table_by_name
         {
         my $self        = shift;
         my $name        = shift;
-        unless (defined $name)
-                {
-                alert "Missing table name";
-                return FALSE;
-                }
-        return $self->get_element
-                ('table:table', attribute => 'name', value => $name);
+        return $self->get_element_by_name('table:table', $name);
         }
 
 sub     get_table_by_position
@@ -1987,14 +1994,14 @@ sub     serialize
         my $self        = shift;
         my %opt         = process_options
                 (
-                pretty          => lpod->debug,
                 empty_tags      => EMPTY_TAGS,
                 @_
                 );
 
+        $opt{pretty} //= ($opt{indent} // lpod->debug);
         $self->set_pretty_print(PRETTY_PRINT) if is_true($opt{pretty});
         $self->set_empty_tag_style($opt{empty_tags});
-        delete @opt{qw(pretty empty_tags)};
+        delete @opt{qw(pretty indent empty_tags)};
         return $self->sprint(%opt);
         }
 

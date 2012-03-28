@@ -2188,4 +2188,113 @@ sub     clear
         }
 
 #=============================================================================
+#       Named ranges
+#-----------------------------------------------------------------------------
+package ODF::lpOD::NamedRange;
+use base 'ODF::lpOD::Element';
+our $VERSION                    = '1.000';
+use constant PACKAGE_DATE       => '2012-03-28T19:11:42';
+use ODF::lpOD::Common;
+#-----------------------------------------------------------------------------
+
+sub     create
+        {
+        my $caller      = shift;
+        return ODF::lpOD::Element->create('table:named-range');
+        }
+
+#-----------------------------------------------------------------------------
+
+sub     set_name
+        {
+        my $self        = shift;
+        my $name        = shift         or return undef;
+        my $old = $self->get_attribute('name');
+        my $doc = $self->document;
+        if ($doc and ($name ne $old) and $doc->get_named_range($name))
+                {
+                alert "Named range $name already exists";
+                return undef;
+                }
+        return $self->set_attribute('name' => $name);
+        }
+
+sub     get_properties
+        {
+        my $self        = shift;
+        my (%p, $t, $b, $s, $e);
+        my $range = $self->get_attribute('table:cell-range-address');
+        my $base = $self->get_attribute('table:base-cell-address');
+        for ($range, $base)
+                {
+                if ($_) { $_ =~ s/\$//g; $_ =~ s/://g; }
+                }
+        ($p{table}, $b) = split(/\./, $base)            if $base;
+        ($t, $p{start}, $p{end}) = split(/\./, $range)  if $range;
+        $p{table} ||= $t;
+        $p{range} = $p{start} . ':' . $p{end}
+                if defined $p{start} and defined $p{end};
+        $p{usage} = $self->get_attribute('range usable as') || 'none';
+        return wantarray ? %p : {%p};
+        }
+
+sub     set_properties
+        {
+        my $self        = shift;
+        my $att = shift;
+        my %att = ref $att ? %{$att} : ($att, @_);
+        my $t = ref $att{table} ? $att{table}->get_name : $att{table};
+        my %old = $self->get_properties;
+        $att{$_} //= $old{$_} for keys %old;
+        if ($att{range})
+                {
+                ($att{start}, $att{end}) = split(/:/, $att{range});
+                delete $att{range};
+                }
+
+        $att{'base cell address'}       ||=
+                        $t . '.' . $att{start};
+        $att{'cell range address'}      ||=
+                        $t . '.' . $att{start} . ':.' . $att{end};
+        $att{'range usable as'}         ||=
+                        ($att{usage} // 'none');
+        delete @att{qw(table start end usage)};
+
+        $self->set_attributes(%att);
+        }
+
+sub     _get_range_access
+        {
+        my $self        = shift;
+        my $doc = $self->document;
+        unless ($doc)
+                {
+                alert "Not in document"; return undef;
+                }
+        my $context = $doc->get_body('spreadsheet');
+        my $p = $self->get_properties;
+        my $t = $context->get_table($p->{table});
+        unless ($t)
+                {
+                alert "Unknown table"; return FALSE;
+                }
+        return ($t, $p->{range});
+        }
+
+sub     get_cells
+        {
+        my $self        = shift;
+        my ($t, $range) = $self->_get_range_access;
+        return $t ? $t->get_cells($range, @_) : undef;
+        }
+
+sub     get_cell_values
+        {
+        my $self        = shift;
+        my $type        = shift;
+        my ($t, $range) = $self->_get_range_access;
+        return $t ? $t->get_cell_values($type, $range) : undef;
+        }
+
+#=============================================================================
 1;

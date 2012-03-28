@@ -1,7 +1,7 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Copyright (c) 2012 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
@@ -11,8 +11,8 @@ use strict;
 #       The ODF Document class definition
 #=============================================================================
 package ODF::lpOD::Document;
-our     $VERSION    = '1.010';
-use     constant PACKAGE_DATE => '2012-02-19T19:13:31';
+our     $VERSION    = '1.011';
+use     constant PACKAGE_DATE => '2012-03-28T17:58:10';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -106,7 +106,7 @@ sub     new
                 $self->{container} = ODF::lpOD::Container->new
                                 (uri => $self->{uri}) or return undef;
                 }
-        $self->{pretty} //= lpod->debug;
+        $self->{pretty} //= ($self->{indent} // lpod->debug);
         return $self;
         }
 
@@ -205,7 +205,7 @@ sub     loaded_xmlparts
 sub     get_body
         {
         my $self        = shift;
-        return $self->get_xmlpart(CONTENT)->get_body;
+        return $self->content->get_body(@_);
         }
 
 sub     get_part
@@ -222,6 +222,30 @@ sub     get_part
                 {
                 return $container->get_part($part_name, @_);
                 }
+        }
+
+sub     content
+        {
+        my $self        = shift;
+        return $self->get_xmlpart(CONTENT);
+        }
+
+sub     meta
+        {
+        my $self        = shift;
+        return $self->get_xmlpart(META);
+        }
+
+sub     styles
+        {
+        my $self        = shift;
+        return $self->get_xmlpart(STYLES);
+        }
+
+sub     manifest
+        {
+        my $self        = shift;
+        return $self->get_xmlpart(MANIFEST);
         }
 
 sub     get_parts
@@ -376,7 +400,7 @@ sub     save
         my $container   = $self->get_container(warning => TRUE)
                                 or return FALSE;
         my %opt         = @_;
-        $opt{pretty} //= $opt{indent};
+        $opt{pretty} //= ($opt{indent} // lpod->debug);
         my $pretty = $opt{pretty};
         delete @opt{qw(pretty indent)};
         foreach my $part_name ($self->loaded_xmlparts)
@@ -946,6 +970,7 @@ sub     set_variable
                 type    => 'string',
                 @_
                 );
+
         my $class = $opt{class};
         my $context = $opt{context};
         delete @opt{qw(class context)};
@@ -954,11 +979,11 @@ sub     set_variable
                 {
                 when ('user')
                         {
-                        $var = ODF::lpOD::UserVariable::create(%opt);
+                        $var = ODF::lpOD::UserVariable->create(%opt);
                         }
                 when ('simple')
                         {
-                        $var = ODF::lpOD::SimpleVariable::create(%opt);
+                        $var = ODF::lpOD::SimpleVariable->create(%opt);
                         }
                 default
                         {
@@ -967,7 +992,8 @@ sub     set_variable
                 }
         if ($var)
                 {
-                $context //= $self->get_required_context($var);
+                my $tag = $var->context_tag;
+                $context //= $self->get_body->set_first_child($tag);
                 if ($context)
                         {
                         $context->append_element($var);
@@ -993,6 +1019,20 @@ sub     get_toc
         {
         my $self        = shift;
         return $self->get_part(CONTENT)->get_toc(@_);
+        }
+
+#--- named range handling ----------------------------------------------------
+
+sub     get_named_range
+        {
+        my $self        = shift;
+        return $self->get_part(CONTENT)->get_named_range(@_);
+        }
+
+sub     set_named_range
+        {
+        my $self        = shift;
+        return $self->get_part(CONTENT)->set_named_range(@_);
         }
 
 #--- font declaration --------------------------------------------------------
@@ -1396,8 +1436,8 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '1.005';
-use constant PACKAGE_DATE => '2011-03-23T08:33:57';
+our     $VERSION    = '1.006';
+use constant PACKAGE_DATE => '2012-03-28T08:36:10';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1407,6 +1447,7 @@ BEGIN   {
         *get_document           = *document;
         *root                   = *get_root;
         *get_element_list       = *get_elements;
+        *export                 = *serialize;
         }
 
 sub     class_of
@@ -1490,6 +1531,7 @@ sub     new
                 {
                 alert "Unknown ODF XML part"; return FALSE;
                 }
+        $self->{pretty} //= ($self->{indent} // lpod->debug);
         $self->{pretty_print} = PRETTY_PRINT if is_true($self->{pretty});
         $self->{twig} //= XML::Twig->new        # twig init
                                 (
@@ -1605,7 +1647,13 @@ sub     get_root
 sub     get_body
         {
         my $self        = shift;
+        my $tag         = shift;
         my $root = $self->get_root;
+        if ($tag)
+                {
+                $tag = 'office:' . $tag unless $tag =~ /:/;
+                return $root->get_xpath(('//office:body/' . $tag), 0);
+                }
         my $context = $root->get_xpath('//office:body', 0);
         return $context ?
                 $context->first_child
@@ -1632,12 +1680,11 @@ sub     serialize
         my $self        = shift;
         my %opt         =
                 (
-                pretty          => lpod->debug,
                 empty_tags      => EMPTY_TAGS,
                 output          => undef,
                 @_
                 );
-        $opt{pretty} //= $opt{indent};
+        $opt{pretty} //= ($self->{indent} // lpod->debug);
         $opt{pretty_print} = PRETTY_PRINT if is_true($opt{pretty});
         my $output = $opt{output};
         delete @opt{qw(pretty output indent)};
@@ -1868,8 +1915,8 @@ sub	substitute_styles
 #=============================================================================
 package ODF::lpOD::Content;
 use base 'ODF::lpOD::StyleContainer';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2011-06-10T09:11:42';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2012-03-26T08:18:17';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1884,17 +1931,41 @@ sub     get_toc
         {
         my $self        = shift;
         my $name        = shift;
-        unless ($name)
-                {
-                alert "Missing TOC name"; return undef;
-                }
         my $context = $self->get_body;
-        return $context->get_element
-                (
-                'text:table-of-content',
-                attribute       => 'name',
-                value           => $name
-                );
+        return $context->get_element_by_name('text:table-of-content', $name);
+        }
+
+sub     get_named_range
+        {
+        my $self        = shift;
+        my $context = $self->get_body('spreadsheet');
+        unless ($context)
+                {
+                alert "Not in spreadsheet context"; return undef;
+                }
+        return $context->get_element_by_name('table:named-range', @_);
+        }
+
+sub     set_named_range
+        {
+        my $self        = shift;
+        my $body = $self->get_body('spreadsheet');
+        unless ($body)
+                {
+                alert "Not in spreadsheet context"; return undef;
+                }
+        my $name        = shift;
+        my $old = $self->get_named_range($name);
+        if ($old)
+                {
+                alert "Named range $name already exists"; return undef;
+                }
+        my $context = $body->set_last_child('table:named-expressions');
+        my $nr = ODF::lpOD::NamedRange->create;
+        $nr->set_name($name);
+        $context->append_element($nr);
+        $nr->set_properties(@_);
+        return $nr;
         }
 
 sub     get_headings

@@ -192,7 +192,7 @@ C<get_body()> (knowing that the I<body> context is located inside the
 C<CONTENT>):
 
         sub process_paragraph   { say "Hello paragraph !" }
-        $doc = odf_get_document($filename);
+        $doc = odf_document->get($filename);
         $context = $doc->get_body;
         $content = $doc->get_part(
                 CONTENT,
@@ -281,6 +281,22 @@ below are equivalent:
 
         $context = $doc->get_body;
         $context = $doc->get_part(CONTENT)->get_body;
+
+Note that C<get_body()> may be called with an optional argument that specifies
+the type of content, typically C<'text'>, C<'spreadsheet'>, C<'presentation'>,
+or C<'drawing'>. Of course, a well-formed ODF document should contain only one
+body and its content type depends on the document type (for example the content
+type of a text document is always C<'text'>). Providing a content type to
+C<get_body()> is just a way among others to check the document type, knowing
+that this method returns C<undef>. Example:
+
+        my $context = $doc->get_body('spreadsheet');
+        if ($context) {
+                # do something
+        } else {
+                alert "We are not in spreadsheet context !";
+                exit;
+        }
 
 =head3  get_parts
 
@@ -527,6 +543,10 @@ reflected as soon as the physical resource is wrote back. However, a part-based
 method can't directly update the resource. The changes may be made persistent
 through a C<save()> method of the C<odf_document> object.
 
+=head3  export
+
+Same as C<serialize()>, introduced below.
+
 =head3  serialize
 
 This part-based method returns a full XML export of the part. The returned XML
@@ -537,20 +557,26 @@ This method may be ignored by users who just need to save created or changed
 documents in a regular compressed ODF format, because the document-based
 C<save()> method does the whole job.
 
-A C<pretty> named option may be provided. If set to C<TRUE>, this option
-specifies that the XML export should be as human-readable as possible.
+A C<indent> or C<pretty> named option may be provided. If set to C<TRUE>, this
+option specifies that the XML export should be indented, so as human-readable
+as possible. Indented XML is useful for debugging purposes, but a little more
+resource-consuming, so it should be avoided in production.
 
 The example below returns a conveniently indented XML representation of the
 content part of a document:
 
-        $doc = odf_get_document("C:\MyDocuments\test.odt");
+        $doc = odf_document->get("C:\MyDocuments\test.odt");
         $part = $doc->get_part(CONTENT);
-        $xml = part->serialize(pretty => TRUE);
+        $xml = $part->serialize(indent => TRUE);
 
-Note that this XML export is not affected by the content encoding/decoding
-mechanism that works for user content, so it's character set doesn't depend on
-the custom text output character set possibly selected through the
-C<set_output_charset()> method introduced in L<ODF::lpOD::Common>.
+Note that this XML export is not affected by the encoding/decoding mechanism
+that works for user content, so it's character set doesn't depend on the custom
+text output character set possibly selected through the C<set_output_charset()>
+method introduced in L<ODF::lpOD::Common>.
+
+lpOD allow the applications to export individually selected XML elements
+instead of full XML parts; to do so, a C<serialize()> or C<export()> element-
+based method is provided (see L<ODF::lpOD::Element>).
 
 =head3  store
 

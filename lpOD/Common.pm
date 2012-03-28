@@ -12,7 +12,7 @@ use     strict;
 #=============================================================================
 package ODF::lpOD::Common;
 our	$VERSION	        = '1.012';
-use constant PACKAGE_DATE       => '2012-02-21T08:57:44';
+use constant PACKAGE_DATE       => '2012-03-26T08:42:37';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -57,7 +57,7 @@ our @EXPORT     = qw
     odf_list odf_table odf_column odf_row odf_cell
     odf_matrix odf_column_group odf_row_group odf_table_element
     odf_structured_container
-    odf_section odf_toc
+    odf_section odf_toc odf_named_range
     odf_file_entry
 
     odf_style
@@ -167,6 +167,7 @@ use constant
     odf_drawing_page_style          => 'ODF::lpOD::DrawingPageStyle',
     odf_file_entry                  => 'ODF::lpOD::FileEntry',
     odf_toc                         => 'ODF::lpOD::TOC',
+    odf_named_range                 => 'ODF::lpOD::NamedRange',
     odf_structured_container        => 'ODF::lpOD::StructuredContainer'
     };
 

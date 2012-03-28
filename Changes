@@ -1,3 +1,11 @@
+1.120   2012-03-28
+  - Document.pm, Element.pm: added export() as synonym of serialize();
+  added 'indent' as synonym of 'pretty'.
+  - Field.pm: bug fix in set_value(); added specific get_text() and set_text().
+  - Element.pm: added get_element_by_name(); created ODF::lpOD::NamedRange.
+  - Table.pm: added ODF::lpOD::NamedRange.
+  - Document.pm, Field.pm: set_variable() bug fix #75515; added
+  get_named_range(), set_named_range(); get_body() improvement.
 1.119   2012-02-21
   - StructuredContainer.pm: image frames automatic sizing improved.
   - Common.pm: image_size() and load_file() bug fix (#74974) and improvements.
