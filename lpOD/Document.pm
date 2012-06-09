@@ -11,14 +11,15 @@ use strict;
 #       The ODF Document class definition
 #=============================================================================
 package ODF::lpOD::Document;
-our     $VERSION    = '1.011';
-use     constant PACKAGE_DATE => '2012-03-28T17:58:10';
+our     $VERSION    = '1.012';
+use     constant PACKAGE_DATE => '2012-05-14T20:23:56';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN   {
         *forget                 = *DESTROY;
         *container              = *get_container;
+        *body                   = *get_body;
         *add_part               = *add_file;
         *register_style         = *insert_style;
         }
@@ -227,25 +228,25 @@ sub     get_part
 sub     content
         {
         my $self        = shift;
-        return $self->get_xmlpart(CONTENT);
+        return $self->get_xmlpart(CONTENT, @_);
         }
 
 sub     meta
         {
         my $self        = shift;
-        return $self->get_xmlpart(META);
+        return $self->get_xmlpart(META, @_);
         }
 
 sub     styles
         {
         my $self        = shift;
-        return $self->get_xmlpart(STYLES);
+        return $self->get_xmlpart(STYLES, @_);
         }
 
 sub     manifest
         {
         my $self        = shift;
-        return $self->get_xmlpart(MANIFEST);
+        return $self->get_xmlpart(MANIFEST, @_);
         }
 
 sub     get_parts
@@ -1436,13 +1437,14 @@ sub     save
 
 #=============================================================================
 package ODF::lpOD::XMLPart;
-our     $VERSION    = '1.006';
-use constant PACKAGE_DATE => '2012-03-28T08:36:10';
+our     $VERSION    = '1.007';
+use constant PACKAGE_DATE => '2012-05-15T08:36:28';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 BEGIN   {
         *forget                 = *DESTROY;
+        *body                   = *get_body;
         *get_container          = *container;
         *get_document           = *document;
         *root                   = *get_root;
@@ -1915,8 +1917,8 @@ sub	substitute_styles
 #=============================================================================
 package ODF::lpOD::Content;
 use base 'ODF::lpOD::StyleContainer';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2012-03-26T08:18:17';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2012-03-29T08:25:40';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1961,10 +1963,8 @@ sub     set_named_range
                 alert "Named range $name already exists"; return undef;
                 }
         my $context = $body->set_last_child('table:named-expressions');
-        my $nr = ODF::lpOD::NamedRange->create;
-        $nr->set_name($name);
+        my $nr = ODF::lpOD::NamedRange->create($name, @_);
         $context->append_element($nr);
-        $nr->set_properties(@_);
         return $nr;
         }
 

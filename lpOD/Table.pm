@@ -2192,15 +2192,18 @@ sub     clear
 #-----------------------------------------------------------------------------
 package ODF::lpOD::NamedRange;
 use base 'ODF::lpOD::Element';
-our $VERSION                    = '1.000';
-use constant PACKAGE_DATE       => '2012-03-28T19:11:42';
+our $VERSION                    = '1.001';
+use constant PACKAGE_DATE       => '2012-03-29T08:06:56';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
 sub     create
         {
         my $caller      = shift;
-        return ODF::lpOD::Element->create('table:named-range');
+        my $nr = ODF::lpOD::Element->create('table:named-range');
+        $nr->set_attribute('name' => shift);
+        $nr->set_properties(@_);
+        return $nr;
         }
 
 #-----------------------------------------------------------------------------
@@ -2241,7 +2244,7 @@ sub     get_properties
 sub     set_properties
         {
         my $self        = shift;
-        my $att = shift;
+        my $att         = shift         or return undef;
         my %att = ref $att ? %{$att} : ($att, @_);
         my $t = ref $att{table} ? $att{table}->get_name : $att{table};
         my %old = $self->get_properties;

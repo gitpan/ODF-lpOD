@@ -1,3 +1,9 @@
+1.121   2012-05-15
+  - StructuredContainer.pm: list creation bug fix.
+  - Style.pm, Element.pm: outline style bug fix #76905; list style bug fix.
+  - Document.pm: improved and documented content(), meta(), styles(),
+  manifest() shortcuts; added syntactic sugar.
+  - Table.pm: improved ODF::lpOD::NamedRange->create().
 1.120   2012-03-28
   - Document.pm, Element.pm: added export() as synonym of serialize();
   added 'indent' as synonym of 'pretty'.

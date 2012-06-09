@@ -11,8 +11,8 @@ use     strict;
 #       Base ODF element class and some derivatives
 #=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.013';
-use constant PACKAGE_DATE => '2012-03-26T08:40:00';
+our     $VERSION        = '1.014';
+use constant PACKAGE_DATE => '2012-05-02T20:12:29';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -57,6 +57,8 @@ our %CLASS    =
         'text:list-style'               => odf_list_style,
         'text:list-level-style-number'  => odf_list_level_style,
         'text:list-level-style-bullet'  => odf_list_level_style,
+        'text:list-level-style-image'   => odf_list_level_style,
+        'text:outline-level-style'      => odf_list_level_style,
         'text:outline-style'            => odf_outline_style,
         'style:master-page'             => odf_master_page,
         'style:page-layout'             => odf_page_layout,

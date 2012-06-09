@@ -1,7 +1,25 @@
 #!/usr/bin/perl
 #=============================================================================
-# lpod_test        lpOD-Perl installation test     2012-02-21T09:31:41
+# lpod_test        lpOD-Perl installation test     2012-06-05T08:44:27
 #=============================================================================
+
+=head1  NAME
+
+lpod_test - ODF::lpOD installation test
+
+=head1  USAGE
+
+lpod_test <filename>
+
+=head1  SYNOPSIS
+
+Sample script that displays a basic information about the current ODF::lpOD
+installation.
+
+A sample ODF text document is generated if a filename is provided as argument.
+
+=cut
+
 use 5.010_000;
 use strict;
 use warnings;
@@ -49,13 +67,13 @@ my $doc = odf_document->create('text')
         or die "# Document initialisation failure. Stopped";
 
 # Main context access
-my $context = $doc->get_body;
+my $context = $doc->body;
 
 # Metadata access
-my $meta = $doc->get_part(META);
+my $meta = $doc->meta;
 
 # Styles context access
-my $styles = $doc->get_part(STYLES);
+my $styles = $doc->styles;
 
 #--- metadata settings -------------------------------------------------------
 

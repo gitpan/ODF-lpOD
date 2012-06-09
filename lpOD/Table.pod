@@ -275,7 +275,7 @@ avoided with large tables, and it may explicitly fail in C<read optimize> mode.
 A spreadsheet may contain cell ranges identified by persistent names. lpOD
 allows the user to retrieve or create such named ranges in some situations.
 
-While it appear in a given table, a named range is not a table element; it's
+While it appears in a given table, a named range is not a table element; it's
 defined at the document level, so it's selected or inserted through document-
 based methods.
 

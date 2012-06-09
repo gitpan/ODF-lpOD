@@ -30,14 +30,20 @@ family as its mandatory first argument. A name, that is the identifier of
 the style in the given family, is generally required. So, a typical style
 creation instruction looks like:
 
-   $s = odf_create_style('text', name => 'MyTextStyleName');
+    $s = odf_create_style('text', name => 'MyTextStyleName');
 
-The example above creates a named text style without any property. The
-properties are optionally passed as named parameters.
+The C<create()> constructor of the C<odf_style> class may be used instead of
+the C<odf_create_style()> functional constructor, so the instruction below
+produces the same effects as the previous one:
+
+   $s = odf_style->create('text', name => 'MyTextStyleName');
+
+This example creates a named text style without any property. The properties
+are optionally passed as named parameters.
 
 Note that in order to be really available in a document, a style, once created,
-must be registered in this document using C<insert_style()>, that is a
-C<odf_document> method, introduced below.
+must be registered in this document using C<insert_style()>
+or C<register_style>, that is a C<odf_document> method, introduced below.
 
 Additional named parameters may be required according to the family. An optional
 C<parent> argument, whose value is the name of another common style of
@@ -103,7 +109,7 @@ logic, must be used instead:
 C<insert_style()> requires a style object as its only one mandatory argument.
 It's return value is the style itself.
 
-Note that C<register_style()> is an alias of C<insert_style()>.
+Remember that C<register_style()> is an alias of C<insert_style()>.
 
 Alternatively, it's possible to register a style using the C<register()> method
 of the C<odf_style> class. So, the two following instructions, assuming that
@@ -692,9 +698,9 @@ If the C<bullet> type is selected, the affected items will be displayed after
 a special character (the "bullet"), which must be provided as a C<character>
 named argument, whose value is an UTF-8 character.
 
-If the C<image> type is selected, the URL of an image resource must be
-provided; the affected items will be displayed after a graphical mark whose
-content is an external image.
+If the C<image> type is selected, the image resource must be linked through
+a C<url> parameter; the affected items will be displayed after a graphical
+mark whose content is the corresponding image file.
 
 A C<number> list level type means that any affected list item will be marked
 with a leading computed number such as "1", "i", "(a)", or any auto-
@@ -777,19 +783,56 @@ bullet list level styles);
 
 =item
 
-C<height> and C<width>: the height and width of the image (for image list
-level styles).
+C<width> and C<height>: the width and height of the image (for image list
+level styles); note that there is no default size, so these parameters must
+be set in order to make the image visible.
+
+=item
+
+C<size>: a syntactic shortcut that replaces C<width> and C<height>; if
+provided, this option may be either a comma-separated string containing
+the width then the height, or an array ref of two strings in the same order.
 
 =back
 
 The next example shows the way to set a level 1 number list level style with
-a 1cm indent and a 5mm minimal space between the label and the item::
+a 1cm indent and a 5mm minimal space between the label and the item text:
 
         $ls->set_level_style(1, type => 'number', format => '1')
                 ->set_properties(
                         'space before'          => '1cm',
                         'min label distance'    => '5mm'
                         );
+
+The following example sets a level 2 image list level style using a previously
+loaded image file, with a 2x2mm image size and a 3mm minimal space between the
+image and the item text:
+
+        $img = $doc->add_image_file('/home/pictures/bullet.png');
+        $ls->set_level_style(2, type => 'image', url => $img)
+                ->set_properties(
+                        size                    => '2mm, 2mm',
+                        'min label distance'    => '3mm'
+                );
+
+See L<ODF::lpOD::Document> for details about the C<add_image_file()> method
+used in this example.
+
+It's possible to avoid an explicit call to C<set_properties()> in order to
+set the display attributes of a list level style; C<set_level_style()>
+allows the user to specify these attributes as a hash ref through a
+C<properties> optional parameter. It's just syntactic sugar: if this option
+is set, C<set_level_style()> automatically calls C<set_properties()> with
+the given content. So the last instruction of the previous example could be
+replaced by the following one:
+
+        $ls->set_level_style(
+                2, type => 'image', url => $img,
+                properties => {
+                        size                    => '2mm, 2mm',
+                        'min label distance'    => '3mm'
+                        }
+                );
 
 An individual list level style may be reloaded through C<get_level_style()>,
 with the level number as its only one argument; it returns a regular ODF element

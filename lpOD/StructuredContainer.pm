@@ -136,8 +136,8 @@ sub     get_source
 #=============================================================================
 package ODF::lpOD::List;
 use base 'ODF::lpOD::StructuredContainer';
-our $VERSION    = '1.002';
-use constant PACKAGE_DATE => '2011-11-15T19:52:49';
+our $VERSION    = '1.003';
+use constant PACKAGE_DATE => '2012-05-02T09:09:28';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -149,7 +149,7 @@ sub     create
         {
         my $caller      = shift;
         my %opt         = process_options(@_);
-        my $list = ODF::lpOD::StrucruredContainer->create('text:list');
+        my $list = ODF::lpOD::StructuredContainer->create('text:list');
         $list->set_style($opt{style});
         $list->set_id($opt{id});
         return $list;

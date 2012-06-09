@@ -1,7 +1,7 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Copyright (c) 2012 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
@@ -623,7 +623,7 @@ sub     set_master_page
         return $self->set_attribute('master page name' => shift);
         }
 
-sub	get_master_page
+sub     get_master_page
         {
         my $self	= shift;
         return $self->get_attribute('master page name');
@@ -632,8 +632,8 @@ sub	get_master_page
 #=============================================================================
 package ODF::lpOD::ListStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-31T11:53:23';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2012-05-04T09:24:07';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -684,7 +684,7 @@ sub     get_level_style
         return $self->get_xpath('.//*[@text:level="' . $level . '"]', 0);
         }
 
-sub	set_level_style
+sub     set_level_style
         {
         my $self	= shift;
         my $level       = shift;
@@ -706,7 +706,7 @@ sub	set_level_style
         $e = ODF::lpOD::ListLevelStyle->create($type) or return FALSE;
         given ($type)
                 {
-                when ('number')
+                when (['number', 'outline'])
                         {
                         $e->set_attributes
                                 (
@@ -734,14 +734,15 @@ sub	set_level_style
         $e->set_attribute(level => $level);
         $e->set_style($opt{style});
         my $old = $self->get_level_style($level); $old && $old->delete;
+        $e->set_properties(%{$opt{properties}}) if $opt{properties};
         return $self->append_element($e);
         }
 
 #=============================================================================
 package ODF::lpOD::ListLevelStyle;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2010-12-29T23:13:48';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2012-05-03T09:25:19';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -775,6 +776,10 @@ sub     create
                 when (['bullet', 'number', 'image'])
                         {
                         $tag = 'text:list-level-style-' . $type;
+                        }
+                when ('outline')
+                        {
+                        $tag = 'text:outline-level-style';
                         }
                 default
                         {
@@ -817,6 +822,13 @@ sub     set_properties
         my $self        = shift;
         my %opt         = process_options(@_);
         my $pr = $self->set_child('style:list-level-properties');
+        if ($opt{size})
+                {
+                my ($w, $h) = input_2d_value($opt{size});
+                delete $opt{size};
+                $opt{width}     //= $w;
+                $opt{height}    //= $h;
+                }
         foreach my $k (keys %opt)
                 {
                 my $att;
@@ -880,7 +892,7 @@ sub     set_level_style
         my $self	= shift;
         my $level       = shift;
         my %opt         = @_;
-        $opt{type}      = 'number';
+        $opt{type}      = 'outline';
         return $self->SUPER::set_level_style($level, %opt);
         }
 
@@ -1592,7 +1604,7 @@ use constant PACKAGE_DATE => '2011-05-27T09:14:03';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
-sub	get_family      { 'page layout' }
+sub     get_family      { 'page layout' }
 
 sub     context_path    { STYLES, '//office:automatic-styles' }
 
@@ -1603,7 +1615,7 @@ sub     properties_tag  { 'style:page-layout-properties' }
 
 #-----------------------------------------------------------------------------
 
-sub	set_properties
+sub     set_properties
         {
         my $self	= shift;
         my %opt         = @_;

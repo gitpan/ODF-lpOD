@@ -33,7 +33,6 @@ This chapter introduces ways to get a global access to a document, to create
 a new document, to get or set the global document metadata. It illustrates
 features that are documented in L<ODF::lpOD::Document>.
 
-
 =head2  Loading documents and parts
 
 Before accessing to anything in a document, you have to create an
@@ -200,6 +199,10 @@ element in this part:
 
         my $meta = $doc->get_part(META);
 
+or:
+
+        my $meta = $doc->meta;
+
 From this context, a set of get/set, self-documented accessors, is available.
 The first instruction below displays the existing document title, and the
 second one sets a new title that replaces the old one:
@@ -209,7 +212,7 @@ second one sets a new title that replaces the old one:
 
 The one-liner below displays the document title:
 
-        say odf_get_document("mydoc.ods")->get_part(META)->get_title;
+        say odf_document->get("mydoc.ods")->meta->get_title;
 
 Some C<set_xxx()> metadata accessors provide default values when called without
 argument. As examples, C<set_modification_date()>, that sets the date/time
@@ -284,7 +287,7 @@ Of course it's possible to add a new keyword:
 
         $meta->set_keyword("ODF");
 
-...as well as a list of keywords in a single instruction:
+as well as a list of keywords in a single instruction:
 
         $meta->set_keywords("ODF", "The lpOD Project", "Perl");
 
@@ -558,7 +561,7 @@ process) and inserted as a new element in a document:
         close FH;
 
         # importing process
-        $p = odf_create_element("paragraph.xml");
+        $p = odf_element->create("paragraph.xml");
 
 In the last instruction above, the ODF element constructor argument is a
 file name. Knowing that a legal ODF XML tag can't be terminated by ".xml",
@@ -588,24 +591,24 @@ with a level 1 heading, followed by a level 2 heading, then by a regular
 paragraph:
 
         use ODF::lpOD;
-        my $doc = odf_new_document('text');
+        my $doc = odf_document->create('text');
         my $context = $doc->get_body;
         $context->append_element(
-                odf_create_heading(
+                odf_heading->create(
                         level   => 1,
                         text    => "Introduction",
                         style   => "Heading 1"
                         )
                 );
         $context->append_element(
-                odf_create_heading(
+                odf_heading->create(
                         level   => 2,
                         text    => "Part One",
                         style   => "Heading 2"
                         )
                 );
         $context->append_element(
-                odf_create_paragraph(
+                odf_paragraph->create(
                         text    => "This is my text content",
                         style   => "Text body"
                         )
@@ -779,7 +782,7 @@ so, you must use the document-based C<register_style()> or C<insert_style()>
 method (don't use C<insert_element()> for styles). The following instruction
 creates the new paragraph style and includes it in the document:
 
-        $ps1 = $doc->insert_style(
+        $ps1 = $doc->register_style(
                 odf_create_style('paragraph', name => 'Bordered')
                 );
 
@@ -791,18 +794,16 @@ may specify particular choices through optional parameters, described in
 L<ODF::lpOD::Style>, but you can safely ignore such details and work with the
 default lpOD behavior for a time.
 
-You can use C<register_style()> as a synonym of C<insert_style()>.
-
 Note that c<insert_style()> returns the inserted style element, so the
 application can keep it in order to invoke it later. The instruction above
 produces the same effect as the sequence below:
 
-        $ps1 = odf_create_style('paragraph', name => 'Bordered');
-        $doc->insert_style($ps1);
+        $ps1 = odf_style->create('paragraph', name => 'Bordered');
+        $doc->register_style($ps1);
 
 A more drastic shortcut is allowed:
 
-        odf_create_style('paragraph', name => 'Bordered')->register($doc);
+        odf_style->create('paragraph', name => 'Bordered')->register($doc);
 
 As shown in this last example, the C<odf_style> class provides a C<register()>
 method whose first (and mandatory) argument is a C<odf_document> object.
@@ -812,8 +813,8 @@ style, because we didn't specify its features. As a consequence, any paragraph
 that will use it will be displayed according to the default paragraph style of
 the document (if any). So we must create the style with the right definition:
 
-        $ps1 = $doc->insert_style(
-                odf_create_style(
+        $ps1 = $doc->register_style(
+                odf_style->create(
                         'paragraph',
                         name            => 'Bordered',
                         border          => '0.1cm dotted #000080',
@@ -1181,8 +1182,8 @@ C<set_hyperlink> using various additional parameters (not introduced here).
 
 A list is a structured, hierarchical container. It contains a set of I<items>.
 Each item in turn can contain paragraphs. An item content is generally
-displayed after either a so-called "bullet" (that is a particular character or an
-image) or an order number. The list-related functionality is documented in
+displayed after either a so-called "bullet" (that is a particular character or
+an image) or an order number. The list-related functionality is documented in
 L<ODF::lpOD::StructuredContainer>.
 
 Like a paragraph (and many other objects), a list may be created through an
@@ -2208,6 +2209,12 @@ below produces the same result as the previous one:
                         page            => 1
                         )
                 );
+
+Knowing that automatic image size detection implies a physical access to the
+graphical content, it may be costly. As a consequence, the user should specify
+this size each time it's known by the application. If C<add_image_file()> is
+called in scalar context and if the C<size> frame creation parameter is
+set by the application, lpOD is prevented from investigating the image file.
 
 Of course, you don't need to include the image resource in the ODF package
 if this resource is available through an absolute URL and if the user's

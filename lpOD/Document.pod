@@ -33,6 +33,10 @@ created from an existing document or from scratch, using one of the constructors
 introduced below. Once created, this instance gives access to individual parts
 through the C<get_part()> method.
 
+=head3  odf_create_document(doc_type)
+
+See C<odf_new_document(doc_type)>.
+
 =head3  odf_get_document(uri)
 
 This function creates a read-write document instance. The returned object is
@@ -96,14 +100,18 @@ The following example creates a spreadsheet document instance:
 
         my $doc = odf_new_document('spreadsheet');
 
+Note that the instruction below is equivalent:
+
+        my $doc = odf_document->create('spreadsheet');
+
 The real content of the instance depends on the default template.
 
-A set of valid template ODF files (created using OpenOffice.org) is
-transparently installed with the standard lpOD distribution. Advanced users may
-use their own template files. To do so, they have to replace the ODF files
-present in the C<templates> sub directory of the lpOD installation; the path to
-the lpOD installation may be retrieved through the lpod->installation_path
-common function. The user-provided template files must have the same names.
+A set of valid template ODF files is transparently installed with the standard
+lpOD distribution. Advanced users may use their own template files. To do so,
+they have to replace the ODF files present in the C<templates> sub directory of
+the lpOD installation; the path to the lpOD installation may be retrieved
+through the lpod->installation_path common function. The user-provided template
+files must have the same names.
 
 Some metadata are initialized in the same way as with
 C<odf_new_document_from_template>.
@@ -148,6 +156,11 @@ object:
 
 With C<MIMETYPE> as argument, C<get_part()> returns the MIME type of the
 document as a text string, i.e. the same result as C<get_mimetype()>.
+
+Note that C<get_part(CONTENT)> may be replaced by the C<content()> accessor,
+so the short form of the instruction above is:
+
+        $content = $document->content;
 
 The parts are loaded for read-write use by default. However, a C<update>
 boolean option may be provided; if set to C<FALSE>, this option instructs
@@ -274,13 +287,23 @@ C<Pictures> folder.)
 
 Returns C<undef> if case of failure.
 
-A special C<get_body()> accessor is available. C<get_body()> is mainly a
-part-based method, introduced later, but, when called from a document object,
-it returns the body element of the C<CONTENT> part. So the two instructions
-below are equivalent:
+There is a shortcut for C<get_part()> for each part in C<CONTENT>, C<STYLES>,
+C<META>, and C<MANIFEST>, that is an accessor whose name is the part name in
+lower case. It's just syntactic sugar. As an example, the two following
+instruction are equivalent:
+
+        $part = $doc->get_part(CONTENT);
+        $part = $doc->content;
+
+A special C<get_body()> or C<body()> accessor is available. C<get_body()> is
+mainly a part-based method, introduced later, but, when called from a document
+object, it returns the body element of the C<CONTENT> part. So the four
+instructions below are equivalent:
 
         $context = $doc->get_body;
         $context = $doc->get_part(CONTENT)->get_body;
+        $context = $doc->content->get_body;
+        $context = $doc->body;
 
 Note that C<get_body()> may be called with an optional argument that specifies
 the type of content, typically C<'text'>, C<'spreadsheet'>, C<'presentation'>,
@@ -288,7 +311,8 @@ or C<'drawing'>. Of course, a well-formed ODF document should contain only one
 body and its content type depends on the document type (for example the content
 type of a text document is always C<'text'>). Providing a content type to
 C<get_body()> is just a way among others to check the document type, knowing
-that this method returns C<undef>. Example:
+that this method returns C<undef> if the given content type doesn't match the
+real one. Example:
 
         my $context = $doc->get_body('spreadsheet');
         if ($context) {
@@ -325,6 +349,10 @@ paragraphs of a part (assuming C<$part> is a previously selected document part):
         my $paragraph = $part->get_element('text:p', 0);
         my @paragraphs = $part->get_elements('text:p');
 
+Beware that such instructions should not appear in a real application,
+knowing that lpOD provides more user-friendly methods to retrieve paragraphs
+(see L<ODF::lpOD::TextElement>).
+
 Note that the position argument of C<get_element> is zero-based, and that it
 may be a negative value (if so, it specifies a position counted backward from
 the last matching element, -1 being the position of the last one).
@@ -334,8 +362,8 @@ class, i.e. L<ODF::lpOD::Element>.
 
 =head1  Global document metadata
 
-From the handler provided by the C<get_meta> document method, several metadata
-of the document may be directly get or set.
+From the handler provided by C<get_part(META)> (or C<meta()>), several pieces
+of document metadata may be directly get or set.
 
 =head2  Simple metadata accessors
 
@@ -441,7 +469,7 @@ a hash reference. The second one takes a hash reference with the same structure,
 containing the attribute names and values. The following example displays the
 page count of the document (assuming it's a text document):
 
-        my $meta = $document->get_meta;
+        my $meta = $document->meta;
         my $stat = $meta->get_statistics;
         say $meta->{'meta:page-count'};
 
@@ -501,7 +529,7 @@ As an example, the following loop displays the name, the value and the type of
 each use field in the metadata part of a document:
 
         my $doc = odf_get_document($source);
-        my $meta = $doc->get_meta;
+        my $meta = $doc->meta;
         foreach my $uf ($meta->get_user_fields) {
                 say "Name   " . $uf->{name} .
                     "Value  " . $uf->{value} .
