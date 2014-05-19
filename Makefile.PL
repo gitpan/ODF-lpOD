@@ -1,14 +1,14 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Copyright (c) 2014 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
 use     5.010_000;
 use     strict;
 #=============================================================================
-#       Packaging & installation for ODF::lpOD - 2012-02-03T08:54:14
+#       Packaging & installation for ODF::lpOD - 2014-04-30T08:35:01
 #=============================================================================
 use ExtUtils::MakeMaker;
 use Getopt::Long;
@@ -94,22 +94,23 @@ WriteMakefile
         (
         'NAME'			=> 'ODF::lpOD',
         'VERSION'		=> $version,
-        'ABSTRACT_FROM'         => 'lpOD.pod',
+        'ABSTRACT_FROM' => 'lpOD.pod',
     	'AUTHOR'		=> $author,
-	'LICENSE'		=> 'GPL',
+		'LICENSE'		=> 'GPL',
     	'PREREQ_PM'		=>
                 {
-                'XML::Twig'		=> '3.34',
+                'XML::Twig'			=> '3.34',
                 'Archive::Zip'		=> '1.30',
                 'File::Temp'		=> '0.12',
                 'File::Find'		=> '1.01',
                 'Time::Local'		=> '1.07',
                 'IO::File'	        => '1.14',
-                'File::Basename'        => '2.76',
-                'File::Slurp'           => '0',
+                'File::Basename'    => '2.76',
+                'File::Slurp'       => '0',
                 'File::Type'		=> '0',
                 'Image::Size'		=> '0',
-                'LWP::Simple'		=> '0'
+                'LWP::Simple'		=> '0',
+                'experimental'		=> '0'
                 },
         'EXE_FILES'	=>
                 [

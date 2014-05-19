@@ -1,12 +1,13 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Copyright (c) 2014 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
 use     5.010_000;
 use     strict;
+use     experimental    'lexical_subs', 'smartmatch';
 #=============================================================================
 #	Tables and table components (columns, rows, cells, row/col groups)
 #=============================================================================
@@ -15,6 +16,7 @@ use base 'ODF::lpOD::Element';
 our $VERSION                    = '1.002';
 use constant PACKAGE_DATE       => '2011-06-06T08:38:04';
 use ODF::lpOD::Common;
+use feature ':5.10';
 #-----------------------------------------------------------------------------
 
 use constant    ROW_FILTER      => 'table:table-row';

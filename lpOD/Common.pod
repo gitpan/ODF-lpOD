@@ -70,8 +70,7 @@ a numeric time into a ISO-8601, ODF-compliant alphanumeric date:
 This function returns C<undef> if the given value is not compatible with the
 given type.
 
-I<Note: this function doesn't work for any type in the present development
-version.>
+I<Note: this function doesn't work for any type in the present version.>
 
 =head3  iso_date(time)
 
@@ -81,13 +80,13 @@ Without argument, returns the current date in ODF-compliant format.
 
 =head3  numeric_date(odf_date)
 
-Translates an ISO-8601 date, coming from an ODF document, into a Perl computable
-C<time> value.
+Translates an ODF-formatted date (ISO-8601) into a Perl computable C<time>
+value.
 
 =head3  translate_coordinates(alpha_spreadsheet_coordinates)
 
 Returns the zero-based row number and column number according to a string
-representing spreadsheet-like coordinated. For example "A1" gives (0, 0),
+representing spreadsheet-like coordinates. For example "A1" gives (0, 0),
 "Z10" gives (9, 25), and so on. Note that the row number comes first in the
 result, while the column letter comes first in the argument.
 
@@ -134,14 +133,14 @@ Returns the MIME type of the resource corresponding to the given file path, or
 C<undef> (without error) if the resource is not available, if the C<File::Type>
 module is not installed, or if the resource is not supported by C<File::Type>.
 
-I<Beware: This function uses the C<File::Type> logic and don't determine the
+I<Beware: This function uses the C<File::Type> logic and doesn't determine the
 type according to the file name suffix.>
 
 =head3  image_size(image [, document => $doc])
 
 Returns the size, expressed in I<points> (C<pt>), of the image corresponding to
-the given resurce, or C<undef> (without error) if the resource is not available,
-or if the image type is not supported by C<Image::Size>.
+the given resource, or C<undef> (without error) if the resource is not
+available, or if the image type is not supported by C<Image::Size>.
 
 The argument may be a local file path, a regular URL, a file handle, or the
 reference of a in-memory buffer (scalar reference). If a C<document> optional
@@ -153,17 +152,11 @@ another application.
 
 In scalar context, the return value (if defined) is an array ref of 2 strings
 (the width and the height), each one containing a numeric value and terminated
-by "pt". This array ref may be directly used as the value of any size-related
-parameter or argument in the lpOD API. In array context, C<image_size()>
+by "pt". This array ref may be directly used in order to set the size of a
+rectangular shape through the lpOD API (typically, in order to adjust the size
+of the object that will contain the image). In array context, C<image_size()>
 returns a list of 2 numeric values, namely the width and the height (both in
 points, but without the "pt" suffix).
-
-C<image_size()> may be used with a C<document> option whose value, if set, is
-an C<odf_document> object. When this option is provided, the image resource is
-looked for in the document container, and the first argument is regarded as the
-internal path in the ODF file. This option is intended to allow the user to
-get the original size of an image that was previously loaded in the document
-(probably by a desktop software or any other application).
 
 =head1  General configuration
 
@@ -181,7 +174,7 @@ installation path, like in the example below:
 
  ODF::lpOD 1.106 2011-02-15T15:07:39 /usr/lib/perl5/site_perl/5.10.0/ODF/lpOD
 
-There is a C<signature> method that produces the same result as C<info> as the
+There is a C<signature> method that produces the same result as the
 scalar value of C<info>.
 
 The C<installation_path> method returns the path of the C<ODF::lpOD> module
@@ -247,7 +240,7 @@ C<set_output_charset()>:
 
 Input and output charsets may be changed at any time, so the user may, for
 example, successively insert texts using various encodings (that could prove
-useful for document generation from heterogeneous web sources).
+useful for document generation from heterogeneous sources).
 
 Beware that the input and output charsets are not always the same. The user
 could want, for example, populate a document from non-utf8 web pages, and
@@ -278,7 +271,7 @@ Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
 Contact: jmgdoc@cpan.org
 
 Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-Copyright (c) 2011 Jean-Marie Gouarne.
+Copyright (c) 2014 Jean-Marie Gouarne.
 
 This work was sponsored by the Agence Nationale de la Recherche
 (L<http://www.agence-nationale-recherche.fr>).

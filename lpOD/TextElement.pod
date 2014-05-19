@@ -355,6 +355,11 @@ C<start mark> is set, C<end mark> is not mandatory and vice versa.
 If C<start mark> and C<offset> are provided, then the offset is counted from
 the position of the start mark.
 
+Warning: A text span can cover a I<flat text> segment only; as a consequence,
+C<set_span()> can't install a text span that would include any breaking
+object, such as a tabulation mark ("\t"), a new line ("\n"), a multiple space,
+a text bookmark, and so on.
+
 =head2  Text hyperlinks
 
 A hyperlink span is created through C<set_hyperlink>, which allows the

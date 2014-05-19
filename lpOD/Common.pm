@@ -1,18 +1,19 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Copyright (c) 2014 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
 use     5.010_000;
 use     strict;
+use     experimental    'lexical_subs', 'smartmatch';
 #=============================================================================
 #       Common lpOD/Perl parameters and utility functions
 #=============================================================================
 package ODF::lpOD::Common;
-our	$VERSION	        = '1.012';
-use constant PACKAGE_DATE       => '2012-03-26T08:42:37';
+our	$VERSION	        	= '1.013';
+use constant PACKAGE_DATE   => '2014-04-30T08:32:52';
 #-----------------------------------------------------------------------------
 use Scalar::Util;
 use Encode;
@@ -87,7 +88,7 @@ our @EXPORT     = qw
     file_parse file_type load_file image_size input_2d_value
     alert not_implemented
 
-    PRETTY_PRINT EMPTY_TAGS
+    XML_PRETTY_PRINT PRETTY_PRINT EMPTY_TAGS
 
     FIRST_CHILD LAST_CHILD NEXT_SIBLING PREV_SIBLING WITHIN PARENT
     );
@@ -221,7 +222,6 @@ use constant
 
 use constant                            # XML::Twig specific
     {
-    PRETTY_PRINT        => 'indented',
     EMPTY_TAGS          => 'normal'
     };
 
@@ -311,6 +311,7 @@ BEGIN   {
     *is_numeric             = *Scalar::Util::looks_like_number;
     *odf_value              = *check_odf_value;
 
+	*PRETTY_PRINT			= *XML_PRETTY_PRINT;
     #initializations
 
     }
@@ -362,26 +363,9 @@ sub     debug
 sub     is_true
         {
         my $arg = shift;
-        return FALSE unless defined $arg;
-        given (lc $arg)
-                {
-                when (["", "false", "off", "no"])
-                        {
-                        return FALSE;
-                        }
-                when ('true')
-                        {
-                        return TRUE;
-                        }
-                when (0)
-                        {
-                        return FALSE;
-                        }
-                default
-                        {
-                        return TRUE;
-                        }
-                }
+        return FALSE unless $arg;
+        my $v = lc $arg;
+        return $v ~~ ["false", "off", "no"] ? FALSE : TRUE;
         }
 
 sub     is_false
@@ -888,12 +872,24 @@ sub     template
 
 #--- session ID generator ----------------------------------------------------
 
-our $LPOD_ID_PATTERN    = 'lpOD_%09x';
+our     $LPOD_ID_PATTERN = 'lpOD_%09x';
 sub     new_id
         {
         state $count    = 0;
         return sprintf($LPOD_ID_PATTERN, ++$count);
         }
+
+#--- pretty XML output option ------------------------------------------------
+
+our     $XML_PRETTY_PRINT_MODE = 'indented';
+
+sub     XML_PRETTY_PRINT
+        {
+        my $pp = shift // "";
+        $pp = shift if ($pp eq lpod);
+        $XML_PRETTY_PRINT_MODE = $pp if $pp;
+        return $XML_PRETTY_PRINT_MODE;
+		}
 
 #-----------------------------------------------------------------------------
 

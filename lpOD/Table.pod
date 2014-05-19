@@ -12,7 +12,8 @@ The lpOD API doesn't make differences between document types in this area. So,
 tables are dealed with in the same way for a spreadsheet document (whose content
 is just a set of tables) as for any other document.
 
-A table is an instance of the lpOD C<odf_table> class.
+A table is an instance of the lpOD C<odf_table> class, knowing that
+C<odf_lpod> is an alias for C<ODF::lpOD::Table>.
 
 An C<odf_table> object is a structured container that holds two sets
 of objects, a set of I<rows> and a set of I<columns>, and that is
@@ -32,7 +33,7 @@ document) and may own some optional properties.
 
 =head1  Table creation and retrieval
 
-Like any other C<odf_element> table may be created either from scratch
+Like any other C<odf_element>, a table may be created either from scratch
 according to various parameters or by cloning an existing table using the
 generic C<clone> method of C<odf_element>. The second way is the most
 recommended one because, while it looks very easy to create a table with a
@@ -71,7 +72,7 @@ be write-protected when the document is edited through a user-oriented,
 interactive application (of course, such a protection doesn't prevent
 an lpOD-based tool from modifying the table)(default is C<FALSE>);
 
-=item
+=item 
 
 C<protection key>: a (supposedly encrypted) string that represents
 a password; if this parameter is set and if C<protected> is C<TRUE>,
@@ -105,8 +106,8 @@ The style of a table may be retrieved or changed at any time using the generic
 C<get_style()> and C<set_style()> accessors.
 
 A table may be retrieved in a document according to its unique name using
-the context-based C<get_table_by_name> with the name as argument. It may
-be selected by its sequential position in the list of the tables belonging
+the context-based C<get_table_by_name> method with the name as argument. It
+may be selected by its sequential position in the list of the tables belonging
 to the context, using C<get_table_by_position>, with a zero-based numeric
 argument (possibly counted back from the end if the argument is negative).
 A C<get_table()> method is provided, that works like C<get_table_by_position()>
@@ -122,7 +123,7 @@ which is regarded as a regular expression.
 In addition, an application can get all the tables of a given context using
 the C<get_tables()> method, without argument.
 
-An application may retrieve a table from any element that belong to it, thanks
+An application may retrieve a table from any element that belongs to it, thanks
 to the C<get_parent_table()> method. This method returns C<undef> if the
 calling element is not in a table. Knowing that a paragraph may be included
 in a table cell and that a table cell indirectly belongs to a table, the
@@ -141,14 +142,15 @@ using its logical position. A position may be expressed using either zero-based
 numeric coordinates, or alphanumeric, spreadsheet-like coordinates. For example
 the top left cell should be addressed either by C<(0,0)> or by C<"A1">. On the
 other hand, numeric coordinates only allow the user to address an object
-relatively to the end of the table; for example, C<(-1,-1)> designates the last
-cell of the last row whatever the table size.
+relatively to the end of the table. To do so, coordinates are provided as
+negative values. For example, C<(-1,-1)> designates the last cell of the last
+row whatever the table size.
 
-Table object selection methods return a null value, without error, when the
-given address is out of range.
+Every table object selection method returns a null value, without error,
+when the given address is out of range.
 
 The number of rows and columns may be got using the C<odf_table> C<get_size>
-method.
+method, that returns the heigth then the width.
 
 An individual cell is selected using C<get_cell> with either a pair of
 numeric arguments corresponding to the row then the column, or an alphanumeric
@@ -161,8 +163,8 @@ second row in a table (assuming that C<$t> is a previously selected table):
         $cell = $t->get_cell('B2');
         $cell = $t->get_cell(1, 1);
 
-C<get_row()> allows the user to select a table row as an ODF element. This
-method requires a zero-based numeric value.
+C<get_row()> selects a table row as an ODF element. This method requires a
+zero-based numeric value.
 
 C<get_column()> works according to the same logic and returns a table column
 ODF element.
@@ -184,7 +186,7 @@ following instructions are equivalent and return a list including the rows from
         @rows = $t->get_rows(5, 10);
         @rows = $t->get_rows('6:11');
 
-According to the same logic, each of the two instruction below returns the
+According to the same logic, each of the two instructions below returns the
 columns from 8 to 15:
 
         @cols = $t->get_columns(8, 15);
@@ -200,17 +202,18 @@ previous example:
         $c = $r->get_cell(1);
 
 A column-based C<get_cell()> method is provided, too, but it's much less
-efficient. In addition, the column-based C<get_cell()> may fail with a
-warning when used in I<read optimize> mode (see below).
+efficient and may produce performance issues. In addition, the column-based
+C<get_cell()> may fail with a warning when used in I<read optimize> mode
+(see below).
 
-A row set may be selected according to the content of a specified column,
+A row set may be selected according to the content of a specified cell,
 thanks to C<get_rows_by_index()>. The following example selects all the rows
 (if any) where the 'C' cell (i.e. the cell at the 3rd position) contains
 "XYZ":
 
         @rows = $table->get_rows_by_index(C => "XYZ");
 
-Note that this method allows an alternative syntax; the column may be
+Note that this method allows an alternative syntax; the cell position may be
 specified by its numeric (zero-based) position:
 
         @rows = $table->get_rows_by_index(2, "XYZ");
@@ -249,7 +252,7 @@ the ODF table.
 If C<get_cells> is called without argument, the selection covers the whole
 table.
 
-A row object has its own C<get_cell()> method. The row based version of
+A row object has its own C<get_cells()> method. The row based version of
 C<get_cells()> returns, of course, a one-row table of cell objects. When
 used without argument, it selects all the cells of the row. It may be called
 with either a pair of numeric arguments that represent the start and the end

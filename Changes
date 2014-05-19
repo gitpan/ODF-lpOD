@@ -1,3 +1,9 @@
+1.122   2014-04-30
+  - All modules: transitional workaround for 5.18 'experimental' warnings.
+  - Common.pm: allowed XML pretty print option change; cleaned is_true().
+  - Element.pm: API conflict fix for set_first_child(), set_last_child().
+  - Style.pm, Document.pm: get_styles() bug fix.
+  - TextElement.pm: set_text() bug fix.
 1.121   2012-05-15
   - StructuredContainer.pm: list creation bug fix.
   - Style.pm, Element.pm: outline style bug fix #76905; list style bug fix.

@@ -1,18 +1,19 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2012 Jean-Marie Gouarné.
+#       Copyright (c) 2014 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
 use 5.010_000;
 use strict;
+use     experimental    'lexical_subs', 'smartmatch';
 #=============================================================================
 #       The ODF Document class definition
 #=============================================================================
 package ODF::lpOD::Document;
-our     $VERSION    = '1.012';
-use     constant PACKAGE_DATE => '2012-05-14T20:23:56';
+our     $VERSION    = '1.013';
+use     constant PACKAGE_DATE => '2014-04-30T08:27:07';
 use     ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -53,7 +54,7 @@ sub     get
         return ODF::lpOD::Document->new(uri => shift, @_);
         }
 
-sub	create
+sub	    create
         {
         my $caller      = shift;
         return ODF::lpOD::Document->new(type => shift, @_);
@@ -576,13 +577,13 @@ sub     get_style
 
 sub     get_styles
         {
-        my $self	= shift;
+        my $self		= shift;
         my $family      = shift;
         unless ($family)
                 {
                 alert "Missing style family"; return undef;
                 }
-        if ($family ~~ ODF::lpOD::DataStyle->families)
+        if (ODF::lpOD::DataStyle->is_numeric_family($family))
                 {
                 return $self->get_data_styles($family, @_);
                 }
@@ -1161,16 +1162,16 @@ sub     new
                 }
         else
                 {
-	        unless	(-r -f -e $source)
-		        {
-		        alert("Missing source");
-		        return FALSE;
-			}
-	        if ($zip->read($source) != AZ_OK)
-		        {
-		        alert("File read error");
-		        return FALSE;
-		        }
+                unless	(-r -f -e $source)
+                    {
+                    alert("Missing source");
+                    return FALSE;
+                    }
+                if ($zip->read($source) != AZ_OK)
+                    {
+                    alert("File read error");
+                    return FALSE;
+                    }
                 }
 
         $self->{zip} = $zip;
@@ -1383,8 +1384,8 @@ sub     save
         if (is_true($self->{read_only}))
                 {
                 unless  (
-                                (defined $opt{target})          &&
-                                $opt{target} ne $self->{uri}
+                            (defined $opt{target})          &&
+                            $opt{target} ne $self->{uri}
                         )
                         {
                         alert("Read-only container");
@@ -1585,24 +1586,24 @@ sub     load
         return TRUE;
         }
 
-sub	needs_update
-	{
-	my $self	= shift;
-	my $arg         = shift;
-        given ($arg)
-                {
-                when (undef)    {}
-                when (TRUE)     { $self->{update} = TRUE  }
-                when (FALSE)    { $self->{update} = FALSE }
-                }
-        return $self->{update};
-	}
-
-sub	get_name
-	{
-	my $self	= shift;
-	return $self->{part};
-	}
+sub	    needs_update
+        {
+        my $self	= shift;
+        my $arg         = shift;
+            given ($arg)
+                    {
+                    when (undef)    {}
+                    when (TRUE)     { $self->{update} = TRUE  }
+                    when (FALSE)    { $self->{update} = FALSE }
+                    }
+            return $self->{update};
+        }
+    
+sub	    get_name
+        {
+        my $self	= shift;
+        return $self->{part};
+        }
 
 #--- destructor --------------------------------------------------------------
 

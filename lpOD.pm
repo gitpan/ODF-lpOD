@@ -1,7 +1,7 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Copyright (c) 2014 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean-marie.gouarne@online.fr>
 #
 #=============================================================================
@@ -11,8 +11,8 @@ use strict;
 #       The main module for the lpOD Project
 #=============================================================================
 package ODF::lpOD;
-our $VERSION                    =       '1.121';
-use constant PACKAGE_DATE       =>      "2012-06-08T22:51:35";
+our $VERSION                    =       '1.122';
+use constant PACKAGE_DATE       =>      "2014-05-19T13:20:24";
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Document;

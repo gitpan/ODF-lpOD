@@ -1,12 +1,13 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2012 Jean-Marie Gouarné.
+#       Copyright (c) 2014 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
 use     5.010_000;
 use     strict;
+use     experimental    'lexical_subs', 'smartmatch';
 #=============================================================================
 #	Style handling package
 #=============================================================================
@@ -1360,8 +1361,8 @@ sub     set_background
 #=============================================================================
 package ODF::lpOD::DataStyle;
 use base 'ODF::lpOD::Style';
-our $VERSION    = '1.001';
-use constant PACKAGE_DATE => '2011-05-27T09:10:55';
+our $VERSION    = '1.002';
+use constant PACKAGE_DATE => '2014-03-05T17:18:31';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 
@@ -1374,11 +1375,32 @@ sub     create
 
 #-----------------------------------------------------------------------------
 
-our     @FAMILIES       =
+our		@NUMERIC_FAMILIES	=
         (
-        "number", "percentage", "currency",
-        "date", "time", "boolean", "text"
+        "number", "percentage", "currency", "date", "time", "boolean"
         );
+our     @FAMILIES       = (@NUMERIC_FAMILIES, "text");
+
+sub	families
+        {
+        my $self	= shift;
+        return wantarray ? @FAMILIES : [ @FAMILIES ];
+        }
+
+sub	numeric_families
+        {
+        my $self	= shift;
+        return wantarray ? @NUMERIC_FAMILIES : [ @NUMERIC_FAMILIES ];
+        }
+
+sub is_numeric_family
+		{
+		my $self	= shift;
+		my $f		= shift		or return undef;
+		return ($f ~~ @NUMERIC_FAMILIES) ? TRUE : FALSE;
+		}
+
+#-----------------------------------------------------------------------------
 
 sub     get_family
         {
@@ -1444,14 +1466,6 @@ sub	get_title
 
 sub     set_properties  {}
 sub     get_properties  {}
-
-#-----------------------------------------------------------------------------
-
-sub	families
-        {
-        my $self	= shift;
-        return wantarray ? @FAMILIES : [ @FAMILIES ];
-        }
 
 #=============================================================================
 package ODF::lpOD::MasterPage;

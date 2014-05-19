@@ -12,6 +12,7 @@ System requirements:
 - File::Slurp
 - Image::Size
 - LWP::Simple
+- experimental
 
 Usage
 =====

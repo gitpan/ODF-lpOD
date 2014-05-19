@@ -1,18 +1,19 @@
 #=============================================================================
 #
 #       Copyright (c) 2010 Ars Aperta, Itaapy, Pierlis, Talend.
-#       Copyright (c) 2011 Jean-Marie Gouarné.
+#       Copyright (c) 2014 Jean-Marie Gouarné.
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
 use     5.010_000;
 use     strict;
+use     experimental    'lexical_subs', 'smartmatch';
 #=============================================================================
 #       Base ODF element class and some derivatives
 #=============================================================================
 package ODF::lpOD::Element;
-our     $VERSION        = '1.014';
-use constant PACKAGE_DATE => '2012-05-02T20:12:29';
+our     $VERSION        = '1.015';
+use constant PACKAGE_DATE => '2014-04-30T08:27:41';
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use XML::Twig           3.34;
@@ -100,6 +101,8 @@ BEGIN
         *_set_text                      = *XML::Twig::Elt::set_text;
         *_get_text                      = *XML::Twig::Elt::text;
         *_set_tag                       = *XML::Twig::Elt::set_tag;
+        *_set_first_child				= *XML::Twig::Elt::set_first_child;
+        *_set_last_child				= *XML::Twig::Elt::set_last_child;
         *replace_element                = *XML::Twig::Elt::replace;
         *set_child                      = *set_first_child;
         *get_element_list               = *get_elements;
@@ -302,6 +305,7 @@ sub     get_child
 sub     set_first_child
         {
         my $self        = shift;
+        return $self->_set_first_child(@_) if caller() eq 'XML::Twig::Elt';
         my $tag         = $self->normalize_name(shift);
         my $child =     $self->first_child($tag)
                                 //
@@ -311,17 +315,18 @@ sub     set_first_child
         return $child;
         }
 
-sub	set_last_child
-	{
-	my $self	= shift;
-	my $tag         = $self->normalize_name(shift);
-        my $child =     $self->first_child($tag)
-                                //
-                        $self->append_element($tag);
-        $child->set_text(shift);
-        $child->set_attributes(@_);
-        return $child;
-	}
+sub		set_last_child
+		{
+		my $self	= shift;
+		return $self->_set_last_child(@_) if caller() eq 'XML::Twig::Elt';
+		my $tag         = $self->normalize_name(shift);
+	        my $child =     $self->first_child($tag)
+	                                //
+	                        $self->append_element($tag);
+	        $child->set_text(shift);
+	        $child->set_attributes(@_);
+	        return $child;
+		}
 
 sub     set_parent
         {

@@ -7,13 +7,14 @@
 #=============================================================================
 use     5.010_000;
 use     strict;
+use     experimental    'lexical_subs', 'smartmatch';
 #=============================================================================
 #       Text Element classes
 #=============================================================================
 package ODF::lpOD::TextElement;
 use base 'ODF::lpOD::Element';
-our $VERSION    = '1.005';
-use constant PACKAGE_DATE => '2011-08-06T19:04:35';
+our $VERSION    = '1.006';
+use constant PACKAGE_DATE => '2014-04-30T08:30:28';
 use ODF::lpOD::Common;
 #=============================================================================
 
@@ -371,15 +372,15 @@ sub     set_text
         return $self->_set_text($text)  if caller() eq 'XML::Twig::Elt';
 
         $self->_set_text("");
-        my @lines = split("\n", $text);
+        my @lines = split("\n", $text, -1);
         while (@lines)
                 {
                 my $line = shift @lines;
-                my @columns = split("\t", $line);
+                my @columns = split("\t", $line, -1);
                 while (@columns)
                         {
                         my $column = shift @columns;
-                        my @words = split(/(\s\s+)/, $column);
+                        my @words = split(/(\s\s+)/, $column, -1);
                         foreach my $word (@words)
                                 {
                                 my $l = length($word);

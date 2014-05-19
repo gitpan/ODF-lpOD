@@ -40,7 +40,7 @@ C<odf_document> instance through the C<odf_get_document()> constructor with the
 path/filename as the only mandatory argument:
 
         my $doc = odf_get_document("olddoc.odt")
-                or die "Failed to load the document\n";
+				or die "Failed to load the document\n";
 
 Note that C<odf_get_document()> is a wrapper for the C<get()> method of the
 C<odf_document> class, and that the instruction above could be written as
@@ -72,10 +72,10 @@ document level.
 
 As long as we just need, say, to deal with the document content, and we have
 nothing to do with styles, metadata and other stuff, we can use C<get_body()>
-that returns the so-called I<document body>, that is the top context for every
-object that appears in the page bodies:
+or C<body> that returns the so-called I<document body>, that is the top
+context for every object that appears in the page bodies:
 
-        my $context = $doc->get_body;
+        my $context = $doc->body;
 
 The document body always belongs to the C<CONTENT> part of the document. So the
 instruction above, which selects the I<body> element of the document content,
@@ -262,26 +262,26 @@ document (i.e. every file whose name is like "*.od?") in the current directory
 whose metadata include a keyword provided through the command line:
 
         foreach my $file (glob "*.od?") {
-                say "$file is OK !" if
-                        odf_get_document($file)
-                                ->get_part(META)
-                                ->check_keyword($ARGV[0]);
-                }
+            say "$file is OK !" if
+                odf_get_document($file)
+                    ->get_part(META)
+                    ->check_keyword($ARGV[0]);
+            }
 
 Note that a more robust variant, with protection against bad files and explicit
 deletion of every document instance, should be preferred for long running
 processes in production:
 
         DOCUMENT: foreach my $file (glob "*.od?") {
-                my $doc = odf_get_document($file);
-                unless ($doc) {
-                        alert("Wrong or unreadable ODF file $file");
-                        next DOCUMENT;
-                        }
-                say "$file is OK !" if
-                        $doc->get_part(META)->check_keyword($ARGV[0]);
-                $doc->forget;
+            my $doc = odf_get_document($file);
+            unless ($doc) {
+                alert("Wrong or unreadable ODF file $file");
+                next DOCUMENT;
                 }
+            say "$file is OK !" if
+                $doc->get_part(META)->check_keyword($ARGV[0]);
+            $doc->forget;
+            }
 
 Of course it's possible to add a new keyword:
 
@@ -304,30 +304,30 @@ user-defined metadata (names, values and types):
 
         my $meta = $doc->get_part(META);
         foreach my $uf ($meta->get_user_fields) {
-                say     "Name : $uf->{name} "   .
-                        "Value : $uf->{value} " .
-                        "Type : $uf->{type}";
-                }
+            say     "Name : $uf->{name} "   .
+                    "Value : $uf->{value} " .
+                    "Type : $uf->{type}";
+            }
 
 Symmetrically, C<set_user_fields()> creates or resets some custom metadata from
 a list of hash refs with the same structure:
 
         $meta->set_user_fields
-                (
-                        {
-                        name    => 'Author',
-                        value   => 'The lpOD team',
-                        },
-                        {
-                        name    => 'Production date',
-                        value   => time,
-                        type    => 'date'
-                        },
-                        {
-                        name    => 'Organization',
-                        value   => 'The lpOD Consortium'
-                        }
-                );
+            (
+                {
+                name    => 'Author',
+                value   => 'The lpOD team',
+                },
+                {
+                name    => 'Production date',
+                value   => time,
+                type    => 'date'
+                },
+                {
+                name    => 'Organization',
+                value   => 'The lpOD Consortium'
+                }
+            );
 
 As you can see, the C<type> has not been provided for every field in this last
 example, because the default type is C<string>, that is convenient for our
@@ -356,7 +356,7 @@ or more paragraphs, so a presentation document, that does a massive use of
 such lists, is mostly a particular way to organize paragraphs. More generally,
 almost any displayable or printable text in any kind of ODF document is stored
 in paragraphs. As a consequence, paragraph handling functions are part of the
-most essential ones.
+most essential features.
 
 The objects and methods introduced in this chapter are mainly documented in
 L<ODF::lpOD::TextElement>. However, we'll use a few common methods that belong
@@ -381,7 +381,7 @@ We assume that C<$doc> is a document object, previously initialized using
 C<odf_get_document()> or C<odf_new_document()>. Note that we could use a
 shortcut for the instruction above:
 
-        my $context = $doc->get_body;
+        my $context = $doc->body;
 
 C<get_body()>, when directly used as a document method, automatically selects
 the body of the C<CONTENT> part.
@@ -434,7 +434,7 @@ and initialize it with a content and/or a style, thanks to appropriate options:
                 style   => "Standard"
                 );
 
-Using an alternative style, the same job could be done like that:
+The same job could be done like that:
 
         $p = odf_paragraph->create(
                 text    => "Hello World !",
@@ -456,11 +456,11 @@ C<set_text()> and/or C<set_style()>. However these optional parameters allow
 the user to create/populate/insert paragraphs in a more compact way:
 
         $context->insert_element(
-                odf_create_paragraph(
-                        text    => "Hello World !",
-                        style   => "Standard"
-                        )
-                );
+            odf_create_paragraph(
+                text    => "Hello World !",
+                style   => "Standard"
+                )
+            );
 
 Note that, by default, C<insert_element()> anchors the given object at the
 first position under the calling context, so after the instruction above the
@@ -476,12 +476,12 @@ context with a C<position> option set to -1 in order to get the last paragraph:
 
         my $p = $context->get_paragraph(position => -1);
         $p->insert_element(
-                odf_create_paragraph(
-                        text    => "We are before the last paragraph",
-                        style   => "Standard"
-                        ),
-                position        => PREV_SIBLING
-                );
+            odf_create_paragraph(
+                text    => "We are before the last paragraph",
+                style   => "Standard"
+                ),
+            position        => PREV_SIBLING
+            );
 
 Here the calling context is a paragraph. Of course we don't want to insert the
 new paragraph I<inside> this context (lpOD doesn't prevent you from doing so if
@@ -500,12 +500,12 @@ previous example:
 
         my $p = $context->get_paragraph(position => -1);
         $context->insert_element(
-                odf_create_paragraph(
-                        text    => "We are before the last paragraph",
-                        style   => "Standard"
-                        ),
-                before  => $p
-                );
+            odf_create_paragraph(
+                text    => "We are before the last paragraph",
+                style   => "Standard"
+                ),
+            before  => $p
+            );
 
 See L<ODF::lpOD::Element> for more details about C<insert_element()>.
 
@@ -520,9 +520,9 @@ of itself and all its content and properties. So the sequence below produces
 a content with 10 copies of the same paragraph:
 
         my $p = odf_create_paragraph(
-                text    => "Hello World !",
-                style   => "Standard"
-                );
+            text    => "Hello World !",
+            style   => "Standard"
+            );
         $context->append_element($p->clone) for 1..10;
 
 Note that in this example the paragraph created by C<odf_create_paragraph()>
@@ -533,8 +533,8 @@ The C<clone()> constructor allows you to copy a text element (like any other
 element) in a document for use in another document. The next example appends
 the copy of the first paragraph of a document at the end of another document:
 
-        $p = $doc1->get_body->get_paragraph->clone;
-        $doc2->get_body->append_element($p);
+        $p = $doc1->body->get_paragraph->clone;
+        $doc2->body->append_element($p);
 
 This example introduced C<get_paragraph()>. We'll see more details about the
 text element retrieval methods later. Just remember that this method, without
@@ -544,7 +544,7 @@ The C<clone()> method is simple and efficient for element replication in the
 current process execution, but it's not the appropriate tool as soon as we
 want to I<export> a particular element for persistent storage or transmission
 through a network in order to reuse it later or in a remote location. Every
-C<odf_element>, including text elements, owns a C<serialize> method that
+C<odf_element>, including text elements, owns a C<export> method that
 returns the full XML description of itself and its whole content. This XML
 export (if stored or piped through any kind of transport service) may be used
 later as the only argument of a subsequent call C<odf_create_element()>
@@ -555,7 +555,7 @@ stored in a file, then the export is loaded (supposedly within another
 process) and inserted as a new element in a document:
 
         # exporting process
-        $xml = $p->serialize;
+        $xml = $p->export;
         open(FH, '>:utf8', "paragraph.xml");
         print FH $xml;
         close FH;
@@ -592,27 +592,27 @@ paragraph:
 
         use ODF::lpOD;
         my $doc = odf_document->create('text');
-        my $context = $doc->get_body;
+        my $context = $doc->body;
         $context->append_element(
-                odf_heading->create(
-                        level   => 1,
-                        text    => "Introduction",
-                        style   => "Heading 1"
-                        )
-                );
+            odf_heading->create(
+                level   => 1,
+                text    => "Introduction",
+                style   => "Heading 1"
+                )
+            );
         $context->append_element(
-                odf_heading->create(
-                        level   => 2,
-                        text    => "Part One",
-                        style   => "Heading 2"
-                        )
-                );
+            odf_heading->create(
+                level   => 2,
+                text    => "Part One",
+                style   => "Heading 2"
+                )
+            );
         $context->append_element(
-                odf_paragraph->create(
-                        text    => "This is my text content",
-                        style   => "Text body"
-                        )
-                );
+            odf_paragraph->create(
+                text    => "This is my text content",
+                style   => "Text body"
+                )
+            );
         $doc->save(target => "test_doc.odt");
 
 Note that we used arbitrary style names in this examples; such styles may not
@@ -638,7 +638,7 @@ fix (provided that the source character set is known and supported):
 Symmetrically, if you want to use the various lpOD content extraction methods
 in a non-utf8 environment, you can tell that to lpOD:
 
-        lpod->set_output_charset('iso-8859-15');
+        lpod->set_output_charset('iso-8859-1');
 
 Note that the input and output character sets may be controlled independently,
 and that you can change each of them several times in a program. To restore
@@ -662,40 +662,41 @@ very last paragraph of the document:
 
         $p = $doc->get_body->get_paragraph(position => -1);
 
-Our search context is always, up to now, the whole document body. Remember that
-this context may be anything more restrictive (such as a particular section, if
-any). Generally speaking, the search context may be any element that can
-directly or indirectly contain text paragraphs. We'll see some of these high
-level structured containers later.
+Our search context is always, in the previous examples, the whole document
+body. Remember that this context may be anything more restrictive (such as a
+particular section, if any). Generally speaking, the search context may be any
+element that can directly or indirectly contain text paragraphs. We'll see
+some of these high level structured containers later.
 
 A paragraph may be searched according to other criteria than its position in
 the context. The following instruction selects the 5th paragraph that uses a
 given style and whose content matches a given regular expression (if any):
 
         $p = $context->get_paragraph(
-                style           => "Standard",
-                content         => "ODF",
-                position        => 4
-                )
-                or say "Not found !";
+            style           => "Standard",
+            content         => "ODF",
+            position        => 4
+            )
+            or say "Not found !";
 
 Of course, this instruction fails if the context contains less than 5
 paragraphs matching the given C<style> and C<content> conditions.
 
 If C<position> is omitted, C<get_paragraph()> returns the 1st paragraph that
-matches the other condition(s).
+matches the given condition(s).
 
-C<get_paragraph()> returns C<undef> if unsuccessful.
+C<get_paragraph()>, like any other object selection method, returns C<undef>
+if unsuccessful.
 
-An other available selector, C<get_paragraphs()>, retrieves all the paragraphs
+Another available selector, C<get_paragraphs()>, retrieves all the paragraphs
 matching the given C<content> and/or C<style> conditions. Of course, the
 C<position> option doesn't make sense here. The example below counts the
 paragraphs that contain "ODF" or "OpenDocument" and whose style is "Text body":
 
         $count++ for $context->get_paragraphs(
-                style   => "Text body",
-                content => "(ODF|OpenDocument)"
-                );
+            style   => "Text body",
+            content => "(ODF|OpenDocument)"
+            );
 
 Headings may be selected in a similar way using C<get_heading()> and
 C<get_headings()> methods. The options are roughly the same, with the exception
@@ -703,9 +704,9 @@ of C<style> that is replaced by C<level>. As an example, we can get all the
 level 2 headings that contain "ODF" like that:
 
         @odf_titles = $context->get_headings(
-                level   => 2,
-                content => "ODF"
-                );
+            level   => 2,
+            content => "ODF"
+            );
 
 Once retrieved, a paragraph or a heading may be changed, cloned, exported, or
 changed by various ways.
@@ -715,26 +716,26 @@ bookmark name, as shown below:
 
         $p = $context->get_paragraph_by_bookmark("BM1");
 
-Knowing that headings, like paragraphs, can contain bookmarks we don't know
+Knowing that headings, like paragraphs, can contain bookmarks, we don't know
 if the returned object (if any) is a flat paragraph or a heading. However it's
 very easy to check the object class if such an information matters. The last
 example could be continued like that:
 
         unless ($p)
-                {
-                say "Not found !";
-                }
+            {
+            say "Not found !";
+            }
         else
+            {
+            if ($p->isa(odf_heading))
                 {
-                if ($p->isa(odf_heading))
-                        {
-                        say "It's a heading";
-                        }
-                elsif ($p->isa(odf_paragraph))
-                        {
-                        say "It's a paragraph";
-                        }
+                say "It's a heading";
                 }
+            elsif ($p->isa(odf_paragraph))
+                {
+                say "It's a paragraph";
+                }
+            }
 
 Remember that C<odf_heading> is a subclass of C<odf_paragraph>, so the order
 of the C<if...elsif> tests matters.
@@ -783,8 +784,8 @@ method (don't use C<insert_element()> for styles). The following instruction
 creates the new paragraph style and includes it in the document:
 
         $ps1 = $doc->register_style(
-                odf_create_style('paragraph', name => 'Bordered')
-                );
+            odf_create_style('paragraph', name => 'Bordered')
+            );
 
 As you can see, the document itself is (apparently) the context for style
 insertion. Technically, it's not true: lpOD automatically (and transparently
@@ -794,7 +795,7 @@ may specify particular choices through optional parameters, described in
 L<ODF::lpOD::Style>, but you can safely ignore such details and work with the
 default lpOD behavior for a time.
 
-Note that c<insert_style()> returns the inserted style element, so the
+Note that C<register_style()> returns the inserted style element, so the
 application can keep it in order to invoke it later. The instruction above
 produces the same effect as the sequence below:
 
@@ -807,6 +808,8 @@ A more drastic shortcut is allowed:
 
 As shown in this last example, the C<odf_style> class provides a C<register()>
 method whose first (and mandatory) argument is a C<odf_document> object.
+Practically, through its own C<register()> method, a style object just calls
+the C<register()> method of the given document.
 
 Now "Bordered" is the name of a really available... but not really useful
 style, because we didn't specify its features. As a consequence, any paragraph
@@ -814,27 +817,29 @@ that will use it will be displayed according to the default paragraph style of
 the document (if any). So we must create the style with the right definition:
 
         $ps1 = $doc->register_style(
-                odf_style->create(
-                        'paragraph',
-                        name            => 'Bordered',
-                        border          => '0.1cm dotted #000080',
-                        padding         => '0.5cm'
-                        )
-                );
+            odf_style->create(
+                'paragraph',
+                name            => 'Bordered',
+                border          => '0.1cm dotted #000080',
+                padding         => '0.5cm'
+                )
+            );
 
-The same job could be done according a different style:
+The same job could be done according a different programmatic style, thanks
+to a C<register()> method that allows a style object to register itself in
+a given document:
 
         $ps1 = odf_style->create(
-                'paragraph',
-                name    => 'Bordered',
-                border  => '0.1cm dotted #000080',
-                padding => '0.5cm'
-                )->register($doc);
+            'paragraph',
+            name    => 'Bordered',
+            border  => '0.1cm dotted #000080',
+            padding => '0.5cm'
+            )->register($doc);
 
 The C<border> option must be set with a 3-part value: the first one is the
 thickness, the second one is a keyword that specifies the style of line, and
-the third one is the RGB color code. Note that with ODF (like with other de
-facto standards) a color code is a 6-digit hexadecimal value prefixed by "#".
+the third one is the RGB color code. Note that with ODF (like with other
+standards) a color code is a 6-digit hexadecimal value prefixed by "#".
 In this example the blue value is "80" while the red and green are zero. Note
 that lpOD provides a C<color_code()> utility that can provide the color codes
 corresponding to a few hundreds of conventional color names, so the same
@@ -850,32 +855,32 @@ I<bordered> with a blue, 0.1cm thick dotted line, separated from the content by
 a 0.5cm space. That is, the same properties as those of our "Bordered" style,
 and only one additional property.
 
-Thanks to a C<align> option, we could create a new style that with all the
-needed features:
+Thanks to a C<align> option, we could create a new style with all the needed
+features from scratch:
 
-        $ps2 = $doc->insert_style(
-                odf_create_style(
-                        'paragraph',
-                        name            => 'BorderedCentered',
-                        border          => '0.1cm dotted #000080',
-                        padding         => '0.5cm',
-                        align           => 'center'
-                        )
-                );
+        $ps2 = $doc->register_style(
+            odf_create_style(
+                'paragraph',
+                name            => 'BorderedCentered',
+                border          => '0.1cm dotted #000080',
+                padding         => '0.5cm',
+                align           => 'center'
+                )
+            );
 
 However, this method is not very elegant. Thanks to the ODF style inheritance
 logic, there is a better approach. Knowing that "BorderedCentered" differs from
 "Bordered" by one property, we can define it as a derivative of "Bordered",
 through the C<parent> option:
 
-        $ps2 = $doc->insert_style(
-                odf_create_style(
-                        'paragraph',
-                        name            => 'BorderedCentered',
-                        parent          => 'Bordered',
-                        align           => 'center'
-                        )
-                );
+        $ps2 = $doc->register_style(
+            odf_create_style(
+                'paragraph',
+                name            => 'BorderedCentered',
+                parent          => 'Bordered',
+                align           => 'center'
+                )
+            );
 
 Once created, a paragraph style may be changed or enriched using various
 C<set_xxx()> methods. As an example, we could provide our styles with a
@@ -883,19 +888,23 @@ pretty yellow background through the following instruction:
 
         $ps1->set_background(color => '#ffff00');
 
+Assuming that C<$ps2> is a derivative of C<$ps1>, the instruction above will
+affect every paragraph using either C<$ps1> or C<$ps2>.
+
 Thanks to a color symbolic naming facility provided by lpOD, this instruction
 could be written in a more friendly way:
 
         $ps1->set_background(color => 'yellow');
 
 Of course this last form works only if the needed color has a registered name
-and if you know it.
+and if you know it. FYI, the default color dictionary is the standard Xorg RGB
+table; it may be extended with user-provided tables.
 
 Note that, due to inheritance, this new background color will affect both
 C<$ps1> and C<$ps2>.
 
 In the examples above, we kept the return values of C<odf_create_style()> and
-C<insert_style()>. But we can retrieve an existing style thanks to the document
+C<register_style()>. But we can retrieve an existing style thanks to the document
 C<get_style()> method, provided that we know the family and the name. So
 the next instruction will allow us to select (or check the existence of) our
 last created style:
@@ -937,14 +946,15 @@ In order to make this style useful, we have to provide some properties. As
 an example, we'll create this "BigText" style will set a 24pt bold blue font:
 
         $ts = odf_create_style(
-                'text',
-                name    => "BigText",
-                size    => "24pt",
-                weight  => "bold",
-                color   => "navy blue"
-                );
+            'text',
+            name        => "BigText",
+            size        => "24pt",
+            weight      => "bold",
+            color       => "navy blue"
+            );
 
-But how apply this style to one or many text segment ? There are two options.
+But how to apply this style to one or many text segment ? Two options are
+allowed.
 
 The first option consists of using it as a template to add a text-oriented area
 to an existing paragraph style. Doing so, we specify that all the properties of
@@ -959,29 +969,29 @@ its properties (i.e. C<size>, C<weight>, C<color>) are register as the default
 properties for the text of every paragraph whose style is "BorderedCentered".
 
 The second option consists of specifying a particular text span in a
-paragraph and to apply the text style for this segment only, not to the whole
+paragraph and to apply the text style for this span only, not to the whole
 paragraph text, whatever the style of this paragraph and its possible default
 text properties. This option requires the use of C<set_span()>. The
 (arbitrary) example below shows the way to create and register a text style,
 then to apply it to any "OpenDocument" substring found in any paragraph whose
 style is "Standard":
 
-        $doc->insert_style(
-                odf_create_style(
-                        'text',
-                        name    => "BigText",
-                        size    => "24pt",
-                        weight  => "bold",
-                        style   => "italic",
-                        color   => "navy blue"
-                        )
-                );
+        $doc->register_style(
+            odf_create_style(
+                'text',
+                name        => "BigText",
+                size        => "24pt",
+                weight      => "bold",
+                style       => "italic",
+                color       => "navy blue"
+                )
+            );
         foreach $p ($doc->get_paragraphs(style => "Standard")) {
-                $p->set_span(
-                        filter  => 'OpenDocument',
-                        style   => 'BigText'
-                        );
-                }
+            $p->set_span(
+                filter  => 'OpenDocument',
+                style   => 'BigText'
+                );
+            }
 
 C<set_span()> requires a C<style> parameter (that should be the name of a text
 style, existing or to be created). In this example the C<filter> option (whose
@@ -994,20 +1004,20 @@ and other details, but not the font choice. Of course, a C<font> optional
 parameter is available with C<odf_create_style()> as well as
 C<set_properties()>. Example:
 
-        $doc->insert_style(
-                odf_create_style(
-                        'text',
-                        name    => "MyText",
-                        size    => "14pt",
-                        font    => "Times New Roman"
-                        )
-                );
+        $doc->register_style(
+            odf_create_style(
+                'text',
+                name        => "MyText",
+                size        => "14pt",
+                font        => "Times New Roman"
+                )
+            );
 
 However, if you don't take care, your font specification could produce no
 visible effect in some situations. Of course you have checked the availability
 of the needed font in your environment. But, in any ODF document, a font
 must be I<declared> to be used by a style. Fortunately such declaration is
-very easy to register thanks to the document-bases C<set_font_declaration()>
+very easy to register thanks to the document-based C<set_font_declaration()>
 method:
 
         $doc->set_font_declaration("Times New Roman");
@@ -1020,45 +1030,45 @@ declarations may contain more properties than a single font name.
 
 =head2  Back to paragraph style properties
 
-Text styles are mainly intended to be used in I<text spans>. The can be used
+Text styles are mainly intended to be used in I<text spans>. They can be used
 to add text properties to paragraph styles, too, but creating a text style as
 a temporary object to be used as a template for the text properties of a
 paragraph style (and to be immediately forgotten) is a bit complicated and
-boring. C<set_properties()> may be used for direct definition of text
-properties:
+boring. Alternatively, C<set_properties()> may be used for direct definition
+of text properties in a paragraph style:
 
         $ps = $doc->get_style('paragraph', 'BorderedCentered');
         $ps->set_properties(
-                area    => 'text',
-                size    => "24pt",
-                weight  => "bold",
-                color   => "navy blue"
-                );
+            area        => 'text',
+            size        => "24pt",
+            weight      => "bold",
+            color       => "navy blue"
+            );
 
 The C<area> parameter, whose value should be 'paragraph' or 'text' with a
-paragraph style, acts a selector that, in this example, tells that all the
+paragraph style, acts as a selector that, in this example, tells that all the
 other parameters are I<text style properties>.
 
 The default value of C<area> in C<set_properties()> depends on the family of
 the calling style object. Knowing that in our example C<$ps> is a paragraph
-style, if C<set_properties()> without C<area> (or with C<area> set to
-'paragraph'), the other parameters will be regarded as regular paragraph
+style, if C<set_properties()> is called without C<area> (or with C<area> set
+to 'paragraph'), the other parameters will be regarded as regular paragraph
 properties. So it's possible to change the main properties of an existing
 paragraph style at any time, like in the example below that updates the
 C<border> and c<align> properties of our "BorderedCentered" style:
 
         $ps = $doc->get_style('paragraph', 'BorderedCentered');
         $ps->set_properties(
-                border  => '0.5mm solid #00ff00',
-                align   => 'justify'
-                );
+            border      => '0.5mm solid #00ff00',
+            align       => 'justify'
+            );
 
 Unfortunately, due to the change made in the C<align> property, the name
 "BorderedCentered" is no longer significant (for the end-user, not for lpOD and
 the office software, which are agnostic about the meaning of the style names).
 C<set_properties()> doesn't allow us to change the style name. However it's
 possible to force a new name for this style thanks to C<set_name()>, that works
-with styles like with some other kinds of ODF elements:
+with styles like with any other "named" ODF element:
 
         $ps->set_name("BorderedJustified");
 
@@ -1068,10 +1078,10 @@ absolutely want to rename a paragraph style you can retrieve the affected
 paragraphs and reconnect them:
 
         $_->set_style("BorderedJustified")
-                for $doc->get_body
-                        ->get_paragraphs(
-                                style => "BorderedCentered"
-                                );
+            for $doc->get_body
+                ->get_paragraphs(
+                    style => "BorderedCentered"
+                    );
 
 Remember C<set_style()>, that works with paragraphs and other elements and
 allows to change the style of the calling element at any time.
@@ -1134,7 +1144,7 @@ combinations. Have a look at the Bookmarks section in L<ODF::lpOD::TextElement>
 for details.
 
 You should remember the bookmark positioning logic knowing that the same
-principles works with other objects such as index marks, bibliography marks,
+principles work with other objects such as index marks, bibliography marks,
 hyperlinks and text spans.
 
 =head1  Setting hyperlinks in text content
@@ -1153,10 +1163,10 @@ the home page of the ODF Technical Committee to every "ODF" or "OpenDocument"
 substring in every paragraph in a given document:
 
         $_->set_hyperlink(
-                filter  => 'ODF|OpenDocument',
-                url     => 'http://www.oasis-open.org/committees/office'
-                )
-                for $doc->get_body->get_paragraphs;
+            filter  => 'ODF|OpenDocument',
+            url     => 'http://www.oasis-open.org/committees/office'
+            )
+            for $doc->get_body->get_paragraphs;
 
 This example uses an internet link, but it's possible to set navigation links
 of other kinds, including, of course, links aimed as various entry points in
@@ -1166,9 +1176,9 @@ the current document content (section, title, etc). The following example
 sets a link from a given substring to a bookmark in the same document:
 
         $paragraph->set_hyperlink(
-                filter  => "jump to the bookmark",
-                url     => "#BM1"
-                );
+            filter  => "jump to the bookmark",
+            url     => "#BM1"
+            );
 
 If you want to set a hyperlink associated to the whole content of the target
 paragraph, just use C<set_hyperlink()> without positioning option:
@@ -1193,8 +1203,8 @@ paragraph containing "ODF", like that:
 
         $p = $doc->get_body->get_paragraph(content => "ODF");
         $list = $p->insert_element(
-                odf_create_list, position => NEXT_SIBLING
-                );
+            odf_create_list, position => NEXT_SIBLING
+            );
 
 There is no mandatory argument for the C<odf_create_list()> constructor, but in
 real applications you should provide a C<style> parameter whose value is the
@@ -1265,7 +1275,7 @@ space, with one-level lists. In such case, the appropriate style should be
 created like that:
 
         my $ls = odf_create_style('list', name => "MyNumberedStyle");
-        $doc->insert_style($ls);
+        $doc->register_style($ls);
         $ls->set_level_style(
                 1,
                 type    => 'number',
@@ -1273,7 +1283,7 @@ created like that:
                 suffix  => '. '
                 );
 
-If this style (after registration in a document through C<insert_style()>) is
+If this style (after registration in a document through C<register_style()>) is
 used by a list, all the level 1 items will be numbered according to a sequence
 like "1. ", "2. ", "3. ", and so on. In addition, we can provide
 C<set_level_style()> with a C<style> option whose value should be the name
@@ -1345,7 +1355,7 @@ levels.
 The outline style is generally present in every text document. A new document,
 just created using C<odf_new_document()>, automatically includes an outline
 style. However, you are allowed to create a new one through C<odf_create_style>
-and insert it using C<insert_style()>, like any other style. As soon as you
+and insert it using C<register_style()>, like any other style. As soon as you
 insert a new outline style, it automatically replaces the old one (if any).
 
 The first difference between the outline style and other list style is the
@@ -1357,14 +1367,14 @@ C<outline> style family. As an consequence, you cat get it without name:
 
 Symmetrically, the outline style is created and inserted without name:
 
-        $os = $doc->insert_style(odf_create_style('outline'));
+        $os = $doc->register_style(odf_create_style('outline'));
 
 The (sometimes really useful) sequence below replicates the outline style of
 a document and puts it in another document, showing a smart way to normalize
 the title hierarchy according to a template document:
 
         $os = $source_doc->get_style('outline')->clone;
-        $target_doc->insert_style($os);
+        $target_doc->register_style($os);
 
 The second difference with named list styles is that you can't select the
 C<type> of a list level style; this type is automatically set to C<'number'>
@@ -1766,7 +1776,7 @@ will be centered in the page and whose width will be 80% of the page width:
                         style   => "MyTableStyle"
                         )
                 );
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'table',
                         name    => "MyTableStyle",
@@ -1784,7 +1794,7 @@ By default, the space will probably be equally distributed. But we can
 define an explicit width for each column through a I<column style>. The
 following sequence adds 3 column styles:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'table column',
                         name            => 'ColumnA'
@@ -1793,7 +1803,7 @@ following sequence adds 3 column styles:
                         width           => '500*'
                 );
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'table column',
                         name            => 'ColumnB'
@@ -1802,7 +1812,7 @@ following sequence adds 3 column styles:
                         width           => '200*'
                 );
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'table column',
                         name            => 'ColumnC'
@@ -1864,7 +1874,7 @@ In a similar way, we can define row styles that specify a non-default height
 (knowing that the default height may be dynamically adjusted according to the
 content). The sequence hereafter provides the 4th row with 8cm height:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'table row',
                         name    => "VeryHighRow"
@@ -1883,7 +1893,7 @@ rectangular object style (such as I<frames>, introduced later). As an example,
 the instruction below creates and registers a cell style providing a 1mm thick
 blue border with a 1.25mm grey shadow:
 
-        $cs = $doc->insert_style(
+        $cs = $doc->register_style(
                 odf_create_style(
                         'table cell',
                         name            => "YellowBox"
@@ -1899,9 +1909,9 @@ In this example, we introduced the C<set_background()> method, that is
 available with any lpOD rectangular object, like frames or cells. However,
 table cell styles own a C<background color> property that may be directly
 set without using C<set_background()>, so the instruction below produces the
-same result as the previous one:
+same result as the previous sequence:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'table cell',
                         name                    => "YellowBox"
@@ -1919,7 +1929,7 @@ characters are equivalent in most lpOD method options.)
 Because all the properties in this example are properties of the default
 area of a cell style, a more compact form is allowed:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'table cell',
                         name                    => "YellowBox",
@@ -1941,7 +1951,7 @@ style, the following code sets a default light blue background for all the
 cells in a row but one cell that uses the previously defined "YellowBox"
 style:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'table cell',
                         name                    => "LightBlue"
@@ -1980,7 +1990,7 @@ way as the text properties of a paragraph style, through C<set_properties()>:
                 weight  => 'bold',
                 style   => 'italic'
                 );
-        $doc->insert_style($cell_style);
+        $doc->register_style($cell_style);
 
 Note that the default value of the <area> parameter of C<set_properties()>
 is the I<family> of the calling style instance, that is 'table cell' here,
@@ -2051,7 +2061,7 @@ In our example the image frame is appended as a character is a paragraph.
 So if we want to center the image we just have to center the paragraph using
 a regular paragraph style:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'paragraph',
                         name    => "Centered",
@@ -2094,7 +2104,7 @@ The way the coordinates are interpreted depends on some properties of the
 associated graphic style. So we'll get a better result with the following
 snippet:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style('graphic', name => "Classic")
                 );
         $doc->get_body->insert_element(
@@ -2120,7 +2130,7 @@ presentation features. As an example, you may want to apply some visual
 correction parameters, like a 10% adjustment on the blue color and a 50%
 opacity:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'graphic',
                         name            => "Customized",
@@ -2131,18 +2141,18 @@ opacity:
                 );
 
 Note: This last style insertion was made with the C<automatic> parameter. This
-parameter (if C<TRUE>) instructs C<insert_style()> to register the style in
+parameter (if C<TRUE>) instructs C<register_style()> to register the style in
 the so-called "automatic" category (see L<ODF::lpOD::Style> for explanations
 about automatic and common styles). We prefer to register customized graphic
 styles as I<automatic> because (for some mysterious reasons) we noticed that
-at least one popular ODF text processor appears to ignore some properties when
-set in I<common> styles.
+at least one popular ODF text processor appears to ignore some graphic
+properties when set in I<common> styles.
 
 Just a minute before leaving the image frames. Up to now we just inserted
 an image available as an I<external> resource through a file path/name. The
-image should be properly embedded in the document as long as you launch you
-ODF text processor from the same location. But the image resource will no
-longer be reachable if the document is viewed elsewhere. So it could be
+image should be properly embedded in the document as long as the reader launch
+her/his ODF text processor from the same location. But the image resource will
+no longer be reachable if the document is viewed elsewhere. So it could be
 useful to include the image in the physical ODF file. To do so, you may use
 the C<add_image_file()> document-based method, that allows you to store almost
 anything in your office document files. Example:
@@ -2154,8 +2164,8 @@ local file system:
 
         $doc->add_image_file("http://some.where/logo.png");
 
-The looks simple, but it's not OK. When we created the image frame, we
-provided an I<external> file path/name. We must tell the image frame that
+That looks simple, but it's not OK. When we created the image frame, we
+provided an I<external> file path/name. Now we must tell the image frame that
 the resource is an internal one. To do so, we must capture the return value
 of C<add_image_file()> and use it as the image resource identifier in place of
 the file name:
@@ -2178,13 +2188,13 @@ content, load the image file and set the size thanks to C<set_image()> and
 its C<load> option:
 
         $fr = $doc->get_body->append_element(
-                odf_frame->create(
-                        name            => "Logo",
-                        style           => "Classic",
-                        position        => "4cm, 8cm",
-                        page            => 1
-                        )
-                );
+            odf_frame->create(
+                name            => "Logo",
+                style           => "Classic",
+                position        => "4cm, 8cm",
+                page            => 1
+                )
+            );
         $fr->set_image("logo.png", load => TRUE);
 
 In the example above, C<set_image()> will see that the frame size is not
@@ -2193,22 +2203,22 @@ accordingly. Alternatively, you can force an explicit value with
 C<set_image()> through a C<size> optional parameter, so the original size
 will not be looked for.
 
-Alternatively, a frame may be originally sized in order to fit with an
-image previously loaded using C<add_image_file()> that, in array context,
-returns not only a resource identifier but also an image size. So, the example
-below produces the same result as the previous one:
+A frame may be originally sized in order to fit with an image previously
+loaded using C<add_image_file()> that, in array context, returns not only a
+resource identifier but also an image size. So, the example below produces
+the same result as the previous one:
 
         ($image, $size) = $doc->add_image_file("logo.png");
         $fr = $doc->get_body->append_element(
-                odf_frame->create(
-                        image           => $image,
-                        size            => $size,
-                        name            => "Logo",
-                        style           => "Classic",
-                        position        => "4cm, 8cm",
-                        page            => 1
-                        )
-                );
+            odf_frame->create(
+                image           => $image,
+                size            => $size,
+                name            => "Logo",
+                style           => "Classic",
+                position        => "4cm, 8cm",
+                page            => 1
+                )
+            );
 
 Knowing that automatic image size detection implies a physical access to the
 graphical content, it may be costly. As a consequence, the user should specify
@@ -2222,7 +2232,7 @@ viewing/printing application is always connected:
 
         $doc->get_body->append_element(
                 odf_create_image_frame(
-                        "http://somewhere.here/logo.png",
+                        "http://some.where/logo.png",
                         name            => "Logo",
                         style           => "Classic",
                         size            => "6cm, 5cm",
@@ -2249,31 +2259,31 @@ The following sequence attaches this box to the first page at a given position
 and associates it to a graphic style:
 
         $doc->get_body->append_element(
-                odf_create_text_frame(
-                        "The text in the frame",
-                        name            => "TB1",
-                        style           => "TextBox",
-                        size            => "6cm, 5cm",
-                        position        => "4cm, 8cm",
-                        page            => 1
-                        )
-                );
+            odf_create_text_frame(
+                "The text in the frame",
+                name            => "TB1",
+                style           => "TextBox",
+                size            => "6cm, 5cm",
+                position        => "4cm, 8cm",
+                page            => 1
+                )
+            );
 
 Note that we could reuse our previously created "Classic" style for this frame
 but we prefer to define a new one in order, say, to set a green solid
 background and to center the text in the box:
 
-        $doc->insert_style(
-                odf_create_style(
-                        'graphic',
-                        name            => "TextBox",
-                        fill            => 'solid',
-                        'fill color'    => 'pale green',
-                        'textarea vertical align' => 'middle',
-                        'textarea horizontal align' => 'center'
-                        ),
-                automatic => TRUE
-                );
+        $doc->register_style(
+            odf_create_style(
+                'graphic',
+                name            => "TextBox",
+                fill            => 'solid',
+                'fill color'    => 'pale green',
+                'textarea vertical align' => 'middle',
+                'textarea horizontal align' => 'center'
+                ),
+            automatic => TRUE
+            );
 
 Note that we introduced the text box creation with a literal text content
 as the first argument. However, we can fill a text frame with more than a
@@ -2284,28 +2294,28 @@ literals and/or ODF text elements (such as paragraphs) as arguments and
 puts all that stuff sequentially in the frame:
 
         $fr = odf_create_frame(
-                name            => "TB2",
-                style           => "TextBox",
-                size            => "6cm, 5cm",
-                position        => "4cm, 8cm",
-                page            => 1
-                );
+            name            => "TB2",
+            style           => "TextBox",
+            size            => "6cm, 5cm",
+            position        => "4cm, 8cm",
+            page            => 1
+            );
         $p = odf_create_paragraph(
-                text    => "Item 3",
-                style   => "RedBold"
-                );
+            text    => "Item 3",
+            style   => "RedBold"
+            );
         $ps = odf_create_style(
-                'paragraph',
-                name    => "RedBold"
-                );
+            'paragraph',
+            name    => "RedBold"
+            );
         $ps->set_properties(
-                area    => 'text',
-                color   => 'red',
-                weight  => 'bold'
-                );
+            area    => 'text',
+            color   => 'red',
+            weight  => 'bold'
+            );
         $fr->set_text_box("Item 1", "Item 2", $p, "Item 4");
         $doc->get_body->append_element($fr);
-        $doc->insert_style($ps, automatic => TRUE);
+        $doc->register_style($ps, automatic => TRUE);
 
 Here we create a frame and a paragraph (with its own style); then we turn
 the frame as a text box with C<set_text_box()> and, in the same time, we
@@ -2326,7 +2336,7 @@ height, and a footer displaying the page number.
 
 First, let's create the page layout that controls the size:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_create_style(
                         'page layout',
                         name    => "SpecialLayout",
@@ -2337,7 +2347,7 @@ First, let's create the page layout that controls the size:
 Then create the "master" (i.e. the main page style) that uses the new
 layout:
 
-        $mp = $doc->insert_style(
+        $mp = $doc->register_style(
                 odf_create_style(
                         'master page',
                         name    => "CustomPage",
@@ -2376,7 +2386,7 @@ define a paragraph style whose C<master page> option is set to the name of the
 required page style, then use this paragraph style with a paragraph somewhere
 in the document content:
 
-        $doc->insert_style(
+        $doc->register_style(
                 odf_style->create(
                         'paragraph',
                         name            => "AfterBreak",
@@ -2594,6 +2604,6 @@ a name to the last page:
 Developer/Maintainer: Jean-Marie Gouarne L<http://jean.marie.gouarne.online.fr>
 Contact: jmgdoc@cpan.org
 
-Copyright (c) 2011 Jean-Marie Gouarne for this tutorial.
+Copyright (c) 2014 Jean-Marie Gouarne for this tutorial.
 
 =cut

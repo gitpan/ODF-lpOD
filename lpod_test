@@ -23,6 +23,7 @@ A sample ODF text document is generated if a filename is provided as argument.
 use 5.010_000;
 use strict;
 use warnings;
+use experimental    'lexical_subs', 'smartmatch';
 use ODF::lpOD;
 #--- announcement ------------------------------------------------------------
 
