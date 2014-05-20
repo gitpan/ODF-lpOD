@@ -5,9 +5,9 @@
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
-use 5.010_000;
-use strict;
-use     experimental    'lexical_subs', 'smartmatch';
+use     5.010_000;
+use     strict;
+use     experimental    'smartmatch';
 #=============================================================================
 #       The ODF Document class definition
 #=============================================================================

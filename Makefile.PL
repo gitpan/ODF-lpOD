@@ -54,7 +54,7 @@ if ($build)
                 do  {
                         $version	= prompt("Version number ?", $version);
                         $dist_date	= prompt("Build date ?", $dist_date);
-                        $author	= prompt("Packager ?", $author);
+                        $author		= prompt("Packager ?", $author);
                         $ok		= prompt("OK ? (Y/N)", "Y");
                         }
                         until (uc($ok) eq "Y")
@@ -94,25 +94,25 @@ WriteMakefile
         (
         'NAME'			=> 'ODF::lpOD',
         'VERSION'		=> $version,
-        'ABSTRACT_FROM' => 'lpOD.pod',
+        'ABSTRACT_FROM' 	=> 'lpOD.pod',
     	'AUTHOR'		=> $author,
-		'LICENSE'		=> 'GPL',
+		'LICENSE'	=> 'GPL',
     	'PREREQ_PM'		=>
                 {
-                'XML::Twig'			=> '3.34',
+                'XML::Twig'		=> '3.34',
                 'Archive::Zip'		=> '1.30',
                 'File::Temp'		=> '0.12',
                 'File::Find'		=> '1.01',
                 'Time::Local'		=> '1.07',
                 'IO::File'	        => '1.14',
-                'File::Basename'    => '2.76',
-                'File::Slurp'       => '0',
+                'File::Basename'	=> '2.76',
+                'File::Slurp'		=> '0',
                 'File::Type'		=> '0',
                 'Image::Size'		=> '0',
                 'LWP::Simple'		=> '0',
                 'experimental'		=> '0'
                 },
-        'EXE_FILES'	=>
+        'EXE_FILES'		=>
                 [
                 'lpod_test'
                 ]

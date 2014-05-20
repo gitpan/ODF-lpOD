@@ -30,4 +30,4 @@ requires:
   Time::Local: 1.07
   XML::Twig: 3.34
   experimental: 0
-version: 1.122
+version: 1.123

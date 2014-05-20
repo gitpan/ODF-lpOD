@@ -7,7 +7,7 @@
 #=============================================================================
 use     5.010_000;
 use     strict;
-use     experimental    'lexical_subs', 'smartmatch';
+use     experimental    'smartmatch';
 #=============================================================================
 #	Tables and table components (columns, rows, cells, row/col groups)
 #=============================================================================

@@ -1,3 +1,5 @@
+1.123	2014-05-20
+  - All modules: removed 'lexical_subs' from 'use experimental' statement. 
 1.122   2014-04-30
   - All modules: transitional workaround for 5.18 'experimental' warnings.
   - Common.pm: allowed XML pretty print option change; cleaned is_true().
