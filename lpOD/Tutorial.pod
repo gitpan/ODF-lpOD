@@ -22,7 +22,7 @@ as a set of code examples to illustrate various features introduced in this
 tutorial.
 
 Note that our code examples use some Perl 5.10 features (remember that lpOD
-requires Perl 5.10 or later).
+requires Perl 5.10.1 or later).
 
 Note: An alternative tutorial, intended for french-reading users, is available
 at L<http://jean.marie.gouarne.online.fr/doc/introduction_lpod_perl.pdf>.

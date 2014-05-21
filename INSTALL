@@ -5,7 +5,7 @@ Perl distribution
 System requirements:
 ====================
 
-- Perl 5.10.0 or later
+- Perl 5.10.1 or later
 - Archive::Zip 1.30 or later
 - XML::Twig 3.34 or later
 - File::Type

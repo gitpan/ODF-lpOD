@@ -5,14 +5,14 @@
 #       Author: Jean-Marie Gouarné <jean-marie.gouarne@online.fr>
 #
 #=============================================================================
-use     5.010_000;
+use     5.010_001;
 use     strict;
 #=============================================================================
 #       The main module for the lpOD Project
 #=============================================================================
 package ODF::lpOD;
-our $VERSION                    =       "1.124";
-use constant PACKAGE_DATE       =>      "2014-05-20T19:02:14";
+our $VERSION                    =       "1.125";
+use constant PACKAGE_DATE       =>      "2014-05-21T15:32:58";
 use ODF::lpOD::Common;
 #-----------------------------------------------------------------------------
 use ODF::lpOD::Document;

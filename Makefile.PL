@@ -5,10 +5,10 @@
 #       Author: Jean-Marie Gouarné <jean.marie.gouarne@online.fr>
 #
 #=============================================================================
-use     5.010_000;
+use     5.010_001;
 use     strict;
 #=============================================================================
-#       Packaging & installation for ODF::lpOD - 2014-04-30T08:35:01
+#       Packaging & installation for ODF::lpOD - 2014-05-21T10:32:13
 #=============================================================================
 use ExtUtils::MakeMaker;
 use Getopt::Long;
@@ -92,27 +92,28 @@ if ($build)
 
 WriteMakefile
         (
-        'NAME'			=> 'ODF::lpOD',
-        'VERSION'		=> $version,
-        'ABSTRACT_FROM' 	=> 'lpOD.pod',
-    	'AUTHOR'		=> $author,
-		'LICENSE'	=> 'GPL',
-    	'PREREQ_PM'		=>
+        'NAME'              => 'ODF::lpOD',
+        'VERSION'           => $version,
+        'ABSTRACT_FROM'     => 'lpOD.pod',
+    	'AUTHOR'            => $author,
+		'LICENSE'   => 'GPL',
+        'MIN_PERL_VERSION'  => '5.010001',
+    	'PREREQ_PM'         =>
                 {
-                'XML::Twig'		=> '3.34',
-                'Archive::Zip'		=> '1.30',
-                'File::Temp'		=> '0.12',
-                'File::Find'		=> '1.01',
-                'Time::Local'		=> '1.07',
-                'IO::File'	        => '1.14',
-                'File::Basename'	=> '2.76',
-                'File::Slurp'		=> '0',
-                'File::Type'		=> '0',
-                'Image::Size'		=> '0',
-                'LWP::Simple'		=> '0',
-                'experimental'		=> '0'
+                'XML::Twig'         => '3.34',
+                'Archive::Zip'      => '1.30',
+                'File::Temp'        => '0.12',
+                'File::Find'        => '1.01',
+                'Time::Local'       => '1.07',
+                'IO::File'          => '1.14',
+                'File::Basename'    => '2.76',
+                'File::Slurp'       => '0',
+                'File::Type'        => '0',
+                'Image::Size'       => '0',
+                'LWP::Simple'       => '0',
+                'experimental'      => '0'
                 },
-        'EXE_FILES'		=>
+        'EXE_FILES'         =>
                 [
                 'lpod_test'
                 ]
