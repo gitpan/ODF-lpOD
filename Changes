@@ -1,5 +1,7 @@
+1.126   2014-05-28
+  - Test script (lpod_test) bug fix.
 1.125   2014-05-21
-    - MIN_PERL_VERSION is now 5.10.1.
+  - MIN_PERL_VERSION is now 5.10.1.
 1.124   2014-05-20
   - Field.pm: fixed 'lexical_subs' error.
 1.123	2014-05-20

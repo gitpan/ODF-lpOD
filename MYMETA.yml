@@ -31,4 +31,4 @@ requires:
   XML::Twig: 3.34
   experimental: 0
   perl: 5.010001
-version: 1.125
+version: 1.126

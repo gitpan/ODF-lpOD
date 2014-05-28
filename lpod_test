@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #=============================================================================
-# lpod_test        lpOD-Perl installation test     2012-06-05T08:44:27
+# lpod_test        lpOD-Perl installation test     2014-05-28T13:27:57
 #=============================================================================
 
 =head1  NAME
@@ -20,10 +20,10 @@ A sample ODF text document is generated if a filename is provided as argument.
 
 =cut
 
-use 5.010_000;
+use 5.010_001;
 use strict;
 use warnings;
-use experimental    'lexical_subs', 'smartmatch';
+
 use ODF::lpOD;
 #--- announcement ------------------------------------------------------------
 

@@ -8,8 +8,12 @@ System requirements:
 - Perl 5.10.1 or later
 - Archive::Zip 1.30 or later
 - XML::Twig 3.34 or later
+- IO::File 1.14 or later
+- File::Basename
 - File::Type
 - File::Slurp
+- File::Temp 0.12 or later
+- Time::Local 1.07 or later
 - Image::Size
 - LWP::Simple
 - experimental
